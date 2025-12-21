@@ -80,7 +80,30 @@ export function DashboardNav() {
         <SidebarGroupContent>
           <SidebarMenu>
             {settingsItems.map((item) => {
-              const isActive = pathname.startsWith(item.url);
+              // Check for exact match
+              if (pathname === item.url) {
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      render={<Link href={item.url} />}
+                      isActive={true}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              }
+              // Check if this is a child route (pathname starts with item.url + "/")
+              // but only if no other more specific item matches
+              const isChildRoute = pathname.startsWith(`${item.url}/`);
+              const hasMoreSpecificMatch = settingsItems.some(
+                (otherItem) =>
+                  otherItem.url !== item.url &&
+                  otherItem.url.startsWith(`${item.url}/`) &&
+                  pathname.startsWith(otherItem.url),
+              );
+              const isActive = isChildRoute && !hasMoreSpecificMatch;
               return (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton

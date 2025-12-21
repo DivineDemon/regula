@@ -1,6 +1,10 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest/client";
 import { crawlTarget, scheduleCrawls } from "@/lib/inngest/functions/crawl";
+import {
+  sendDailyDigests,
+  sendWeeklyDigests,
+} from "@/lib/inngest/functions/digest";
 
 /**
  * Inngest API route handler for background job processing
@@ -8,5 +12,5 @@ import { crawlTarget, scheduleCrawls } from "@/lib/inngest/functions/crawl";
  */
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [crawlTarget, scheduleCrawls],
+  functions: [crawlTarget, scheduleCrawls, sendDailyDigests, sendWeeklyDigests],
 });

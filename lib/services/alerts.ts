@@ -1,12 +1,20 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
-import { alerts } from "@/lib/db/schema";
+import {
+  alertAssignments,
+  alertComments,
+  alerts,
+  targets,
+  users,
+  versions,
+} from "@/lib/db/schema";
+import type { AlertStatus } from "@/lib/db/schema/alerts";
 import type { organizations } from "@/lib/db/schema/organizations";
-import type { targets } from "@/lib/db/schema/targets";
 import type { DiffMetadata } from "./diff";
 import { calculateImpactScoreFromDiff } from "./impact-scoring";
 import { type SummarizationResult, summarizeRegulatoryContent } from "./llm";
+import { sendRealtimeAlertNotification } from "./notifications";
 import { getVersionContent } from "./versions";
 
 /**
@@ -118,6 +126,22 @@ export async function generateAlert(params: {
     throw new Error("Failed to create alert record");
   }
 
+  // Step 5: Send real-time notifications (fire and forget)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const alertUrl = `${baseUrl}/alerts/${alert.id}?organizationId=${organizationId}`;
+
+  sendRealtimeAlertNotification({
+    alertId: alert.id,
+    organizationId,
+    targetLabel: target.label,
+    summary: alert.summary ?? "",
+    impactScore: alert.impactScore ?? null,
+    alertUrl,
+  }).catch((error) => {
+    console.error("Error sending real-time alert notifications:", error);
+    // Don't throw - notification failures shouldn't break alert creation
+  });
+
   return {
     id: alert.id,
     summary: alert.summary ?? "",
@@ -157,5 +181,282 @@ export async function getAlertsByTarget(targetId: string) {
     .select()
     .from(alerts)
     .where(eq(alerts.targetId, targetId))
-    .orderBy(alerts.createdAt);
+    .orderBy(desc(alerts.createdAt));
+}
+
+/**
+ * Get alert with related data (target, version, assignments, comments)
+ */
+export async function getAlertWithDetails(
+  alertId: string,
+  organizationId: string,
+) {
+  const [alertData] = await db
+    .select({
+      alert: alerts,
+      target: targets,
+      version: versions,
+    })
+    .from(alerts)
+    .innerJoin(targets, eq(alerts.targetId, targets.id))
+    .innerJoin(versions, eq(alerts.versionId, versions.id))
+    .where(
+      and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  if (!alertData) {
+    return null;
+  }
+
+  // Get assignments
+  const assignments = await db
+    .select({
+      assignment: alertAssignments,
+      user: users,
+    })
+    .from(alertAssignments)
+    .innerJoin(users, eq(alertAssignments.userId, users.id))
+    .where(eq(alertAssignments.alertId, alertId));
+
+  // Get comments
+  const comments = await db
+    .select({
+      comment: alertComments,
+      user: users,
+    })
+    .from(alertComments)
+    .innerJoin(users, eq(alertComments.userId, users.id))
+    .where(eq(alertComments.alertId, alertId))
+    .orderBy(desc(alertComments.createdAt));
+
+  return {
+    ...alertData,
+    assignments: assignments.map((a) => ({
+      ...a.assignment,
+      user: a.user,
+    })),
+    comments: comments.map((c) => ({
+      ...c.comment,
+      user: c.user,
+    })),
+  };
+}
+
+/**
+ * Get alerts with filtering and search
+ */
+export async function getAlertsWithFilters(params: {
+  organizationId: string;
+  status?: AlertStatus;
+  severity?: "low" | "medium" | "high";
+  jurisdiction?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const {
+    organizationId,
+    status,
+    severity,
+    jurisdiction,
+    dateFrom,
+    dateTo,
+    search,
+    limit = 100,
+    offset = 0,
+  } = params;
+
+  const conditions = [eq(alerts.organizationId, organizationId)];
+
+  if (status) {
+    conditions.push(eq(alerts.status, status));
+  }
+
+  if (severity) {
+    if (severity === "low") {
+      const condition = and(
+        gte(alerts.impactScore, 0),
+        lte(alerts.impactScore, 0.4),
+      );
+      if (condition) conditions.push(condition);
+    } else if (severity === "medium") {
+      const condition = and(
+        gte(alerts.impactScore, 0.4),
+        lte(alerts.impactScore, 0.7),
+      );
+      if (condition) conditions.push(condition);
+    } else if (severity === "high") {
+      const condition = gte(alerts.impactScore, 0.7);
+      if (condition) conditions.push(condition);
+    }
+  }
+
+  if (dateFrom) {
+    conditions.push(gte(alerts.createdAt, dateFrom));
+  }
+
+  if (dateTo) {
+    conditions.push(lte(alerts.createdAt, dateTo));
+  }
+
+  if (search) {
+    const condition = or(
+      ilike(alerts.summary, `%${search}%`),
+      ilike(targets.label, `%${search}%`),
+      ilike(targets.jurisdiction, `%${search}%`),
+    );
+    if (condition) conditions.push(condition);
+  }
+
+  if (jurisdiction) {
+    conditions.push(eq(targets.jurisdiction, jurisdiction));
+  }
+
+  const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const results = await db
+    .select({
+      alert: alerts,
+      target: targets,
+    })
+    .from(alerts)
+    .innerJoin(targets, eq(alerts.targetId, targets.id))
+    .where(whereCondition)
+    .orderBy(desc(alerts.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  // Get total count for pagination
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(alerts)
+    .innerJoin(targets, eq(alerts.targetId, targets.id))
+    .where(whereCondition);
+
+  return {
+    alerts: results,
+    total: Number(countResult?.count ?? 0),
+  };
+}
+
+/**
+ * Update alert status
+ */
+export async function updateAlertStatus(
+  alertId: string,
+  organizationId: string,
+  status: AlertStatus,
+) {
+  const [updated] = await db
+    .update(alerts)
+    .set({
+      status,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)),
+    )
+    .returning();
+
+  return updated || null;
+}
+
+/**
+ * Assign alert to user(s)
+ */
+export async function assignAlertToUsers(
+  alertId: string,
+  organizationId: string,
+  userIds: string[],
+) {
+  // Verify alert belongs to organization
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(
+      and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  if (!alert) {
+    throw new Error("Alert not found or access denied");
+  }
+
+  // Remove existing assignments
+  await db
+    .delete(alertAssignments)
+    .where(eq(alertAssignments.alertId, alertId));
+
+  // Add new assignments
+  if (userIds.length > 0) {
+    await db.insert(alertAssignments).values(
+      userIds.map((userId) => ({
+        alertId,
+        userId,
+        assignedAt: new Date(),
+      })),
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Add comment to alert
+ */
+export async function addAlertComment(
+  alertId: string,
+  organizationId: string,
+  userId: string,
+  content: string,
+) {
+  // Verify alert belongs to organization
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(
+      and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  if (!alert) {
+    throw new Error("Alert not found or access denied");
+  }
+
+  const commentId = nanoid();
+  const [comment] = await db
+    .insert(alertComments)
+    .values({
+      id: commentId,
+      alertId,
+      userId,
+      content,
+      createdAt: new Date(),
+    })
+    .returning();
+
+  return comment;
+}
+
+/**
+ * Get unique jurisdictions for alerts in an organization
+ */
+export async function getAlertJurisdictions(organizationId: string) {
+  const results = await db
+    .selectDistinct({ jurisdiction: targets.jurisdiction })
+    .from(alerts)
+    .innerJoin(targets, eq(alerts.targetId, targets.id))
+    .where(
+      and(
+        eq(alerts.organizationId, organizationId),
+        sql`${targets.jurisdiction} IS NOT NULL`,
+      ),
+    );
+
+  return results
+    .map((r) => r.jurisdiction)
+    .filter((j): j is string => j !== null);
 }

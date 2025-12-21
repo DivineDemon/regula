@@ -2,8 +2,17 @@ import { and, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { organizations, targets } from "@/lib/db/schema";
 import { inngest } from "@/lib/inngest/client";
+import {
+  adaptiveCrawlTarget,
+  shouldRefreshContentGraph,
+} from "@/lib/services/adaptive-crawl";
 import { generateAlert } from "@/lib/services/alerts";
-import { detectChanges } from "@/lib/services/diff";
+import {
+  type ChangeType,
+  type DiffMetadata,
+  detectChanges,
+} from "@/lib/services/diff";
+import type { CrawlResult } from "@/lib/services/firecrawl";
 import { crawlUrl } from "@/lib/services/firecrawl";
 import {
   compareVersionsByHash,
@@ -56,32 +65,86 @@ export const crawlTarget = inngest.createFunction(
       return targetRecord;
     });
 
-    // Step 2: Crawl the URL
-    const crawlResult = await step.run("crawl-url", async () => {
-      try {
-        const result = await crawlUrl(target.url, {
-          respectRobotsTxt: true,
-          includePdfs: true,
-          extractPdfContent: true,
-        });
-        return result;
-      } catch (error) {
-        // Update target status and job status to "failed" on failure
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        await db
-          .update(targets)
-          .set({
-            status: "error",
-            lastCrawlStatus: "failed",
-            lastCrawlError: errorMessage.substring(0, 500), // Limit error message length
-            updatedAt: new Date(),
-          })
-          .where(eq(targets.id, targetId));
+    // Step 2: Check if we should use adaptive discovery
+    const useAdaptiveDiscovery = await step.run(
+      "check-adaptive-discovery",
+      async () => {
+        // Use adaptive discovery on first crawl or if graph needs refresh
+        return shouldRefreshContentGraph(targetId);
+      },
+    );
 
-        throw error;
+    let crawlResult: CrawlResult | undefined;
+    // Inngest serializes return values, so we use any for the step result
+    // biome-ignore lint/suspicious/noExplicitAny: Inngest step results are serialized and may not match exact types
+    let adaptiveResult: any = null;
+
+    if (useAdaptiveDiscovery) {
+      // Use adaptive content discovery
+      adaptiveResult = await step.run("adaptive-crawl", async () => {
+        try {
+          return await adaptiveCrawlTarget({
+            targetId,
+            organizationId,
+            targetUrl: target.url,
+            targetConfig: {
+              url: target.url,
+              label: target.label,
+              jurisdiction: target.jurisdiction || undefined,
+              category: target.category || undefined,
+            },
+          });
+        } catch (error) {
+          console.error(
+            "Adaptive crawl failed, falling back to simple crawl:",
+            error,
+          );
+          // Fall through to simple crawl
+          return null;
+        }
+      });
+
+      if (adaptiveResult?.success) {
+        // Adaptive crawl succeeded - we still need to crawl the main URL
+        // for backward compatibility with existing change detection
+        crawlResult = await step.run("crawl-main-url", async () => {
+          return await crawlUrl(target.url, {
+            respectRobotsTxt: true,
+            includePdfs: true,
+            extractPdfContent: true,
+          });
+        });
       }
-    });
+    }
+
+    // Fallback to simple crawl if adaptive discovery not used or failed
+    if (!crawlResult) {
+      crawlResult = await step.run("crawl-url", async () => {
+        try {
+          const result = await crawlUrl(target.url, {
+            respectRobotsTxt: true,
+            includePdfs: true,
+            extractPdfContent: true,
+          });
+          return result;
+        } catch (error) {
+          // Update target status and job status to "failed" on failure
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          await db
+            .update(targets)
+            .set({
+              status: "error",
+              lastCrawlStatus: "failed",
+              lastCrawlError: errorMessage.substring(0, 500), // Limit error message length
+              updatedAt: new Date(),
+            })
+            .where(eq(targets.id, targetId));
+
+          throw error;
+        }
+      });
+    }
 
     // Step 3: Store the version
     const version = await step.run("store-version", async () => {
@@ -92,9 +155,73 @@ export const crawlTarget = inngest.createFunction(
       });
     });
 
-    // Step 4: Check for changes by comparing with previous version
+    // Step 4: Check for changes
     const changeDetectionResult = await step.run("detect-changes", async () => {
-      // Get the newly created version (which has the previousVersionId set)
+      // If we used adaptive discovery, check graph changes
+      if (adaptiveResult?.changesDetected && adaptiveResult.graphDiff) {
+        // Graph-based change detection
+        const hasNewFiles = adaptiveResult.graphDiff.addedNodes.length > 0;
+        const hasModifiedFiles =
+          adaptiveResult.graphDiff.modifiedNodes.length > 0;
+        const hasRemovedFiles =
+          adaptiveResult.graphDiff.removedNodes.length > 0;
+
+        if (hasNewFiles || hasModifiedFiles || hasRemovedFiles) {
+          // Create a synthetic diff metadata for graph changes
+          const changeTypes: ChangeType[] = [];
+          if (hasNewFiles) changeTypes.push("attachment_added");
+          if (hasModifiedFiles) changeTypes.push("modified");
+          if (hasRemovedFiles) changeTypes.push("attachment_removed");
+
+          const diffMetadata: DiffMetadata = {
+            hasChanges: true,
+            changeTypes,
+            structuralChanges: [] as DiffMetadata["structuralChanges"],
+            attachmentChanges: [
+              ...adaptiveResult.graphDiff.addedNodes
+                .filter((n: { type: string }) => n.type === "pdf")
+                .map((n: { url: string }) => ({
+                  url: n.url,
+                  filename: extractFilenameFromUrl(n.url),
+                  action: "added" as const,
+                })),
+              ...adaptiveResult.graphDiff.modifiedNodes
+                .filter(
+                  (n: { node: { type: string } }) => n.node.type === "pdf",
+                )
+                .map((n: { node: { url: string } }) => ({
+                  url: n.node.url,
+                  filename: extractFilenameFromUrl(n.node.url),
+                  action: "modified" as const,
+                })),
+              ...adaptiveResult.graphDiff.removedNodes
+                .filter((n: { type: string }) => n.type === "pdf")
+                .map((n: { url: string }) => ({
+                  url: n.url,
+                  filename: extractFilenameFromUrl(n.url),
+                  action: "removed" as const,
+                })),
+            ],
+            affectedSections: [],
+          };
+
+          // Use the main URL version for alert generation
+          const newVersion = await getVersion(version.id);
+          const previousVersion = newVersion?.previousVersionId
+            ? await getVersion(newVersion.previousVersionId)
+            : null;
+
+          return {
+            hasChanges: true,
+            diffMetadata,
+            currentVersionId: newVersion?.id || null,
+            previousVersionId: previousVersion?.id || null,
+            graphBased: true,
+          };
+        }
+      }
+
+      // Fallback to traditional version-based change detection
       const newVersion = await getVersion(version.id);
 
       // If there's a previous version, compare hashes first
@@ -122,6 +249,7 @@ export const crawlTarget = inngest.createFunction(
               diffMetadata,
               currentVersionId: newVersion.id,
               previousVersionId: previousVersion.id,
+              graphBased: false,
             };
           }
         }
@@ -132,15 +260,29 @@ export const crawlTarget = inngest.createFunction(
         diffMetadata: null,
         currentVersionId: null,
         previousVersionId: null,
+        graphBased: false,
       };
     });
+
+    // Helper function to extract filename from URL
+    function extractFilenameFromUrl(url: string): string {
+      try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const filename = pathname.split("/").pop() || "document";
+        return decodeURIComponent(filename);
+      } catch {
+        const parts = url.split("/");
+        return parts[parts.length - 1] || "document";
+      }
+    }
 
     // Step 5: Generate alert if changes were detected
     if (
       changeDetectionResult.hasChanges &&
       changeDetectionResult.diffMetadata &&
-      changeDetectionResult.currentVersionId &&
-      changeDetectionResult.previousVersionId
+      (changeDetectionResult.currentVersionId ||
+        changeDetectionResult.graphBased)
     ) {
       await step.run("generate-alert", async () => {
         // Get organization record
@@ -159,11 +301,27 @@ export const crawlTarget = inngest.createFunction(
 
         // Generate alert using AI summarization and impact scoring
         try {
+          // For graph-based changes, we need to create a version for the alert system
+          // Use the main URL version or create a synthetic one
+          let currentVersionId = changeDetectionResult.currentVersionId;
+          let previousVersionId = changeDetectionResult.previousVersionId;
+
+          if (changeDetectionResult.graphBased && !currentVersionId) {
+            // Use the main URL version
+            const mainVersion = await getVersion(version.id);
+            currentVersionId = mainVersion?.id || version.id;
+            previousVersionId = mainVersion?.previousVersionId || null;
+          }
+
+          if (!currentVersionId) {
+            currentVersionId = version.id;
+          }
+
           const alert = await generateAlert({
             organizationId,
             targetId,
-            currentVersionId: changeDetectionResult.currentVersionId,
-            previousVersionId: changeDetectionResult.previousVersionId,
+            currentVersionId,
+            previousVersionId: previousVersionId || version.id, // Fallback
             diffMetadata: changeDetectionResult.diffMetadata,
             target,
             organization,
