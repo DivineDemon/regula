@@ -1,8 +1,9 @@
 "use client";
 
-import { MessageSquare, UserPlus } from "lucide-react";
+import { FileText, MessageSquare, UserPlus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { DocumentViewer } from "@/components/document-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { VersionComparisonViewer } from "@/components/version-comparison-viewer";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 
 interface AlertDetail {
@@ -37,6 +39,8 @@ interface AlertDetail {
     id: string;
     crawledAt: Date;
     hasChanges: boolean | null;
+    previousVersionId: string | null;
+    metadata: string | null;
   };
   assignments: Array<{
     userId: string;
@@ -323,6 +327,53 @@ export default function AlertDetailPage({
               </div>
             </CardContent>
           </Card>
+
+          {/* Version Comparison */}
+          {alertDetail.version.previousVersionId && (
+            <VersionComparisonViewer
+              currentVersionId={alertDetail.version.id}
+              previousVersionId={alertDetail.version.previousVersionId}
+              organizationId={organizationId || ""}
+            />
+          )}
+
+          {/* Document Viewer */}
+          {(() => {
+            try {
+              const metadata = alertDetail.version.metadata
+                ? JSON.parse(alertDetail.version.metadata)
+                : null;
+              const hasAttachments =
+                metadata?.attachments && metadata.attachments.length > 0;
+              const isPDF = metadata?.contentType === "pdf";
+
+              if (hasAttachments || isPDF) {
+                return (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Document Viewer
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <DocumentViewer
+                        versionId={alertDetail.version.id}
+                        organizationId={organizationId || ""}
+                        filename={
+                          metadata?.attachments?.[0]?.filename ||
+                          `document-${alertDetail.version.id}.pdf`
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+                );
+              }
+              return null;
+            } catch {
+              return null;
+            }
+          })()}
 
           {/* Comments */}
           <Card>

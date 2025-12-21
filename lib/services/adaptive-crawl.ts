@@ -15,7 +15,10 @@ import {
   getLatestContentGraph,
   storeContentGraph,
 } from "./pattern-detection";
+
 import { storeVersion } from "./versions";
+
+export type { GraphDiff };
 
 /**
  * Enhanced crawl using adaptive content discovery
@@ -41,7 +44,7 @@ export async function adaptiveCrawlTarget(params: {
 
   // Step 1: Get or create content graph
   const previousGraph = await getLatestContentGraph(targetId);
-  const _isFirstCrawl = !previousGraph;
+  const isFirstCrawl = !previousGraph;
 
   // Step 2: Discover content intelligently
   const contentGraph = await discoverContentIntelligently(
@@ -54,14 +57,29 @@ export async function adaptiveCrawlTarget(params: {
   const strategy = adaptStrategyForPattern(patternInfo.pattern);
 
   // Step 4: Crawl discovered content based on strategy
+  // Use reduced limits for first crawl to avoid timeouts
+  const maxPdfs = isFirstCrawl ? 10 : 100;
+  const maxPages = isFirstCrawl
+    ? 5
+    : strategy.pagesToCrawl > 0
+      ? strategy.pagesToCrawl
+      : 0;
+
   const versionsCreated: Array<{ id: string; contentHash: string }> = [];
   const crawlResults: Array<{ url: string; result: CrawlResult }> = [];
 
   // Crawl PDFs directly if strategy says so
   if (strategy.directPdfUrls) {
     const pdfNodes = contentGraph.nodes.filter((n) => n.type === "pdf");
-    for (const pdfNode of pdfNodes.slice(0, 100)) {
-      // Limit to 100 PDFs per crawl
+    const nodesToCrawl = pdfNodes.slice(0, maxPdfs);
+
+    if (isFirstCrawl && pdfNodes.length > maxPdfs) {
+      console.log(
+        `First crawl: Limiting PDF crawl from ${pdfNodes.length} to ${maxPdfs} to avoid timeout`,
+      );
+    }
+
+    for (const pdfNode of nodesToCrawl) {
       try {
         const result = await crawlUrl(pdfNode.url, {
           respectRobotsTxt: true,
@@ -86,9 +104,17 @@ export async function adaptiveCrawlTarget(params: {
   }
 
   // Crawl pages if strategy says so
-  if (strategy.pagesToCrawl > 0) {
+  if (maxPages > 0) {
     const pageNodes = contentGraph.nodes.filter((n) => n.type === "page");
-    for (const pageNode of pageNodes.slice(0, strategy.pagesToCrawl)) {
+    const nodesToCrawl = pageNodes.slice(0, maxPages);
+
+    if (isFirstCrawl && pageNodes.length > maxPages) {
+      console.log(
+        `First crawl: Limiting page crawl from ${pageNodes.length} to ${maxPages} to avoid timeout`,
+      );
+    }
+
+    for (const pageNode of nodesToCrawl) {
       try {
         const result = await crawlUrl(pageNode.url, {
           respectRobotsTxt: true,

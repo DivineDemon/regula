@@ -1,11 +1,26 @@
 "use client";
 
-import { AlertCircle, Calendar, Filter, Search, X } from "lucide-react";
+import {
+  AlertCircle,
+  Calendar,
+  CheckSquare,
+  Download,
+  Filter,
+  Search,
+  Square,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,26 +59,40 @@ export function AlertsList({ organizationId }: AlertsListProps) {
   const [alerts, setAlerts] = useState<AlertsResponse["alerts"]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(new Set());
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [filters, setFilters] = useState({
     status: "" as string,
     severity: "" as string,
     jurisdiction: "" as string,
+    category: "" as string,
     dateFrom: "" as string,
     dateTo: "" as string,
     search: "" as string,
   });
   const [jurisdictions, setJurisdictions] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch jurisdictions
+  // Fetch jurisdictions and categories
   useEffect(() => {
     if (!organizationId) return;
 
-    fetch(`/api/alerts/jurisdictions?organizationId=${organizationId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.jurisdictions) {
-          setJurisdictions(data.jurisdictions);
+    Promise.all([
+      fetch(`/api/alerts/jurisdictions?organizationId=${organizationId}`),
+      fetch(`/api/alerts/categories?organizationId=${organizationId}`),
+    ])
+      .then(async ([jurRes, catRes]) => {
+        const [jurData, catData] = await Promise.all([
+          jurRes.json(),
+          catRes.json(),
+        ]);
+        if (jurData.jurisdictions) {
+          setJurisdictions(jurData.jurisdictions);
+        }
+        if (catData.categories) {
+          setCategories(catData.categories);
         }
       })
       .catch(() => {});
@@ -97,6 +126,39 @@ export function AlertsList({ organizationId }: AlertsListProps) {
   useEffect(() => {
     fetchAlerts();
   }, [fetchAlerts]);
+
+  const handleExport = async (format: "csv" | "pdf") => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({
+        organizationId,
+        format,
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([_, v]) => v !== ""),
+        ),
+      });
+
+      const response = await fetch(`/api/alerts/export?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `alerts-export-${new Date().toISOString()}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error exporting:", error);
+      alert("Failed to export alerts. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const getSeverityBadge = (score: number | null) => {
     if (score === null) return null;
@@ -143,6 +205,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
       status: "",
       severity: "",
       jurisdiction: "",
+      category: "",
       dateFrom: "",
       dateTo: "",
       search: "",
@@ -150,6 +213,54 @@ export function AlertsList({ organizationId }: AlertsListProps) {
   };
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
+
+  const handleSelectAll = () => {
+    if (selectedAlerts.size === alerts.length) {
+      setSelectedAlerts(new Set());
+    } else {
+      setSelectedAlerts(new Set(alerts.map(({ alert }) => alert.id)));
+    }
+  };
+
+  const handleSelectAlert = (alertId: string) => {
+    const newSelected = new Set(selectedAlerts);
+    if (newSelected.has(alertId)) {
+      newSelected.delete(alertId);
+    } else {
+      newSelected.add(alertId);
+    }
+    setSelectedAlerts(newSelected);
+  };
+
+  const handleBulkStatusUpdate = async (status: AlertStatus) => {
+    if (selectedAlerts.size === 0) return;
+
+    setBulkUpdating(true);
+    try {
+      const response = await fetch("/api/alerts/bulk", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId,
+          alertIds: Array.from(selectedAlerts),
+          status,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update alerts");
+      }
+
+      // Clear selection and refresh
+      setSelectedAlerts(new Set());
+      await fetchAlerts();
+    } catch (error) {
+      console.error("Error updating alerts:", error);
+      alert("Failed to update alerts. Please try again.");
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -161,6 +272,60 @@ export function AlertsList({ organizationId }: AlertsListProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {selectedAlerts.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedAlerts.size} selected
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <Button variant="outline" disabled={bulkUpdating}>
+                    Bulk Actions
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() => handleBulkStatusUpdate("triaged")}
+                  >
+                    Mark as Triaged
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleBulkStatusUpdate("actioned")}
+                  >
+                    Mark as Actioned
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleBulkStatusUpdate("closed")}
+                  >
+                    Mark as Closed
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedAlerts(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => handleExport("csv")}
+            disabled={exporting || total === 0}
+          >
+            <Download className="mr-2 size-4" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleExport("pdf")}
+            disabled={exporting || total === 0}
+          >
+            <Download className="mr-2 size-4" />
+            Export PDF
+          </Button>
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -282,6 +447,28 @@ export function AlertsList({ organizationId }: AlertsListProps) {
               </div>
 
               <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={filters.category}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({ ...prev, category: value || "" }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All categories</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Calendar className="size-4" />
                   Date From
@@ -335,13 +522,46 @@ export function AlertsList({ organizationId }: AlertsListProps) {
         </Card>
       ) : (
         <div className="space-y-4">
+          {/* Select All Checkbox */}
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectAll}
+              className="h-8 w-8 p-0"
+            >
+              {selectedAlerts.size === alerts.length ? (
+                <CheckSquare className="h-4 w-4" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Select all ({alerts.length})
+            </span>
+          </div>
+
           {alerts.map(({ alert, target }) => (
             <Card
               key={alert.id}
-              className="hover:bg-muted/50 transition-colors"
+              className={`hover:bg-muted/50 transition-colors ${
+                selectedAlerts.has(alert.id) ? "ring-2 ring-primary" : ""
+              }`}
             >
               <CardContent className="p-6">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSelectAlert(alert.id)}
+                    className="h-6 w-6 p-0 mt-1"
+                  >
+                    {selectedAlerts.has(alert.id) ? (
+                      <CheckSquare className="h-4 w-4" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                  </Button>
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link
@@ -354,6 +574,9 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                       {getSeverityBadge(alert.impactScore)}
                       {target.jurisdiction && (
                         <Badge variant="outline">{target.jurisdiction}</Badge>
+                      )}
+                      {target.category && (
+                        <Badge variant="outline">{target.category}</Badge>
                       )}
                     </div>
                     {alert.summary && (

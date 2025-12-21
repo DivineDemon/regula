@@ -2,16 +2,9 @@ import { and, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { organizations, targets } from "@/lib/db/schema";
 import { inngest } from "@/lib/inngest/client";
-import {
-  adaptiveCrawlTarget,
-  shouldRefreshContentGraph,
-} from "@/lib/services/adaptive-crawl";
+import { shouldRefreshContentGraph } from "@/lib/services/adaptive-crawl";
 import { generateAlert } from "@/lib/services/alerts";
-import {
-  type ChangeType,
-  type DiffMetadata,
-  detectChanges,
-} from "@/lib/services/diff";
+import { detectChanges } from "@/lib/services/diff";
 import type { CrawlResult } from "@/lib/services/firecrawl";
 import { crawlUrl } from "@/lib/services/firecrawl";
 import {
@@ -38,326 +31,307 @@ export const crawlTarget = inngest.createFunction(
   async ({ event, step }) => {
     const { targetId, organizationId } = event.data;
 
-    // Step 1: Fetch target from database
-    const target = await step.run("fetch-target", async () => {
-      const [targetRecord] = await db
-        .select()
-        .from(targets)
-        .where(eq(targets.id, targetId))
-        .limit(1);
+    // Wrap entire function in try-catch to ensure target status is updated on any error
+    try {
+      // Step 1: Fetch target from database
+      const target = await step.run("fetch-target", async () => {
+        const [targetRecord] = await db
+          .select()
+          .from(targets)
+          .where(eq(targets.id, targetId))
+          .limit(1);
 
-      if (!targetRecord) {
-        throw new Error(`Target ${targetId} not found`);
-      }
-
-      // Update target status and job status to "running"
-      await db
-        .update(targets)
-        .set({
-          status: "running",
-          lastCrawlStatus: "running",
-          lastCrawlAt: new Date(),
-          lastCrawlError: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(targets.id, targetId));
-
-      return targetRecord;
-    });
-
-    // Step 2: Check if we should use adaptive discovery
-    const useAdaptiveDiscovery = await step.run(
-      "check-adaptive-discovery",
-      async () => {
-        // Use adaptive discovery on first crawl or if graph needs refresh
-        return shouldRefreshContentGraph(targetId);
-      },
-    );
-
-    let crawlResult: CrawlResult | undefined;
-    // Inngest serializes return values, so we use any for the step result
-    // biome-ignore lint/suspicious/noExplicitAny: Inngest step results are serialized and may not match exact types
-    let adaptiveResult: any = null;
-
-    if (useAdaptiveDiscovery) {
-      // Use adaptive content discovery
-      adaptiveResult = await step.run("adaptive-crawl", async () => {
-        try {
-          return await adaptiveCrawlTarget({
-            targetId,
-            organizationId,
-            targetUrl: target.url,
-            targetConfig: {
-              url: target.url,
-              label: target.label,
-              jurisdiction: target.jurisdiction || undefined,
-              category: target.category || undefined,
-            },
-          });
-        } catch (error) {
-          console.error(
-            "Adaptive crawl failed, falling back to simple crawl:",
-            error,
-          );
-          // Fall through to simple crawl
-          return null;
+        if (!targetRecord) {
+          throw new Error(`Target ${targetId} not found`);
         }
+
+        // Update target status and job status to "running"
+        await db
+          .update(targets)
+          .set({
+            status: "running",
+            lastCrawlStatus: "running",
+            lastCrawlAt: new Date(),
+            lastCrawlError: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(targets.id, targetId));
+
+        return targetRecord;
       });
 
-      if (adaptiveResult?.success) {
-        // Adaptive crawl succeeded - we still need to crawl the main URL
-        // for backward compatibility with existing change detection
-        crawlResult = await step.run("crawl-main-url", async () => {
-          return await crawlUrl(target.url, {
-            respectRobotsTxt: true,
-            includePdfs: true,
-            extractPdfContent: true,
-          });
+      // Step 2: Check if we should use adaptive discovery
+      const useAdaptiveDiscovery = await step.run(
+        "check-adaptive-discovery",
+        async () => {
+          try {
+            // Use adaptive discovery on first crawl or if graph needs refresh
+            return shouldRefreshContentGraph(targetId);
+          } catch (error) {
+            // If check fails (e.g., table doesn't exist), log and default to false
+            console.warn(
+              "Failed to check if content graph needs refresh, defaulting to simple crawl:",
+              error,
+            );
+            return false;
+          }
+        },
+      );
+
+      let crawlResult: CrawlResult | undefined;
+
+      if (useAdaptiveDiscovery) {
+        // Trigger adaptive crawl as a separate background job (non-blocking)
+        // This prevents timeout issues while still discovering content
+        await step.run("trigger-adaptive-crawl", async () => {
+          try {
+            await inngest.send({
+              name: "target/adaptive-crawl",
+              data: {
+                targetId,
+                organizationId,
+                targetUrl: target.url,
+                targetConfig: {
+                  url: target.url,
+                  label: target.label,
+                  jurisdiction: target.jurisdiction || undefined,
+                  category: target.category || undefined,
+                },
+              },
+            });
+            console.log(
+              `Triggered background adaptive crawl for target ${targetId}`,
+            );
+            return { triggered: true };
+          } catch (error) {
+            console.error(
+              "Failed to trigger adaptive crawl, continuing with simple crawl:",
+              error,
+            );
+            // Don't fail the main crawl if adaptive crawl trigger fails
+            return { triggered: false };
+          }
         });
       }
-    }
 
-    // Fallback to simple crawl if adaptive discovery not used or failed
-    if (!crawlResult) {
-      crawlResult = await step.run("crawl-url", async () => {
+      // Always crawl the main URL (adaptive crawl runs in background)
+      if (!crawlResult) {
+        crawlResult = await step.run("crawl-url", async () => {
+          try {
+            const result = await crawlUrl(target.url, {
+              respectRobotsTxt: true,
+              includePdfs: true,
+              extractPdfContent: true,
+            });
+            return result;
+          } catch (error) {
+            // Update target status and job status to "failed" on failure
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+            await db
+              .update(targets)
+              .set({
+                status: "error",
+                lastCrawlStatus: "failed",
+                lastCrawlError: errorMessage.substring(0, 500), // Limit error message length
+                updatedAt: new Date(),
+              })
+              .where(eq(targets.id, targetId));
+
+            throw error;
+          }
+        });
+      }
+
+      // Step 3: Store the version
+      const version = await step.run("store-version", async () => {
+        return storeVersion({
+          targetId,
+          crawlResult,
+          organizationId,
+        });
+      });
+
+      // Step 4: Check for changes
+      // Note: Adaptive crawl runs in background, so we only do traditional change detection here
+      // Graph-based changes will be detected by the background adaptive crawl function
+      const changeDetectionResult = await step.run(
+        "detect-changes",
+        async () => {
+          // Use traditional version-based change detection
+          const newVersion = await getVersion(version.id);
+
+          // If there's a previous version, compare hashes first
+          if (newVersion?.previousVersionId) {
+            const previousVersion = await getVersion(
+              newVersion.previousVersionId,
+            );
+
+            if (previousVersion) {
+              const hasHashChanged = !compareVersionsByHash(
+                previousVersion.contentHash,
+                newVersion.contentHash,
+              );
+
+              if (hasHashChanged) {
+                // Perform detailed diff
+                const diffMetadata = await detectChanges({
+                  currentVersionId: newVersion.id,
+                  previousVersionId: previousVersion.id,
+                  organizationId,
+                  targetId,
+                });
+
+                // Return diff metadata for alert generation
+                return {
+                  hasChanges: true,
+                  diffMetadata,
+                  currentVersionId: newVersion.id,
+                  previousVersionId: previousVersion.id || newVersion.id,
+                  graphBased: false,
+                };
+              }
+            }
+          }
+
+          return {
+            hasChanges: false,
+            diffMetadata: null,
+            currentVersionId: null,
+            previousVersionId: null,
+            graphBased: false,
+          };
+        },
+      );
+
+      // Helper function to extract filename from URL
+      function _extractFilenameFromUrl(url: string): string {
         try {
-          const result = await crawlUrl(target.url, {
-            respectRobotsTxt: true,
-            includePdfs: true,
-            extractPdfContent: true,
-          });
-          return result;
-        } catch (error) {
-          // Update target status and job status to "failed" on failure
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
+          const urlObj = new URL(url);
+          const pathname = urlObj.pathname;
+          const filename = pathname.split("/").pop() || "document";
+          return decodeURIComponent(filename);
+        } catch {
+          const parts = url.split("/");
+          return parts[parts.length - 1] || "document";
+        }
+      }
+
+      // Step 5: Generate alert if changes were detected
+      if (
+        changeDetectionResult.hasChanges &&
+        changeDetectionResult.diffMetadata &&
+        (changeDetectionResult.currentVersionId ||
+          changeDetectionResult.graphBased)
+      ) {
+        await step.run("generate-alert", async () => {
+          // Get organization record
+          const [organization] = await db
+            .select()
+            .from(organizations)
+            .where(eq(organizations.id, organizationId))
+            .limit(1);
+
+          if (!organization) {
+            console.error(
+              `Organization ${organizationId} not found for alert generation`,
+            );
+            return;
+          }
+
+          // Generate alert using AI summarization and impact scoring
+          try {
+            // For graph-based changes, we need to create a version for the alert system
+            // Use the main URL version or create a synthetic one
+            let currentVersionId = changeDetectionResult.currentVersionId;
+            let previousVersionId = changeDetectionResult.previousVersionId;
+
+            if (changeDetectionResult.graphBased && !currentVersionId) {
+              // Use the main URL version
+              const mainVersion = await getVersion(version.id);
+              currentVersionId = mainVersion?.id || version.id;
+              previousVersionId = mainVersion?.previousVersionId || version.id;
+            }
+
+            if (!currentVersionId) {
+              currentVersionId = version.id;
+            }
+
+            if (!previousVersionId) {
+              previousVersionId = version.id;
+            }
+
+            const alert = await generateAlert({
+              organizationId,
+              targetId,
+              currentVersionId,
+              previousVersionId,
+              diffMetadata: changeDetectionResult.diffMetadata,
+              target,
+              organization,
+            });
+
+            return { alertId: alert.id, impactScore: alert.impactScore };
+          } catch (error) {
+            console.error("Error generating alert:", error);
+            // Don't fail the crawl job if alert generation fails
+            // The change is still detected and stored in the version
+            return {
+              error: error instanceof Error ? error.message : String(error),
+            };
+          }
+        });
+      }
+
+      // Update target status and job status to "completed" on success
+      // Update target status and job status to "completed" on success
+      await step.run("update-target-status", async () => {
+        await db
+          .update(targets)
+          .set({
+            status: "active",
+            lastCrawlStatus: "completed",
+            lastCrawlError: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(targets.id, targetId));
+      });
+
+      return {
+        success: true,
+        targetId,
+        versionId: version.id,
+        contentHash: version.contentHash,
+      };
+    } catch (error) {
+      // Catch any unhandled errors and update target status
+      // This ensures the target status is always updated even if an error occurs
+      // in a step that doesn't have explicit error handling
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      await step.run("update-target-on-error", async () => {
+        try {
           await db
             .update(targets)
             .set({
               status: "error",
               lastCrawlStatus: "failed",
-              lastCrawlError: errorMessage.substring(0, 500), // Limit error message length
+              lastCrawlError: errorMessage.substring(0, 500),
               updatedAt: new Date(),
             })
             .where(eq(targets.id, targetId));
-
-          throw error;
-        }
-      });
-    }
-
-    // Step 3: Store the version
-    const version = await step.run("store-version", async () => {
-      return storeVersion({
-        targetId,
-        crawlResult,
-        organizationId,
-      });
-    });
-
-    // Step 4: Check for changes
-    const changeDetectionResult = await step.run("detect-changes", async () => {
-      // If we used adaptive discovery, check graph changes
-      if (adaptiveResult?.changesDetected && adaptiveResult.graphDiff) {
-        // Graph-based change detection
-        const hasNewFiles = adaptiveResult.graphDiff.addedNodes.length > 0;
-        const hasModifiedFiles =
-          adaptiveResult.graphDiff.modifiedNodes.length > 0;
-        const hasRemovedFiles =
-          adaptiveResult.graphDiff.removedNodes.length > 0;
-
-        if (hasNewFiles || hasModifiedFiles || hasRemovedFiles) {
-          // Create a synthetic diff metadata for graph changes
-          const changeTypes: ChangeType[] = [];
-          if (hasNewFiles) changeTypes.push("attachment_added");
-          if (hasModifiedFiles) changeTypes.push("modified");
-          if (hasRemovedFiles) changeTypes.push("attachment_removed");
-
-          const diffMetadata: DiffMetadata = {
-            hasChanges: true,
-            changeTypes,
-            structuralChanges: [] as DiffMetadata["structuralChanges"],
-            attachmentChanges: [
-              ...adaptiveResult.graphDiff.addedNodes
-                .filter((n: { type: string }) => n.type === "pdf")
-                .map((n: { url: string }) => ({
-                  url: n.url,
-                  filename: extractFilenameFromUrl(n.url),
-                  action: "added" as const,
-                })),
-              ...adaptiveResult.graphDiff.modifiedNodes
-                .filter(
-                  (n: { node: { type: string } }) => n.node.type === "pdf",
-                )
-                .map((n: { node: { url: string } }) => ({
-                  url: n.node.url,
-                  filename: extractFilenameFromUrl(n.node.url),
-                  action: "modified" as const,
-                })),
-              ...adaptiveResult.graphDiff.removedNodes
-                .filter((n: { type: string }) => n.type === "pdf")
-                .map((n: { url: string }) => ({
-                  url: n.url,
-                  filename: extractFilenameFromUrl(n.url),
-                  action: "removed" as const,
-                })),
-            ],
-            affectedSections: [],
-          };
-
-          // Use the main URL version for alert generation
-          const newVersion = await getVersion(version.id);
-          const previousVersion = newVersion?.previousVersionId
-            ? await getVersion(newVersion.previousVersionId)
-            : null;
-
-          return {
-            hasChanges: true,
-            diffMetadata,
-            currentVersionId: newVersion?.id || null,
-            previousVersionId: previousVersion?.id || null,
-            graphBased: true,
-          };
-        }
-      }
-
-      // Fallback to traditional version-based change detection
-      const newVersion = await getVersion(version.id);
-
-      // If there's a previous version, compare hashes first
-      if (newVersion?.previousVersionId) {
-        const previousVersion = await getVersion(newVersion.previousVersionId);
-
-        if (previousVersion) {
-          const hasHashChanged = !compareVersionsByHash(
-            previousVersion.contentHash,
-            newVersion.contentHash,
-          );
-
-          if (hasHashChanged) {
-            // Perform detailed diff
-            const diffMetadata = await detectChanges({
-              currentVersionId: newVersion.id,
-              previousVersionId: previousVersion.id,
-              organizationId,
-              targetId,
-            });
-
-            // Return diff metadata for alert generation
-            return {
-              hasChanges: true,
-              diffMetadata,
-              currentVersionId: newVersion.id,
-              previousVersionId: previousVersion.id,
-              graphBased: false,
-            };
-          }
-        }
-      }
-
-      return {
-        hasChanges: false,
-        diffMetadata: null,
-        currentVersionId: null,
-        previousVersionId: null,
-        graphBased: false,
-      };
-    });
-
-    // Helper function to extract filename from URL
-    function extractFilenameFromUrl(url: string): string {
-      try {
-        const urlObj = new URL(url);
-        const pathname = urlObj.pathname;
-        const filename = pathname.split("/").pop() || "document";
-        return decodeURIComponent(filename);
-      } catch {
-        const parts = url.split("/");
-        return parts[parts.length - 1] || "document";
-      }
-    }
-
-    // Step 5: Generate alert if changes were detected
-    if (
-      changeDetectionResult.hasChanges &&
-      changeDetectionResult.diffMetadata &&
-      (changeDetectionResult.currentVersionId ||
-        changeDetectionResult.graphBased)
-    ) {
-      await step.run("generate-alert", async () => {
-        // Get organization record
-        const [organization] = await db
-          .select()
-          .from(organizations)
-          .where(eq(organizations.id, organizationId))
-          .limit(1);
-
-        if (!organization) {
+        } catch (updateError) {
           console.error(
-            `Organization ${organizationId} not found for alert generation`,
+            `Failed to update target status on crawl failure: ${targetId}`,
+            updateError,
           );
-          return;
-        }
-
-        // Generate alert using AI summarization and impact scoring
-        try {
-          // For graph-based changes, we need to create a version for the alert system
-          // Use the main URL version or create a synthetic one
-          let currentVersionId = changeDetectionResult.currentVersionId;
-          let previousVersionId = changeDetectionResult.previousVersionId;
-
-          if (changeDetectionResult.graphBased && !currentVersionId) {
-            // Use the main URL version
-            const mainVersion = await getVersion(version.id);
-            currentVersionId = mainVersion?.id || version.id;
-            previousVersionId = mainVersion?.previousVersionId || null;
-          }
-
-          if (!currentVersionId) {
-            currentVersionId = version.id;
-          }
-
-          const alert = await generateAlert({
-            organizationId,
-            targetId,
-            currentVersionId,
-            previousVersionId: previousVersionId || version.id, // Fallback
-            diffMetadata: changeDetectionResult.diffMetadata,
-            target,
-            organization,
-          });
-
-          return { alertId: alert.id, impactScore: alert.impactScore };
-        } catch (error) {
-          console.error("Error generating alert:", error);
-          // Don't fail the crawl job if alert generation fails
-          // The change is still detected and stored in the version
-          return {
-            error: error instanceof Error ? error.message : String(error),
-          };
         }
       });
+
+      // Re-throw the error so Inngest can handle retries
+      throw error;
     }
-
-    // Update target status and job status to "completed" on success
-    await step.run("update-target-status", async () => {
-      await db
-        .update(targets)
-        .set({
-          status: "active",
-          lastCrawlStatus: "completed",
-          lastCrawlError: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(targets.id, targetId));
-    });
-
-    return {
-      success: true,
-      targetId,
-      versionId: version.id,
-      contentHash: version.contentHash,
-    };
   },
 );
 

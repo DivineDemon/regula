@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
+import { DashboardContent } from "../dashboard-content";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -28,14 +29,12 @@ export default async function DashboardPage() {
     redirect("/register");
   }
 
-  return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="mt-2 text-muted-foreground">
-          Welcome, {session.user?.email || session.user?.name || "User"}!
-        </p>
-      </div>
-    </div>
-  );
+  // Get the current organization (first one for now)
+  const currentOrg = userOrgs[0]?.organization;
+
+  if (!currentOrg) {
+    redirect("/register");
+  }
+
+  return <DashboardContent organizationId={currentOrg.id} />;
 }

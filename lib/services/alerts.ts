@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 import type { organizations } from "@/lib/db/schema/organizations";
+import type { TargetCategory } from "@/lib/db/schema/targets";
 import type { DiffMetadata } from "./diff";
 import { calculateImpactScoreFromDiff } from "./impact-scoring";
 import { type SummarizationResult, summarizeRegulatoryContent } from "./llm";
@@ -251,6 +252,7 @@ export async function getAlertsWithFilters(params: {
   status?: AlertStatus;
   severity?: "low" | "medium" | "high";
   jurisdiction?: string;
+  category?: TargetCategory;
   dateFrom?: Date;
   dateTo?: Date;
   search?: string;
@@ -262,6 +264,7 @@ export async function getAlertsWithFilters(params: {
     status,
     severity,
     jurisdiction,
+    category,
     dateFrom,
     dateTo,
     search,
@@ -313,6 +316,10 @@ export async function getAlertsWithFilters(params: {
 
   if (jurisdiction) {
     conditions.push(eq(targets.jurisdiction, jurisdiction));
+  }
+
+  if (category) {
+    conditions.push(eq(targets.category, category));
   }
 
   const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;

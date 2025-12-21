@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { organizationMembers } from "@/lib/db/schema";
+import { organizationMembers, type TargetCategory } from "@/lib/db/schema";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 import { getAlertsWithFilters } from "@/lib/services/alerts";
 
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const severity = searchParams.get("severity");
     const jurisdiction = searchParams.get("jurisdiction");
+    const category = searchParams.get("category");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const search = searchParams.get("search");
@@ -53,6 +54,7 @@ export async function GET(request: NextRequest) {
       status: status ? (status as AlertStatus) : undefined,
       severity: severity ? (severity as "low" | "medium" | "high") : undefined,
       jurisdiction: jurisdiction || undefined,
+      category: category ? (category as TargetCategory) : undefined,
       dateFrom: dateFrom ? new Date(dateFrom) : undefined,
       dateTo: dateTo ? new Date(dateTo) : undefined,
       search: search || undefined,

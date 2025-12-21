@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { Target } from "lucide-react";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard-nav";
+import { LogoutButton } from "@/components/logout-button";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
 import {
   Sidebar,
@@ -62,8 +63,11 @@ export default async function DashboardLayout({
         </SidebarHeader>
         <DashboardNav />
         <SidebarFooter>
-          <div className="px-2 py-2 group-data-[collapsible=icon]:hidden">
-            <OrganizationSwitcher organizations={userOrgs} />
+          <div className="space-y-2 px-2 py-2">
+            <div className="group-data-[collapsible=icon]:hidden">
+              <OrganizationSwitcher organizations={userOrgs} />
+            </div>
+            <LogoutButton />
           </div>
         </SidebarFooter>
         <SidebarRail />

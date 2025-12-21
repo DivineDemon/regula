@@ -306,8 +306,22 @@ export async function discoverContentAdaptively(
   // Step 4: Deduplicate and merge results
   const uniqueSources = deduplicateSources(allSources);
 
+  // Limit sources to prevent excessive processing (prioritize most relevant)
+  // Take top 500 sources after deduplication to balance coverage and performance
+  const limitedSources = uniqueSources.slice(0, 500);
+
+  if (uniqueSources.length > 500) {
+    console.log(
+      `Limiting sources from ${uniqueSources.length} to 500 for performance`,
+    );
+  }
+
   // Step 5: Build content graph
-  return buildContentGraphFromSources(uniqueSources, targetUrl, relevanceModel);
+  return buildContentGraphFromSources(
+    limitedSources,
+    targetUrl,
+    relevanceModel,
+  );
 }
 
 /**
@@ -360,8 +374,15 @@ async function buildContentGraphFromSources(
   // Process pages that might contain PDFs (nested structure)
   const pageSources = sources.filter((s) => s.type === "html");
 
-  // Limit pages to crawl (efficiency)
+  // Limit pages to crawl (efficiency) - prioritize pages that might link to PDFs
+  // For large sites, we limit to 50 pages to avoid excessive crawling
   const pagesToCrawl = pageSources.slice(0, 50);
+
+  if (pageSources.length > 50) {
+    console.log(
+      `Limiting page crawl from ${pageSources.length} to 50 pages for efficiency`,
+    );
+  }
 
   for (const pageSource of pagesToCrawl) {
     try {

@@ -27,10 +27,18 @@ export default async function proxy(request: NextRequest) {
   const isLoggedIn = !!session;
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/register", "/verify-email", "/check-email"];
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route),
-  );
+  const publicRoutes = [
+    "/",
+    "/login",
+    "/register",
+    "/verify-email",
+    "/check-email",
+    "/forgot-password",
+    "/reset-password",
+  ];
+  const isPublicRoute =
+    pathname === "/" ||
+    publicRoutes.some((route) => pathname.startsWith(route));
 
   // If user is not logged in and trying to access protected route
   if (!isLoggedIn && !isPublicRoute) {
