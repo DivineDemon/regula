@@ -40,12 +40,10 @@ export default async function OrganizationMembersPage() {
   // Check if user is admin
   if (userOrg.role !== UserRole.ADMIN) {
     return (
-      <div className="container mx-auto max-w-4xl p-6">
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-destructive">
-            You must be an administrator to manage organization members.
-          </p>
-        </div>
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+        <p className="text-destructive">
+          You must be an administrator to manage organization members.
+        </p>
       </div>
     );
   }
@@ -75,24 +73,22 @@ export default async function OrganizationMembersPage() {
     .orderBy(desc(invitations.createdAt));
 
   return (
-    <div className="container mx-auto max-w-4xl p-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Organization Members</h1>
-          <p className="mt-2 text-muted-foreground">
-            Manage members and invitations for {userOrg.organization.name}
-          </p>
-        </div>
-
-        <InviteMemberForm organizationId={userOrg.organization.id} />
-
-        <MembersList
-          organizationId={userOrg.organization.id}
-          members={members}
-          pendingInvitations={pendingInvitations}
-          currentUserId={session.user.id}
-        />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Organization Members</h1>
+        <p className="mt-2 text-muted-foreground">
+          Manage members and invitations for {userOrg.organization.name}
+        </p>
       </div>
+
+      <InviteMemberForm organizationId={userOrg.organization.id} />
+
+      <MembersList
+        organizationId={userOrg.organization.id}
+        members={members}
+        pendingInvitations={pendingInvitations}
+        currentUserId={session.user.id}
+      />
     </div>
   );
 }

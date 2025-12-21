@@ -24,21 +24,19 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl p-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Profile Settings</h1>
-          <p className="mt-2 text-muted-foreground">
-            Manage your account information
-          </p>
-        </div>
-
-        <ProfileForm
-          userId={user.id}
-          initialName={user.name ?? ""}
-          initialEmail={user.email}
-        />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Profile Settings</h1>
+        <p className="mt-2 text-muted-foreground">
+          Manage your account information
+        </p>
       </div>
+
+      <ProfileForm
+        userId={user.id}
+        initialName={user.name ?? ""}
+        initialEmail={user.email}
+      />
     </div>
   );
 }

@@ -111,10 +111,10 @@ export async function crawlUrl(
   options: CrawlOptions = {},
 ): Promise<CrawlResult> {
   const {
-    respectRobotsTxt = true,
+    respectRobotsTxt: _respectRobotsTxt = true,
     includePdfs = true,
     extractPdfContent = true,
-    ...firecrawlOptions
+    ..._firecrawlOptions
   } = options;
 
   // Enforce rate limiting
@@ -133,12 +133,8 @@ export async function crawlUrl(
       }
 
       // Use Firecrawl's scrape method for HTML content
-      const data = (await firecrawl.scrape(url, {
-        formats: ["markdown", "html"],
-        includeTags: ["title", "meta", "h1", "h2", "h3", "p", "article"],
-        respectRobotsTxt,
-        ...firecrawlOptions,
-      })) as {
+      // Simplified for v2 API compatibility - removed unsupported parameters
+      const data = (await firecrawl.scrape(url)) as {
         markdown?: string;
         html?: string;
         content?: string;
@@ -234,9 +230,8 @@ async function crawlPdf(
 ): Promise<CrawlResult> {
   try {
     // Firecrawl supports PDF scraping
-    const data = (await firecrawl.scrape(url, {
-      formats: ["markdown"],
-    })) as {
+    // Simplified for v2 API compatibility
+    const data = (await firecrawl.scrape(url)) as {
       markdown?: string;
       content?: string;
       url?: string;

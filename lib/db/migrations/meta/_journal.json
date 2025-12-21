@@ -15,6 +15,13 @@
       "when": 1766307378270,
       "tag": "0001_nervous_sunset_bain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766311590749,
+      "tag": "0002_spicy_supernaut",
+      "breakpoints": true
     }
   ]
 }

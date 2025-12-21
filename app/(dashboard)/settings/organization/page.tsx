@@ -35,31 +35,27 @@ export default async function OrganizationSettingsPage() {
   // Check if user is admin
   if (userOrg.role !== UserRole.ADMIN) {
     return (
-      <div className="container mx-auto max-w-2xl p-6">
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-destructive">
-            You must be an administrator to access organization settings.
-          </p>
-        </div>
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+        <p className="text-destructive">
+          You must be an administrator to access organization settings.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-2xl p-6">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Organization Settings</h1>
-          <p className="mt-2 text-muted-foreground">
-            Manage your organization information
-          </p>
-        </div>
-
-        <OrganizationSettingsForm
-          organizationId={userOrg.organization.id}
-          initialName={userOrg.organization.name}
-        />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Organization Settings</h1>
+        <p className="mt-2 text-muted-foreground">
+          Manage your organization information
+        </p>
       </div>
+
+      <OrganizationSettingsForm
+        organizationId={userOrg.organization.id}
+        initialName={userOrg.organization.name}
+      />
     </div>
   );
 }

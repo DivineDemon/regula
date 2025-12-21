@@ -28,7 +28,6 @@ const menuItems = [
     title: "Alerts",
     url: "/alerts",
     icon: Target, // Using Target as placeholder, can be changed to AlertCircle later
-    disabled: true,
   },
 ];
 
@@ -66,7 +65,6 @@ export function DashboardNav() {
                   <SidebarMenuButton
                     render={<Link href={item.url} />}
                     isActive={isActive}
-                    disabled={item.disabled}
                   >
                     <item.icon />
                     <span>{item.title}</span>
