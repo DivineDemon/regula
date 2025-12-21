@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { targets } from "@/lib/db/schema";
+import { organizations, targets } from "@/lib/db/schema";
 import { inngest } from "@/lib/inngest/client";
+import { generateAlert } from "@/lib/services/alerts";
 import { detectChanges } from "@/lib/services/diff";
 import { crawlUrl } from "@/lib/services/firecrawl";
 import {
@@ -92,7 +93,7 @@ export const crawlTarget = inngest.createFunction(
     });
 
     // Step 4: Check for changes by comparing with previous version
-    await step.run("detect-changes", async () => {
+    const changeDetectionResult = await step.run("detect-changes", async () => {
       // Get the newly created version (which has the previousVersionId set)
       const newVersion = await getVersion(version.id);
 
@@ -108,17 +109,80 @@ export const crawlTarget = inngest.createFunction(
 
           if (hasHashChanged) {
             // Perform detailed diff
-            await detectChanges({
+            const diffMetadata = await detectChanges({
               currentVersionId: newVersion.id,
               previousVersionId: previousVersion.id,
               organizationId,
               targetId,
             });
+
+            // Return diff metadata for alert generation
+            return {
+              hasChanges: true,
+              diffMetadata,
+              currentVersionId: newVersion.id,
+              previousVersionId: previousVersion.id,
+            };
           }
         }
       }
 
-      // Update target status and job status to "completed" on success
+      return {
+        hasChanges: false,
+        diffMetadata: null,
+        currentVersionId: null,
+        previousVersionId: null,
+      };
+    });
+
+    // Step 5: Generate alert if changes were detected
+    if (
+      changeDetectionResult.hasChanges &&
+      changeDetectionResult.diffMetadata &&
+      changeDetectionResult.currentVersionId &&
+      changeDetectionResult.previousVersionId
+    ) {
+      await step.run("generate-alert", async () => {
+        // Get organization record
+        const [organization] = await db
+          .select()
+          .from(organizations)
+          .where(eq(organizations.id, organizationId))
+          .limit(1);
+
+        if (!organization) {
+          console.error(
+            `Organization ${organizationId} not found for alert generation`,
+          );
+          return;
+        }
+
+        // Generate alert using AI summarization and impact scoring
+        try {
+          const alert = await generateAlert({
+            organizationId,
+            targetId,
+            currentVersionId: changeDetectionResult.currentVersionId,
+            previousVersionId: changeDetectionResult.previousVersionId,
+            diffMetadata: changeDetectionResult.diffMetadata,
+            target,
+            organization,
+          });
+
+          return { alertId: alert.id, impactScore: alert.impactScore };
+        } catch (error) {
+          console.error("Error generating alert:", error);
+          // Don't fail the crawl job if alert generation fails
+          // The change is still detected and stored in the version
+          return {
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      });
+    }
+
+    // Update target status and job status to "completed" on success
+    await step.run("update-target-status", async () => {
       await db
         .update(targets)
         .set({
@@ -149,15 +213,21 @@ export const scheduleCrawls = inngest.createFunction(
   },
   { cron: "0 * * * *" }, // Run every hour
   async ({ step }) => {
-    // Get all active targets that need crawling
+    // Get all active targets and pending targets that have never been crawled
     const targetsToCrawl = await step.run("fetch-targets", async () => {
-      const activeTargets = await db
+      const allTargets = await db
         .select()
         .from(targets)
-        .where(eq(targets.status, "active"));
+        .where(
+          or(
+            eq(targets.status, "active"),
+            // Include pending targets that have never been crawled (fallback for initial crawl)
+            and(eq(targets.status, "pending"), isNull(targets.lastCrawlAt)),
+          ),
+        );
 
       const now = new Date();
-      const targetsNeedingCrawl = activeTargets.filter((target) => {
+      const targetsNeedingCrawl = allTargets.filter((target) => {
         // If never crawled, schedule it
         if (!target.lastCrawlAt) {
           return true;
@@ -210,13 +280,52 @@ export const scheduleCrawls = inngest.createFunction(
 
 /**
  * Manually trigger a crawl for a specific target
+ *
+ * Note: When running locally with production Inngest, the event will be sent
+ * but the function may not execute because Inngest can't reach your local
+ * /api/inngest endpoint. In this case, the scheduled crawl (runs every hour)
+ * will pick up pending targets as a fallback.
  */
 export async function triggerCrawl(targetId: string, organizationId: string) {
-  await inngest.send({
-    name: "target/crawl",
-    data: {
-      targetId,
-      organizationId,
-    },
-  });
+  try {
+    console.log(`Triggering crawl for target ${targetId}`);
+    const result = await inngest.send({
+      name: "target/crawl",
+      data: {
+        targetId,
+        organizationId,
+      },
+    });
+    console.log(
+      `Crawl event sent successfully for target ${targetId}. Event ID: ${
+        result.ids?.[0] || "unknown"
+      }`,
+    );
+    console.log(
+      `Note: If running locally, the function may not execute immediately. The scheduled crawl will pick up pending targets.`,
+    );
+    return result;
+  } catch (error) {
+    // Log detailed error information
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    console.error(`Failed to trigger crawl for target ${targetId}:`, {
+      error: errorMessage,
+      stack: errorStack,
+      eventKey: process.env.INNGEST_EVENT_KEY ? "present" : "missing",
+    });
+
+    // If Inngest is not configured (e.g., in development), log and re-throw
+    // The caller should handle this gracefully
+    if (
+      errorMessage.includes("Event key not found") ||
+      errorMessage.includes("401")
+    ) {
+      console.warn(
+        `Inngest not configured. Crawl for target ${targetId} will be picked up by scheduled crawls.`,
+      );
+    }
+    throw error;
+  }
 }

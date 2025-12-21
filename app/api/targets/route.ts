@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, targets } from "@/lib/db/schema";
 import type { TargetCategory, TargetStatus } from "@/lib/db/schema/targets";
+import { triggerCrawl } from "@/lib/inngest/functions/crawl";
 
 const createTargetSchema = z.object({
   organizationId: z.string(),
@@ -141,6 +142,26 @@ export async function POST(request: Request) {
         status: "pending" as TargetStatus,
       })
       .returning();
+
+    // Trigger initial crawl immediately (non-blocking)
+    // This ensures the target starts monitoring right away
+    // If Inngest is not configured, the scheduled crawl will pick it up
+    triggerCrawl(newTarget.id, validatedData.organizationId).catch((error) => {
+      // Log error but don't fail the target creation
+      // The scheduled crawl will pick up pending targets that have never been crawled
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("Event key not found")) {
+        console.info(
+          `Inngest not configured. Target ${newTarget.id} will be crawled by the next scheduled crawl.`,
+        );
+      } else {
+        console.error(
+          `Failed to trigger initial crawl for target ${newTarget.id}:`,
+          error,
+        );
+      }
+    });
 
     return NextResponse.json({ target: newTarget }, { status: 201 });
   } catch (error) {
