@@ -1,11 +1,32 @@
 "use client";
 
-import { PencilIcon, PlusIcon, TrashIcon } from "lucide-react";
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { targets } from "@/lib/db/schema";
 import { AddTargetDialog } from "./add-target-dialog";
 import { DeleteTargetDialog } from "./delete-target-dialog";
@@ -77,6 +98,117 @@ export function TargetsList({
     router.refresh();
   };
 
+  const columns: ColumnDef<Target>[] = [
+    {
+      accessorKey: "label",
+      header: "Label",
+    },
+    {
+      accessorKey: "url",
+      header: "URL",
+      cell: ({ row }) => {
+        const url = row.getValue("url") as string;
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline truncate max-w-xs block"
+          >
+            {url}
+          </a>
+        );
+      },
+    },
+    {
+      accessorKey: "jurisdiction",
+      header: "Jurisdiction",
+      cell: ({ row }) => {
+        const jurisdiction = row.getValue("jurisdiction") as string | null;
+        return jurisdiction ? (
+          jurisdiction
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+      },
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => {
+        const category = row.getValue("category") as string | null;
+        return category ? (
+          <Badge variant="outline">
+            {category.charAt(0).toUpperCase() + category.slice(1)}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+      },
+    },
+    {
+      accessorKey: "crawlFrequency",
+      header: "Frequency",
+      cell: ({ row }) => {
+        const frequency = row.getValue("crawlFrequency") as string;
+        return (
+          <Badge variant="outline">
+            {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as Target["status"];
+        return (
+          <Badge variant={getStatusBadgeVariant(status)}>
+            {getStatusLabel(status)}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const target = row.original;
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingTarget(target)}
+            >
+              <PencilIcon className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeletingTarget(target)}
+            >
+              <TrashIcon className="size-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const table = useReactTable({
+    data: targets,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
+  });
+
   return (
     <>
       <Card>
@@ -101,81 +233,102 @@ export function TargetsList({
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Label</th>
-                    <th className="text-left p-3 font-medium">URL</th>
-                    <th className="text-left p-3 font-medium">Jurisdiction</th>
-                    <th className="text-left p-3 font-medium">Category</th>
-                    <th className="text-left p-3 font-medium">Frequency</th>
-                    <th className="text-left p-3 font-medium">Status</th>
-                    <th className="text-right p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {targets.map((target) => (
-                    <tr key={target.id} className="border-b hover:bg-muted/50">
-                      <td className="p-3">{target.label}</td>
-                      <td className="p-3">
-                        <a
-                          href={target.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline truncate max-w-xs block"
+            <div className="space-y-4">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableHead
+                            key={header.id}
+                            className={
+                              header.id === "actions" ? "text-right" : undefined
+                            }
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
                         >
-                          {target.url}
-                        </a>
-                      </td>
-                      <td className="p-3">
-                        {target.jurisdiction || (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {target.category ? (
-                          <Badge variant="outline">
-                            {target.category.charAt(0).toUpperCase() +
-                              target.category.slice(1)}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <Badge variant="outline">
-                          {target.crawlFrequency.charAt(0).toUpperCase() +
-                            target.crawlFrequency.slice(1)}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant={getStatusBadgeVariant(target.status)}>
-                          {getStatusLabel(target.status)}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingTarget(target)}
-                          >
-                            <PencilIcon className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeletingTarget(target)}
-                          >
-                            <TrashIcon className="size-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell
+                              key={cell.id}
+                              className={
+                                cell.column.id === "actions"
+                                  ? "text-right"
+                                  : undefined
+                              }
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className="h-24 text-center"
+                        >
+                          No results.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Showing{" "}
+                  {table.getState().pagination.pageIndex *
+                    table.getState().pagination.pageSize +
+                    1}{" "}
+                  to{" "}
+                  {Math.min(
+                    (table.getState().pagination.pageIndex + 1) *
+                      table.getState().pagination.pageSize,
+                    targets.length,
+                  )}{" "}
+                  of {targets.length} targets
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    <ChevronLeftIcon className="size-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    Next
+                    <ChevronRightIcon className="size-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
