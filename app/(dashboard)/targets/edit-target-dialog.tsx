@@ -38,7 +38,9 @@ const targetFormSchema = z.object({
   crawlFrequency: z
     .enum(["hourly", "daily", "weekly", "monthly"])
     .default("daily"),
-  status: z.enum(["active", "pending", "error", "paused"]).optional(),
+  status: z
+    .enum(["active", "pending", "running", "error", "paused"])
+    .optional(),
 });
 
 type TargetFormData = z.infer<typeof targetFormSchema>;
@@ -81,7 +83,7 @@ export function EditTargetDialog({
         | "hourly"
         | "weekly"
         | "monthly",
-      status: target.status,
+      status: target.status === "running" ? "pending" : target.status,
     },
   });
 
@@ -97,7 +99,7 @@ export function EditTargetDialog({
           | "hourly"
           | "weekly"
           | "monthly",
-        status: target.status,
+        status: target.status === "running" ? "pending" : target.status,
       });
     }
   }, [open, target, reset]);
