@@ -2,9 +2,31 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { type ZodIssue, z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const registerSchema = z
+  .object({
+    name: z.string().min(1, "Name is required").max(100, "Name is too long"),
+    email: z.string().email("Invalid email address"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters long")
+      .max(100, "Password is too long"),
+    confirmPassword: z.string(),
+    organizationName: z
+      .string()
+      .min(1, "Organization name is required")
+      .max(100, "Organization name is too long"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,21 +35,37 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [organizationName, setOrganizationName] = useState("");
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof RegisterFormData, string>>
+  >({});
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setErrors({});
 
-    // Validation
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+    // Validate with Zod
+    const result = registerSchema.safeParse({
+      name,
+      email,
+      password,
+      confirmPassword,
+      organizationName,
+    });
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof RegisterFormData, string>> = {};
+      result.error.issues.forEach((err: ZodIssue) => {
+        const field = (
+          typeof err.path[0] === "string" ? err.path[0] : String(err.path[0])
+        ) as keyof RegisterFormData;
+        if (field) {
+          fieldErrors[field] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
       return;
     }
 
@@ -40,10 +78,10 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          email,
-          password,
-          organizationName,
+          name: result.data.name,
+          email: result.data.email,
+          password: result.data.password,
+          organizationName: result.data.organizationName,
         }),
       });
 
@@ -57,7 +95,7 @@ export default function RegisterPage() {
 
       // Registration successful - redirect to check email page
       router.push(
-        `/check-email?email=${encodeURIComponent(email)}&registered=true`,
+        `/check-email?email=${encodeURIComponent(result.data.email)}&registered=true`,
       );
     } catch (_err) {
       setError("An error occurred. Please try again.");
@@ -94,7 +132,11 @@ export default function RegisterPage() {
                 required
                 disabled={isLoading}
                 autoComplete="name"
+                aria-invalid={errors.name ? "true" : "false"}
               />
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -108,7 +150,11 @@ export default function RegisterPage() {
                 required
                 disabled={isLoading}
                 autoComplete="email"
+                aria-invalid={errors.email ? "true" : "false"}
               />
+              {errors.email && (
+                <p className="text-xs text-destructive">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -122,7 +168,13 @@ export default function RegisterPage() {
                 required
                 disabled={isLoading}
                 autoComplete="organization"
+                aria-invalid={errors.organizationName ? "true" : "false"}
               />
+              {errors.organizationName && (
+                <p className="text-xs text-destructive">
+                  {errors.organizationName}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -137,10 +189,14 @@ export default function RegisterPage() {
                 disabled={isLoading}
                 autoComplete="new-password"
                 minLength={8}
+                aria-invalid={errors.password ? "true" : "false"}
               />
               <p className="text-xs text-muted-foreground">
                 Must be at least 8 characters long
               </p>
+              {errors.password && (
+                <p className="text-xs text-destructive">{errors.password}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -155,7 +211,13 @@ export default function RegisterPage() {
                 disabled={isLoading}
                 autoComplete="new-password"
                 minLength={8}
+                aria-invalid={errors.confirmPassword ? "true" : "false"}
               />
+              {errors.confirmPassword && (
+                <p className="text-xs text-destructive">
+                  {errors.confirmPassword}
+                </p>
+              )}
             </div>
           </div>
 

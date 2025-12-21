@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import {
   organizationMembers,
   organizations,
+  subscriptions,
   users,
   verificationTokens,
 } from "@/lib/db/schema";
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
     const tokenExpires = new Date();
     tokenExpires.setHours(tokenExpires.getHours() + 24); // Token expires in 24 hours
 
-    // Create user and organization in a transaction
+    // Create user, organization, and subscription in a transaction
     await db.transaction(async (tx) => {
       // Create user
       await tx.insert(users).values({
@@ -105,6 +106,17 @@ export async function POST(request: Request) {
         userId,
         organizationId,
         role: UserRole.ADMIN,
+      });
+
+      // Create default subscription (free plan)
+      const subscriptionId = nanoid();
+      await tx.insert(subscriptions).values({
+        id: subscriptionId,
+        organizationId,
+        plan: "free",
+        status: "active",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now for free plan
       });
 
       // Create verification token

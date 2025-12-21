@@ -3,6 +3,7 @@ export * from "./alert-comments";
 export * from "./alerts";
 export * from "./audit-logs";
 export * from "./auth";
+export * from "./invitations";
 export * from "./members";
 export * from "./organizations";
 export * from "./subscriptions";
