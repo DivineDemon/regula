@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
-import { NotificationPreferencesClient } from "./notification-preferences-client";
+import { UsageDashboardClient } from "./usage-dashboard-client";
 
-export default async function NotificationPreferencesPage() {
+export default async function UsageDashboardPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -32,13 +32,16 @@ export default async function NotificationPreferencesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Notification Preferences</h1>
+        <h1 className="text-3xl font-bold">Usage & Limits</h1>
         <p className="mt-2 text-muted-foreground">
-          Configure how you receive alerts and notifications
+          Monitor your plan usage and limits
         </p>
       </div>
 
-      <NotificationPreferencesClient organizationId={userOrg.organization.id} />
+      <UsageDashboardClient
+        organizationId={userOrg.organization.id}
+        organizationName={userOrg.organization.name}
+      />
     </div>
   );
 }

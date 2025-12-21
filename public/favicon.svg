@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- squircle background (rounded-rect approximation) -->
+  <rect x="0" y="0" width="24" height="24" rx="6" ry="6" fill="#1447e6"/>
+
+  <!-- icon in white, inset with 5px padding (original design scaled down) -->
+  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- outer / middle / inner radii adjusted so there's ~5px padding around the icon -->
+    <circle cx="12" cy="12" r="7" />
+    <circle cx="12" cy="12" r="4.2" />
+    <circle cx="12" cy="12" r="1.4" />
+  </g>
+</svg>

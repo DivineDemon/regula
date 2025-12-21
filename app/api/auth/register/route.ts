@@ -12,6 +12,7 @@ import {
   verificationTokens,
 } from "@/lib/db/schema";
 import { email as emailService } from "@/lib/services/email";
+import { stripeService } from "@/lib/services/stripe";
 
 export async function POST(request: Request) {
   try {
@@ -126,6 +127,30 @@ export async function POST(request: Request) {
         expires: tokenExpires,
       });
     });
+
+    // Create Stripe customer for the organization (for future paid subscriptions)
+    // Do this outside the transaction since it's an external API call
+    // If it fails, we still have a working account with a free subscription
+    try {
+      const customer = await stripeService.createCustomer({
+        email,
+        name: organizationName,
+        metadata: {
+          organizationId,
+          userId,
+        },
+      });
+
+      // Update subscription with Stripe customer ID
+      await db
+        .update(subscriptions)
+        .set({ stripeCustomerId: customer.id })
+        .where(eq(subscriptions.organizationId, organizationId));
+    } catch (error) {
+      console.error("Failed to create Stripe customer:", error);
+      // Continue with registration even if Stripe customer creation fails
+      // The subscription will work fine without it for free plans
+    }
 
     // Send verification email
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { organizationMembers, targets } from "@/lib/db/schema";
 import type { TargetCategory, TargetStatus } from "@/lib/db/schema/targets";
 import { triggerCrawl } from "@/lib/inngest/functions/crawl";
+import { quotaService } from "@/lib/services/quotas";
 
 const createTargetSchema = z.object({
   organizationId: z.string(),
@@ -123,6 +124,19 @@ export async function POST(request: Request) {
     if (!hasAccess) {
       return NextResponse.json(
         { error: "Access denied to this organization" },
+        { status: 403 },
+      );
+    }
+
+    // Check quota before creating target
+    const quotaCheck = await quotaService.checkQuota({
+      organizationId: validatedData.organizationId,
+      action: "create_target",
+    });
+
+    if (!quotaCheck.allowed) {
+      return NextResponse.json(
+        { error: quotaCheck.reason || "Quota limit reached" },
         { status: 403 },
       );
     }

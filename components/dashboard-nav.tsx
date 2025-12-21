@@ -1,6 +1,16 @@
 "use client";
 
-import { Building2, LayoutDashboard, Target, User, Users } from "lucide-react";
+import {
+  AlertCircle,
+  BarChart3,
+  Bell,
+  Building2,
+  CreditCard,
+  LayoutDashboard,
+  Target,
+  User,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,7 +37,7 @@ const menuItems = [
   {
     title: "Alerts",
     url: "/alerts",
-    icon: Target, // Using Target as placeholder, can be changed to AlertCircle later
+    icon: AlertCircle,
   },
 ];
 
@@ -46,6 +56,21 @@ const settingsItems = [
     title: "Profile",
     url: "/settings/profile",
     icon: User,
+  },
+  {
+    title: "Notifications",
+    url: "/settings/notifications",
+    icon: Bell,
+  },
+  {
+    title: "Usage",
+    url: "/settings/usage",
+    icon: BarChart3,
+  },
+  {
+    title: "Billing",
+    url: "/settings/billing",
+    icon: CreditCard,
   },
 ];
 

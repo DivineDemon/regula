@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
+import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
-import { NotificationPreferencesClient } from "./notification-preferences-client";
+import { BillingClient } from "./billing-client";
 
-export default async function NotificationPreferencesPage() {
+export default async function BillingSettingsPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -16,6 +17,7 @@ export default async function NotificationPreferencesPage() {
   const [userOrg] = await db
     .select({
       organization: organizations,
+      role: organizationMembers.role,
     })
     .from(organizationMembers)
     .innerJoin(
@@ -29,16 +31,30 @@ export default async function NotificationPreferencesPage() {
     redirect("/dashboard");
   }
 
+  // Check if user is admin
+  if (userOrg.role !== UserRole.ADMIN) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+        <p className="text-destructive">
+          You must be an administrator to access billing settings.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Notification Preferences</h1>
+        <h1 className="text-3xl font-bold">Billing & Subscription</h1>
         <p className="mt-2 text-muted-foreground">
-          Configure how you receive alerts and notifications
+          Manage your subscription, payment methods, and invoices
         </p>
       </div>
 
-      <NotificationPreferencesClient organizationId={userOrg.organization.id} />
+      <BillingClient
+        organizationId={userOrg.organization.id}
+        organizationName={userOrg.organization.name}
+      />
     </div>
   );
 }
