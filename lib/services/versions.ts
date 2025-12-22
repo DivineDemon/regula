@@ -97,6 +97,10 @@ export async function storeVersion(params: {
     .orderBy(desc(versions.crawledAt))
     .limit(1);
 
+  console.log(
+    `Storing version for target ${targetId}: previousVersionId=${previousVersion?.id ?? "none"}, contentHash=${contentHash.substring(0, 8)}...`,
+  );
+
   // Create version record
   const versionId = s3Key
     ? s3Key.split("/").pop()?.replace(".txt", "") || nanoid()
@@ -115,6 +119,10 @@ export async function storeVersion(params: {
       diffMetadata: null,
     })
     .returning();
+
+  console.log(
+    `Version stored successfully: id=${newVersion.id}, previousVersionId=${newVersion.previousVersionId ?? "null"}`,
+  );
 
   return {
     id: newVersion.id,

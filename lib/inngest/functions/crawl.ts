@@ -7,11 +7,7 @@ import { generateAlert } from "@/lib/services/alerts";
 import { detectChanges } from "@/lib/services/diff";
 import type { CrawlResult } from "@/lib/services/firecrawl";
 import { crawlUrl } from "@/lib/services/firecrawl";
-import {
-  compareVersionsByHash,
-  getVersion,
-  storeVersion,
-} from "@/lib/services/versions";
+import { getVersion, storeVersion } from "@/lib/services/versions";
 
 /**
  * Maximum number of retry attempts for crawl jobs
@@ -161,38 +157,91 @@ export const crawlTarget = inngest.createFunction(
           // Use traditional version-based change detection
           const newVersion = await getVersion(version.id, organizationId);
 
+          if (!newVersion) {
+            console.error(
+              `Failed to retrieve new version ${version.id} for change detection`,
+            );
+            return {
+              hasChanges: false,
+              diffMetadata: null,
+              currentVersionId: null,
+              previousVersionId: null,
+              graphBased: false,
+            };
+          }
+
+          console.log(
+            `Change detection for target ${targetId}: newVersion.id=${newVersion.id}, previousVersionId=${newVersion.previousVersionId}`,
+          );
+
           // If there's a previous version, compare hashes first
-          if (newVersion?.previousVersionId) {
+          if (newVersion.previousVersionId) {
             const previousVersion = await getVersion(
               newVersion.previousVersionId,
               organizationId,
             );
 
-            if (previousVersion) {
-              const hasHashChanged = !compareVersionsByHash(
-                previousVersion.contentHash,
-                newVersion.contentHash,
+            if (!previousVersion) {
+              console.warn(
+                `Previous version ${newVersion.previousVersionId} not found for target ${targetId}`,
+              );
+              return {
+                hasChanges: false,
+                diffMetadata: null,
+                currentVersionId: null,
+                previousVersionId: null,
+                graphBased: false,
+              };
+            }
+
+            const hasHashChanged =
+              previousVersion.contentHash !== newVersion.contentHash;
+
+            console.log(
+              `Hash comparison for target ${targetId}: previousHash=${previousVersion.contentHash.substring(
+                0,
+                8,
+              )}..., newHash=${newVersion.contentHash.substring(
+                0,
+                8,
+              )}..., hasChanged=${hasHashChanged}`,
+            );
+
+            if (hasHashChanged) {
+              console.log(
+                `Content hash changed for target ${targetId}, performing detailed diff`,
+              );
+              // Perform detailed diff
+              const diffMetadata = await detectChanges({
+                currentVersionId: newVersion.id,
+                previousVersionId: previousVersion.id,
+                organizationId,
+                targetId,
+              });
+
+              console.log(
+                `Diff completed for target ${targetId}: hasChanges=${
+                  diffMetadata.hasChanges
+                }, changeTypes=${diffMetadata.changeTypes.join(", ")}`,
               );
 
-              if (hasHashChanged) {
-                // Perform detailed diff
-                const diffMetadata = await detectChanges({
-                  currentVersionId: newVersion.id,
-                  previousVersionId: previousVersion.id,
-                  organizationId,
-                  targetId,
-                });
-
-                // Return diff metadata for alert generation
-                return {
-                  hasChanges: true,
-                  diffMetadata,
-                  currentVersionId: newVersion.id,
-                  previousVersionId: previousVersion.id || newVersion.id,
-                  graphBased: false,
-                };
-              }
+              // Return diff metadata for alert generation
+              return {
+                hasChanges: true,
+                diffMetadata,
+                currentVersionId: newVersion.id,
+                previousVersionId: previousVersion.id,
+                graphBased: false,
+              };
+            } else {
+              console.log(
+                `No hash change detected for target ${targetId}, skipping diff`,
+              );
             }
+          } else {
+            console.log(
+              `No previous version for target ${targetId} (first crawl), skipping change detection`,
+            );
           }
 
           return {
@@ -219,6 +268,12 @@ export const crawlTarget = inngest.createFunction(
       }
 
       // Step 5: Generate alert if changes were detected
+      console.log(
+        `Alert generation check for target ${targetId}: hasChanges=${
+          changeDetectionResult.hasChanges
+        }, hasDiffMetadata=${!!changeDetectionResult.diffMetadata}, hasCurrentVersionId=${!!changeDetectionResult.currentVersionId}`,
+      );
+
       if (
         changeDetectionResult.hasChanges &&
         changeDetectionResult.diffMetadata &&
@@ -226,6 +281,9 @@ export const crawlTarget = inngest.createFunction(
           changeDetectionResult.graphBased)
       ) {
         await step.run("generate-alert", async () => {
+          console.log(
+            `Generating alert for target ${targetId} with changes detected`,
+          );
           // Get organization record
           const [organization] = await db
             .select()
@@ -272,6 +330,10 @@ export const crawlTarget = inngest.createFunction(
               organization,
             });
 
+            console.log(
+              `Alert generated successfully for target ${targetId}: alertId=${alert.id}, impactScore=${alert.impactScore}`,
+            );
+
             return { alertId: alert.id, impactScore: alert.impactScore };
           } catch (error) {
             console.error("Error generating alert:", error);
@@ -285,13 +347,13 @@ export const crawlTarget = inngest.createFunction(
       }
 
       // Update target status and job status to "completed" on success
-      // Update target status and job status to "completed" on success
       await step.run("update-target-status", async () => {
         await db
           .update(targets)
           .set({
             status: "active",
             lastCrawlStatus: "completed",
+            lastCrawlAt: new Date(), // Update to reflect completion time
             lastCrawlError: null,
             updatedAt: new Date(),
           })
