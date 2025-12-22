@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { Target } from "lucide-react";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard-nav";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { LogoutButton } from "@/components/logout-button";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
 import {
@@ -77,7 +78,9 @@ export default async function DashboardLayout({
           <SidebarTrigger className="-ml-1" />
           <div className="flex-1" />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

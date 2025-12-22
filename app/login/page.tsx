@@ -59,6 +59,44 @@ function LoginContent() {
         }
         setIsLoading(false);
       } else if (result?.ok) {
+        // Check if callbackUrl is an invitation acceptance URL
+        try {
+          const callbackUrlObj = new URL(callbackUrl, window.location.origin);
+          if (callbackUrlObj.pathname === "/accept-invitation") {
+            const token = callbackUrlObj.searchParams.get("token");
+            const email = callbackUrlObj.searchParams.get("email");
+
+            if (token && email && email === data.email) {
+              // Auto-accept invitation
+              try {
+                const acceptResponse = await fetch(
+                  "/api/organizations/invitations/accept",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ token, email }),
+                  },
+                );
+
+                if (acceptResponse.ok) {
+                  // Invitation accepted - redirect to dashboard
+                  router.push("/dashboard");
+                  router.refresh();
+                  return;
+                }
+                // If acceptance fails, still redirect to callbackUrl
+              } catch (acceptError) {
+                console.error("Error accepting invitation:", acceptError);
+                // Continue to callbackUrl even if acceptance fails
+              }
+            }
+          }
+        } catch (_urlError) {
+          // Invalid URL, just proceed with callbackUrl
+        }
+
         router.push(callbackUrl);
         router.refresh();
       }

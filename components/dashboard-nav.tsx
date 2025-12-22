@@ -8,7 +8,6 @@ import {
   CreditCard,
   FileText,
   LayoutDashboard,
-  Search,
   Target,
   User,
   Users,
@@ -48,11 +47,6 @@ const menuItems: MenuItem[] = [
     title: "Alerts",
     url: "/alerts",
     icon: AlertCircle,
-  },
-  {
-    title: "Search",
-    url: "/search",
-    icon: Search,
   },
 ];
 

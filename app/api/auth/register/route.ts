@@ -49,15 +49,16 @@ export async function POST(request: Request) {
     }
 
     // Check if organization name is already taken
+    // Generate slug using same logic as creation
+    const orgSlugCheck = organizationName
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+
     const [existingOrg] = await db
       .select()
       .from(organizations)
-      .where(
-        eq(
-          organizations.slug,
-          organizationName.toLowerCase().replace(/\s+/g, "-"),
-        ),
-      )
+      .where(eq(organizations.slug, orgSlugCheck))
       .limit(1);
 
     if (existingOrg) {

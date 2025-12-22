@@ -189,7 +189,7 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
@@ -248,7 +248,7 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Alerts Over Time</CardTitle>
@@ -384,7 +384,7 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
           <CardTitle>Target Status Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
             {Object.entries(metrics.targets.byStatus).map(([status, count]) => (
               <div key={status} className="text-center">
                 <div className="text-2xl font-bold">{count}</div>

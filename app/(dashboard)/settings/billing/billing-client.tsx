@@ -2,6 +2,7 @@
 
 import { CreditCard, Download, ExternalLink, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -155,14 +156,14 @@ export function BillingClient({
       }
 
       const data = await response.json();
-      alert(`Subscription synced successfully! Plan: ${data.plan}`);
+      toast.success(`Subscription synced successfully! Plan: ${data.plan}`);
       // Refresh billing data
       await fetchBillingData();
     } catch (error) {
       console.error("Sync error:", error);
       const message =
         error instanceof Error ? error.message : "Failed to sync subscription";
-      alert(message);
+      toast.error(message);
     } finally {
       setSyncing(false);
     }
@@ -200,7 +201,7 @@ export function BillingClient({
         error instanceof Error
           ? error.message
           : "Failed to start checkout. Please try again.";
-      alert(message);
+      toast.error(message);
     } finally {
       setProcessing(null);
     }

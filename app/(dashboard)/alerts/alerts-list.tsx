@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 
 interface Alert {
@@ -159,9 +161,10 @@ export function AlertsList({ organizationId }: AlertsListProps) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast.success("Alerts exported successfully");
     } catch (error) {
       console.error("Error exporting:", error);
-      alert("Failed to export alerts. Please try again.");
+      toast.error("Failed to export alerts. Please try again.");
     } finally {
       setExporting(false);
     }
@@ -261,9 +264,10 @@ export function AlertsList({ organizationId }: AlertsListProps) {
       // Clear selection and refresh
       setSelectedAlerts(new Set());
       await fetchAlerts();
+      toast.success("Alerts updated successfully");
     } catch (error) {
       console.error("Error updating alerts:", error);
-      alert("Failed to update alerts. Please try again.");
+      toast.error("Failed to update alerts. Please try again.");
     } finally {
       setBulkUpdating(false);
     }
@@ -351,7 +355,10 @@ export function AlertsList({ organizationId }: AlertsListProps) {
       {/* Search Bar */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
             placeholder="Search alerts by summary, target, or jurisdiction..."
             value={filters.search}
@@ -359,6 +366,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
               setFilters((prev) => ({ ...prev, search: e.target.value }))
             }
             className="pl-10"
+            aria-label="Search alerts"
           />
         </div>
         {filters.search && (
@@ -376,17 +384,22 @@ export function AlertsList({ organizationId }: AlertsListProps) {
       {showFilters && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between flex-wrap gap-2">
               <span>Filter Alerts</span>
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  aria-label="Clear all filters"
+                >
                   Clear All
                 </Button>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select
@@ -512,8 +525,27 @@ export function AlertsList({ organizationId }: AlertsListProps) {
 
       {/* Alerts List */}
       {loading ? (
-        <div className="flex items-center justify-center p-8">
-          <p className="text-muted-foreground">Loading alerts...</p>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-9 w-24" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       ) : alerts.length === 0 ? (
         <Empty>
@@ -576,6 +608,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                       <Link
                         href={`/alerts/${alert.id}?organizationId=${organizationId}`}
                         className="font-semibold hover:underline"
+                        aria-label={`View alert for ${target.label}`}
                       >
                         {target.label}
                       </Link>
@@ -604,6 +637,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                   </div>
                   <Link
                     href={`/alerts/${alert.id}?organizationId=${organizationId}`}
+                    aria-label={`View details for alert ${alert.id}`}
                   >
                     <Button variant="outline" size="sm">
                       View Details

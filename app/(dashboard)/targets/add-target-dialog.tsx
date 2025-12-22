@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { InfoIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,6 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const targetFormSchema = z.object({
   url: z.string().url("Invalid URL format"),
@@ -159,13 +164,27 @@ export function AddTargetDialog({
               name="url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    URL <span className="text-destructive">*</span>
-                  </FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormLabel>
+                      URL <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <InfoIcon className="size-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">
+                          Enter the full URL of the regulatory website or page
+                          you want to monitor for changes.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <FormControl>
                     <Input
                       placeholder="https://example.com/regulations"
                       disabled={isSubmitting || isValidating}
+                      aria-label="Target URL"
                       {...field}
                     />
                   </FormControl>
@@ -247,13 +266,28 @@ export function AddTargetDialog({
               name="crawlFrequency"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Crawl Frequency <span className="text-destructive">*</span>
-                  </FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormLabel>
+                      Crawl Frequency{" "}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <InfoIcon className="size-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">
+                          How often Regula should check this target for changes.
+                          More frequent checks may increase costs.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || "daily"}
                     disabled={isSubmitting}
+                    aria-label="Crawl frequency"
                   >
                     <FormControl>
                       <SelectTrigger>

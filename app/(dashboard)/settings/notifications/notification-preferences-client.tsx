@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Mail, Webhook } from "lucide-react";
+import { Bell, InfoIcon, Mail, Webhook } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,6 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface NotificationPreferences {
   id?: string;
@@ -88,10 +94,10 @@ export function NotificationPreferencesClient({
 
       const data = await response.json();
       setPreferences(data);
-      alert("Preferences saved successfully!");
+      toast.success("Preferences saved successfully!");
     } catch (error) {
       console.error("Error saving preferences:", error);
-      alert("Failed to save preferences. Please try again.");
+      toast.error("Failed to save preferences. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -230,7 +236,21 @@ export function NotificationPreferencesClient({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label>Minimum Impact Level</Label>
+              <div className="flex items-center gap-2">
+                <Label>Minimum Impact Level</Label>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="size-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">
+                      Only receive notifications for alerts with an impact score
+                      at or above this threshold. This helps reduce notification
+                      noise.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <Select
                 value={preferences.alertThreshold}
                 onValueChange={(value) => {
@@ -246,6 +266,7 @@ export function NotificationPreferencesClient({
                     }));
                   }
                 }}
+                aria-label="Alert threshold"
               >
                 <SelectTrigger>
                   <SelectValue />

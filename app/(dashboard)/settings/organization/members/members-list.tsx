@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,12 +72,13 @@ export function MembersList({
 
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Failed to update role");
+        toast.error(data.error || "Failed to update role");
       } else {
+        toast.success("Role updated successfully");
         router.refresh();
       }
     } catch (_err) {
-      alert("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setUpdatingRole(null);
     }
@@ -107,12 +109,13 @@ export function MembersList({
 
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Failed to remove member");
+        toast.error(data.error || "Failed to remove member");
       } else {
+        toast.success("Member removed successfully");
         router.refresh();
       }
     } catch (_err) {
-      alert("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setRemovingMember(null);
     }
@@ -134,12 +137,13 @@ export function MembersList({
 
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Failed to cancel invitation");
+        toast.error(data.error || "Failed to cancel invitation");
       } else {
+        toast.success("Invitation cancelled successfully");
         router.refresh();
       }
     } catch (_err) {
-      alert("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setCancelingInvite(null);
     }

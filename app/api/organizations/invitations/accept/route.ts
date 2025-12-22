@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
@@ -22,28 +22,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find invitation
-    const [invitation] = await db
-      .select()
-      .from(invitations)
-      .where(
-        and(
-          eq(invitations.token, token),
-          eq(invitations.email, email),
-          isNull(invitations.acceptedAt),
-          gt(invitations.expiresAt, new Date()),
-        ),
-      )
-      .limit(1);
-
-    if (!invitation) {
-      return NextResponse.json(
-        { error: "Invalid or expired invitation" },
-        { status: 400 },
-      );
-    }
-
-    // Verify email matches session user
+    // Verify email matches session user first
     const [user] = await db
       .select()
       .from(users)
@@ -57,7 +36,53 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user is already a member
+    // Find invitation (including already accepted ones for idempotency check)
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(and(eq(invitations.token, token), eq(invitations.email, email)))
+      .limit(1);
+
+    if (!invitation) {
+      return NextResponse.json(
+        { error: "Invalid invitation" },
+        { status: 400 },
+      );
+    }
+
+    // Check if invitation was already accepted
+    if (invitation.acceptedAt) {
+      // Check if user is a member (invitation was accepted, possibly via registration)
+      const [existingMember] = await db
+        .select()
+        .from(organizationMembers)
+        .where(
+          and(
+            eq(organizationMembers.userId, session.user.id),
+            eq(organizationMembers.organizationId, invitation.organizationId),
+          ),
+        )
+        .limit(1);
+
+      if (existingMember) {
+        return NextResponse.json({ error: "ALREADY_MEMBER" }, { status: 400 });
+      }
+      // Invitation was accepted but user is not a member - edge case
+      return NextResponse.json(
+        { error: "Invitation was already accepted" },
+        { status: 400 },
+      );
+    }
+
+    // Check if invitation is expired
+    if (invitation.expiresAt <= new Date()) {
+      return NextResponse.json(
+        { error: "Invitation has expired" },
+        { status: 400 },
+      );
+    }
+
+    // Check if user is already a member (edge case: user was added another way)
     const [existingMember] = await db
       .select()
       .from(organizationMembers)
@@ -70,7 +95,7 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (existingMember) {
-      // Mark invitation as accepted anyway
+      // Mark invitation as accepted anyway for idempotency
       await db
         .update(invitations)
         .set({ acceptedAt: new Date() })

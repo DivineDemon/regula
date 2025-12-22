@@ -189,15 +189,17 @@ export function TargetsList({
               variant="ghost"
               size="icon"
               onClick={() => setEditingTarget(target)}
+              aria-label={`Edit target ${target.label}`}
             >
-              <PencilIcon className="size-4" />
+              <PencilIcon className="size-4" aria-hidden="true" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setDeletingTarget(target)}
+              aria-label={`Delete target ${target.label}`}
             >
-              <TrashIcon className="size-4" />
+              <TrashIcon className="size-4" aria-hidden="true" />
             </Button>
           </div>
         );
@@ -223,8 +225,11 @@ export function TargetsList({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Monitoring Targets</CardTitle>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <PlusIcon className="size-4" />
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              aria-label="Add new target"
+            >
+              <PlusIcon className="size-4" aria-hidden="true" />
               Add Target
             </Button>
           </div>
@@ -250,7 +255,7 @@ export function TargetsList({
             </Empty>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -261,6 +266,7 @@ export function TargetsList({
                             className={
                               header.id === "actions" ? "text-right" : undefined
                             }
+                            scope="col"
                           >
                             {header.isPlaceholder
                               ? null
@@ -310,7 +316,7 @@ export function TargetsList({
                   </TableBody>
                 </Table>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="text-sm text-muted-foreground">
                   Showing{" "}
                   {table.getState().pagination.pageIndex *
@@ -330,18 +336,20 @@ export function TargetsList({
                     size="sm"
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
+                    aria-label="Previous page"
                   >
-                    <ChevronLeftIcon className="size-4" />
-                    Previous
+                    <ChevronLeftIcon className="size-4" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Previous</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
+                    aria-label="Next page"
                   >
-                    Next
-                    <ChevronRightIcon className="size-4" />
+                    <span className="sr-only sm:not-sr-only">Next</span>
+                    <ChevronRightIcon className="size-4" aria-hidden="true" />
                   </Button>
                 </div>
               </div>
