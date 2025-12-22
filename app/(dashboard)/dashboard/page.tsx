@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { organizationMembers, organizations } from "@/lib/db/schema";
+import { organizationMembers, organizations, targets } from "@/lib/db/schema";
 import { DashboardContent } from "../dashboard-content";
 
 export default async function DashboardPage() {
@@ -34,6 +34,18 @@ export default async function DashboardPage() {
 
   if (!currentOrg) {
     redirect("/register");
+  }
+
+  // Check if user has targets - if not, redirect to onboarding
+  const existingTargets = await db
+    .select()
+    .from(targets)
+    .where(eq(targets.organizationId, currentOrg.id))
+    .limit(1);
+
+  // If user has no targets, they need to complete onboarding
+  if (existingTargets.length === 0) {
+    redirect("/onboarding");
   }
 
   return <DashboardContent organizationId={currentOrg.id} />;
