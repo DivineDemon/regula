@@ -110,6 +110,7 @@ export default async function proxy(request: NextRequest) {
     "/check-email",
     "/forgot-password",
     "/reset-password",
+    "/legal", // Legal pages (terms, privacy, cookies, etc.)
   ];
   const isPublicRoute =
     pathname === "/" ||

@@ -39,6 +39,11 @@ export type AuditAction =
   // Export operations
   | "export.alerts"
   | "export.compliance_report"
+  // GDPR operations
+  | "gdpr_request_deletion"
+  | "gdpr_request_export"
+  | "gdpr_data_deleted"
+  | "gdpr_data_exported"
   // System operations
   | "system.crawl_triggered"
   | "system.crawl_completed"

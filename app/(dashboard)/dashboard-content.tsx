@@ -3,6 +3,7 @@
 import { AlertCircle, Clock, Target, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CookieConsentRequiredBanner } from "@/components/cookie-consent-required-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -175,154 +176,159 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="mt-2 text-muted-foreground">
-          Overview of your regulatory monitoring activity
-        </p>
-      </div>
-
-      {/* Key Metrics Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.alerts.active}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.alerts.total} total alerts
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Targets</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.targets.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.targets.byStatus.active || 0} active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              High Impact Alerts
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.alerts.bySeverity.high || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Require immediate attention
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Alerts</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.alerts.byStatus.new || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Awaiting triage</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        <AlertsByStatus data={alertsByStatusData} />
-
-        {/* Additional Chart */}
-        {alertsBySeverityData.length > 0 && (
-          <AlertsBySeverity data={alertsBySeverityData} />
-        )}
-
-        <div className="w-full col-span-2">
-          <AlertsOverTime data={alertsOverTimeData} />
+    <>
+      <CookieConsentRequiredBanner />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="mt-2 text-muted-foreground">
+            Overview of your regulatory monitoring activity
+          </p>
         </div>
-      </div>
 
-      {/* Recent Alerts */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Alerts</CardTitle>
-          <Link href="/alerts">
-            <Button variant="outline">View All</Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {metrics.alerts.recent.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <AlertCircle className="size-6" />
-                </EmptyMedia>
-                <EmptyTitle>No alerts yet</EmptyTitle>
-                <EmptyDescription>
-                  Alerts will appear here when changes are detected in your
-                  monitored targets.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <div className="space-y-4">
-              {metrics.alerts.recent.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="flex items-start justify-between border-b pb-4 last:border-0 last:pb-0"
-                >
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link
-                        href={`/alerts/${alert.id}?organizationId=${organizationId}`}
-                        className="font-semibold hover:underline"
-                      >
-                        {alert.target.label}
-                      </Link>
-                      {getStatusBadge(alert.status)}
-                      {getSeverityBadge(alert.impactScore)}
-                      {alert.target.jurisdiction && (
-                        <Badge variant="outline">
-                          {alert.target.jurisdiction}
-                        </Badge>
-                      )}
-                    </div>
-                    {alert.summary && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {alert.summary}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(alert.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/alerts/${alert.id}?organizationId=${organizationId}`}
-                  >
-                    <Button variant="outline" size="sm">
-                      View
-                    </Button>
-                  </Link>
-                </div>
-              ))}
-            </div>
+        {/* Key Metrics Cards */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Alerts
+              </CardTitle>
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.alerts.active}</div>
+              <p className="text-xs text-muted-foreground">
+                {metrics.alerts.total} total alerts
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Targets</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.targets.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {metrics.targets.byStatus.active || 0} active
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                High Impact Alerts
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {metrics.alerts.bySeverity.high || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Require immediate attention
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">New Alerts</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {metrics.alerts.byStatus.new || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">Awaiting triage</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+          <AlertsByStatus data={alertsByStatusData} />
+
+          {/* Additional Chart */}
+          {alertsBySeverityData.length > 0 && (
+            <AlertsBySeverity data={alertsBySeverityData} />
           )}
-        </CardContent>
-      </Card>
-    </div>
+
+          <div className="w-full col-span-2">
+            <AlertsOverTime data={alertsOverTimeData} />
+          </div>
+        </div>
+
+        {/* Recent Alerts */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recent Alerts</CardTitle>
+            <Link href="/alerts">
+              <Button variant="outline">View All</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {metrics.alerts.recent.length === 0 ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <AlertCircle className="size-6" />
+                  </EmptyMedia>
+                  <EmptyTitle>No alerts yet</EmptyTitle>
+                  <EmptyDescription>
+                    Alerts will appear here when changes are detected in your
+                    monitored targets.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <div className="space-y-4">
+                {metrics.alerts.recent.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start justify-between border-b pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link
+                          href={`/alerts/${alert.id}?organizationId=${organizationId}`}
+                          className="font-semibold hover:underline"
+                        >
+                          {alert.target.label}
+                        </Link>
+                        {getStatusBadge(alert.status)}
+                        {getSeverityBadge(alert.impactScore)}
+                        {alert.target.jurisdiction && (
+                          <Badge variant="outline">
+                            {alert.target.jurisdiction}
+                          </Badge>
+                        )}
+                      </div>
+                      {alert.summary && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {alert.summary}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(alert.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/alerts/${alert.id}?organizationId=${organizationId}`}
+                    >
+                      <Button variant="outline" size="sm">
+                        View
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }

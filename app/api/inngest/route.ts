@@ -2,6 +2,7 @@ import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest/client";
 import { adaptiveCrawlBackground } from "@/lib/inngest/functions/adaptive-crawl";
 import { crawlTarget, scheduleCrawls } from "@/lib/inngest/functions/crawl";
+import { dataRetentionCleanup } from "@/lib/inngest/functions/data-retention";
 import {
   sendDailyDigests,
   sendWeeklyDigests,
@@ -19,5 +20,6 @@ export const { GET, POST, PUT } = serve({
     adaptiveCrawlBackground,
     sendDailyDigests,
     sendWeeklyDigests,
+    dataRetentionCleanup,
   ],
 });

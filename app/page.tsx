@@ -192,9 +192,37 @@ export default function LandingPage() {
               </div>
               <span className="font-semibold">Regula</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Regula. All rights reserved.
-            </p>
+            <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
+                <Link
+                  href="/legal/terms"
+                  className="hover:text-foreground transition-colors"
+                >
+                  Terms
+                </Link>
+                <Link
+                  href="/legal/privacy"
+                  className="hover:text-foreground transition-colors"
+                >
+                  Privacy
+                </Link>
+                <Link
+                  href="/legal/cookies"
+                  className="hover:text-foreground transition-colors"
+                >
+                  Cookies
+                </Link>
+                <Link
+                  href="/legal/aup"
+                  className="hover:text-foreground transition-colors"
+                >
+                  AUP
+                </Link>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                © {new Date().getFullYear()} Regula. All rights reserved.
+              </p>
+            </div>
           </div>
         </div>
       </footer>

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { setCookieWithConsent } from "@/lib/utils/cookie-consent";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -82,8 +83,15 @@ function SidebarProvider({
       }
 
       // This sets the cookie to keep the sidebar state.
-      // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API is experimental, document.cookie is the standard approach
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      // Check consent before setting functional cookie
+      if (typeof window !== "undefined") {
+        setCookieWithConsent(
+          SIDEBAR_COOKIE_NAME,
+          String(openState),
+          { path: "/", maxAge: SIDEBAR_COOKIE_MAX_AGE },
+          "functional",
+        );
+      }
     },
     [setOpenProp, open],
   );

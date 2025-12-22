@@ -23,13 +23,13 @@ export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
     price: 0,
     targets: 3,
     crawlFrequency: "daily",
-    retentionDays: 30,
+    retentionDays: 90, // 3 months
     realTimeAlerts: false,
     features: [
       "3 targets",
       "Daily crawls",
       "Daily digest emails",
-      "30-day data retention",
+      "3-month data retention",
     ],
   },
   starter: {
@@ -38,13 +38,13 @@ export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
     price: 3900, // $39/month in cents
     targets: 10,
     crawlFrequency: "hourly",
-    retentionDays: 90,
+    retentionDays: 365, // 1 year
     realTimeAlerts: false,
     features: [
       "10 targets",
       "Hourly crawls",
       "Daily digest emails",
-      "90-day data retention",
+      "1-year data retention",
     ],
   },
   growth: {
@@ -53,13 +53,13 @@ export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
     price: 12900, // $129/month in cents
     targets: 50,
     crawlFrequency: "hourly",
-    retentionDays: 365,
+    retentionDays: 1095, // 3 years
     realTimeAlerts: true,
     features: [
       "50 targets",
       "Hourly crawls",
       "Real-time alerts",
-      "1-year data retention",
+      "3-year data retention",
     ],
   },
   enterprise: {
@@ -68,13 +68,13 @@ export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
     price: 49900, // $499/month in cents (base)
     targets: Infinity, // Unlimited
     crawlFrequency: "hourly",
-    retentionDays: Infinity, // Unlimited
+    retentionDays: Infinity, // 5+ years (effectively unlimited)
     realTimeAlerts: true,
     features: [
       "Unlimited targets",
       "Hourly crawls",
       "Real-time alerts",
-      "Unlimited retention",
+      "5+ year data retention",
       "Priority support",
       "Custom features",
     ],

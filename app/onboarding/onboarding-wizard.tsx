@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Step1Welcome } from "./steps/step1-welcome";
 import { Step2AddTargets } from "./steps/step2-add-targets";
+import { Step2CookieConsent } from "./steps/step2-cookie-consent";
 import { Step3AlertPreferences } from "./steps/step3-alert-preferences";
 import { Step4RunCrawl } from "./steps/step4-run-crawl";
 import { Step5WaitForAlert } from "./steps/step5-wait-for-alert";
@@ -18,7 +19,7 @@ interface OnboardingWizardProps {
   userId: string;
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export function OnboardingWizard({
   organizationId,
@@ -136,10 +137,11 @@ export function OnboardingWizard({
                         </span>
                         <span className="mt-2 text-xs text-muted-foreground">
                           {step === 1 && "Welcome"}
-                          {step === 2 && "Targets"}
-                          {step === 3 && "Preferences"}
-                          {step === 4 && "Crawl"}
-                          {step === 5 && "Complete"}
+                          {step === 2 && "Cookies"}
+                          {step === 3 && "Targets"}
+                          {step === 4 && "Preferences"}
+                          {step === 5 && "Crawl"}
+                          {step === 6 && "Complete"}
                         </span>
                       </div>
                       {step < TOTAL_STEPS && (
@@ -170,33 +172,39 @@ export function OnboardingWizard({
               />
             )}
             {currentStep === 2 && (
-              <Step2AddTargets
-                organizationId={organizationId}
-                onComplete={(data) => handleStepComplete(2, data)}
+              <Step2CookieConsent
+                onComplete={() => handleStepComplete(2)}
                 onBack={handleBack}
-                onSkip={handleSkip}
               />
             )}
             {currentStep === 3 && (
-              <Step3AlertPreferences
+              <Step2AddTargets
                 organizationId={organizationId}
-                onComplete={(data) => handleStepComplete(3, data)}
+                onComplete={(data: unknown) => handleStepComplete(3, data)}
                 onBack={handleBack}
                 onSkip={handleSkip}
               />
             )}
             {currentStep === 4 && (
-              <Step4RunCrawl
+              <Step3AlertPreferences
                 organizationId={organizationId}
-                targetIds={stepData.targetIds || []}
-                onComplete={() => handleStepComplete(4)}
+                onComplete={(data: unknown) => handleStepComplete(4, data)}
                 onBack={handleBack}
+                onSkip={handleSkip}
               />
             )}
             {currentStep === 5 && (
+              <Step4RunCrawl
+                organizationId={organizationId}
+                targetIds={stepData.targetIds || []}
+                onComplete={() => handleStepComplete(5)}
+                onBack={handleBack}
+              />
+            )}
+            {currentStep === 6 && (
               <Step5WaitForAlert
                 organizationId={organizationId}
-                onComplete={() => handleStepComplete(5)}
+                onComplete={() => handleStepComplete(6)}
                 onBack={handleBack}
               />
             )}
