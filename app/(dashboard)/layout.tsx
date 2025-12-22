@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { LogoutButton } from "@/components/logout-button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
 import {
   Sidebar,
@@ -74,9 +75,9 @@ export default async function DashboardLayout({
         <SidebarRail />
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <div className="flex-1" />
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
+          <SidebarTrigger />
+          <ModeToggle />
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <ErrorBoundary>{children}</ErrorBoundary>
