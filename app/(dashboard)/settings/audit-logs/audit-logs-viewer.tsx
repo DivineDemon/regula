@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { actionOptions } from "@/lib/constants";
 import type { AuditAction } from "@/lib/services/audit";
 
 interface AuditLog {
@@ -107,37 +108,11 @@ export function AuditLogsViewer({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Actions</SelectItem>
-            <SelectItem value="user.login">User Login</SelectItem>
-            <SelectItem value="user.logout">User Logout</SelectItem>
-            <SelectItem value="target.created">Target Created</SelectItem>
-            <SelectItem value="target.updated">Target Updated</SelectItem>
-            <SelectItem value="target.deleted">Target Deleted</SelectItem>
-            <SelectItem value="alert.created">Alert Created</SelectItem>
-            <SelectItem value="alert.status_changed">
-              Alert Status Changed
-            </SelectItem>
-            <SelectItem value="alert.assigned">Alert Assigned</SelectItem>
-            <SelectItem value="alert.comment_added">
-              Alert Comment Added
-            </SelectItem>
-            <SelectItem value="alert.exported">Alert Exported</SelectItem>
-            <SelectItem value="organization.member_invited">
-              Member Invited
-            </SelectItem>
-            <SelectItem value="organization.member_removed">
-              Member Removed
-            </SelectItem>
-            <SelectItem value="organization.member_role_changed">
-              Member Role Changed
-            </SelectItem>
-            <SelectItem value="billing.subscription_created">
-              Subscription Created
-            </SelectItem>
-            <SelectItem value="billing.subscription_updated">
-              Subscription Updated
-            </SelectItem>
-            <SelectItem value="export.alerts">Alerts Exported</SelectItem>
+            {actionOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value ?? ""}>
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
@@ -201,7 +176,7 @@ export function AuditLogsViewer({
                       {log.userId || "System"}
                     </TableCell>
                     <TableCell className="max-w-md">
-                      <pre className="text-xs overflow-auto whitespace-pre-wrap break-words">
+                      <pre className="text-xs overflow-auto whitespace-pre-wrap wrap-break-word">
                         {formatMetadata(log.metadata)}
                       </pre>
                     </TableCell>
