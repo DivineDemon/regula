@@ -1,31 +1,53 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Suspense, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     setError(null);
     setIsLoading(true);
 
     try {
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: data.email,
+        password: data.password,
         redirect: false,
       });
 
@@ -56,59 +78,76 @@ function LoginContent() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive space-y-2">
-              <p>
-                {error === "EMAIL_NOT_VERIFIED"
-                  ? "Please verify your email before signing in. Check your inbox for the verification link."
-                  : error}
-              </p>
-              {error === "EMAIL_NOT_VERIFIED" && (
-                <a
-                  href={`/check-email?email=${encodeURIComponent(email)}`}
-                  className="text-primary hover:underline block"
-                >
-                  Resend verification email
-                </a>
-              )}
-            </div>
-          )}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="mt-8 space-y-6"
+          >
+            {error && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive space-y-2">
+                <p>
+                  {error === "EMAIL_NOT_VERIFIED"
+                    ? "Please verify your email before signing in. Check your inbox for the verification link."
+                    : error}
+                </p>
+                {error === "EMAIL_NOT_VERIFIED" && (
+                  <a
+                    href={`/check-email?email=${encodeURIComponent(form.getValues("email"))}`}
+                    className="text-primary hover:underline block"
+                  >
+                    Resend verification email
+                  </a>
+                )}
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="email"
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        disabled={isLoading}
+                        autoComplete="email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        disabled={isLoading}
+                        autoComplete="current-password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="current-password"
-              />
-            </div>
-          </div>
-
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign in"}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
+        </Form>
 
         <div className="space-y-2">
           <p className="text-center text-sm text-muted-foreground">

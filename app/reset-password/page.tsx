@@ -1,11 +1,21 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { type ZodIssue, z } from "zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const resetPasswordSchema = z
   .object({
@@ -20,19 +30,24 @@ const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [errors, setErrors] = useState<
-    Partial<Record<"password" | "confirmPassword", string>>
-  >({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidatingToken, setIsValidatingToken] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
+
+  const form = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
   useEffect(() => {
     const validateToken = async () => {
@@ -69,38 +84,14 @@ function ResetPasswordContent() {
     validateToken();
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: ResetPasswordFormData) => {
     setError(null);
-    setErrors({});
 
     const token = searchParams.get("token");
     const email = searchParams.get("email");
 
     if (!token || !email) {
       setError("Invalid reset link");
-      return;
-    }
-
-    // Validate with Zod
-    const result = resetPasswordSchema.safeParse({
-      password,
-      confirmPassword,
-    });
-
-    if (!result.success) {
-      const fieldErrors: Partial<
-        Record<"password" | "confirmPassword", string>
-      > = {};
-      result.error.issues.forEach((err: ZodIssue) => {
-        const field = (
-          typeof err.path[0] === "string" ? err.path[0] : String(err.path[0])
-        ) as "password" | "confirmPassword";
-        if (field) {
-          fieldErrors[field] = err.message;
-        }
-      });
-      setErrors(fieldErrors);
       return;
     }
 
@@ -115,14 +106,14 @@ function ResetPasswordContent() {
         body: JSON.stringify({
           token,
           email,
-          password: result.data.password,
+          password: data.password,
         }),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to reset password");
+        setError(responseData.error || "Failed to reset password");
         setIsLoading(false);
         return;
       }
@@ -218,62 +209,69 @@ function ResetPasswordContent() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="mt-8 space-y-6"
+          >
+            {error && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="new-password"
-                minLength={8}
-                aria-invalid={errors.password ? "true" : "false"}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        disabled={isLoading}
+                        autoComplete="new-password"
+                        minLength={8}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Must be at least 8 characters long
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters long
-              </p>
-              {errors.password && (
-                <p className="text-xs text-destructive">{errors.password}</p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="new-password"
-                minLength={8}
-                aria-invalid={errors.confirmPassword ? "true" : "false"}
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        disabled={isLoading}
+                        autoComplete="new-password"
+                        minLength={8}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.confirmPassword && (
-                <p className="text-xs text-destructive">
-                  {errors.confirmPassword}
-                </p>
-              )}
             </div>
-          </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Resetting..." : "Reset Password"}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Resetting..." : "Reset Password"}
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );

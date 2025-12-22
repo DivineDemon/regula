@@ -61,10 +61,10 @@ export async function detectChanges(params: {
 }): Promise<DiffMetadata> {
   const { currentVersionId, previousVersionId, organizationId } = params;
 
-  // Get both versions
+  // Get both versions with organizationId verification
   const [currentVersion, previousVersion] = await Promise.all([
-    getVersion(currentVersionId),
-    getVersion(previousVersionId),
+    getVersion(currentVersionId, organizationId),
+    getVersion(previousVersionId, organizationId),
   ]);
 
   if (!currentVersion || !previousVersion) {
@@ -104,7 +104,12 @@ export async function detectChanges(params: {
 
   if (!hasContentChanged) {
     // No changes detected
-    await updateVersionDiffMetadata(currentVersionId, false, diffMetadata);
+    await updateVersionDiffMetadata(
+      currentVersionId,
+      organizationId,
+      false,
+      diffMetadata,
+    );
     return diffMetadata;
   }
 
@@ -164,7 +169,12 @@ export async function detectChanges(params: {
   );
 
   // Store diff metadata in database
-  await updateVersionDiffMetadata(currentVersionId, true, diffMetadata);
+  await updateVersionDiffMetadata(
+    currentVersionId,
+    organizationId,
+    true,
+    diffMetadata,
+  );
 
   return diffMetadata;
 }
@@ -417,11 +427,11 @@ export async function compareVersions(params: {
   versionId2: string;
   organizationId: string;
 }): Promise<boolean> {
-  const { versionId1, versionId2, organizationId: _organizationId } = params;
+  const { versionId1, versionId2, organizationId } = params;
 
   const [version1, version2] = await Promise.all([
-    getVersion(versionId1),
-    getVersion(versionId2),
+    getVersion(versionId1, organizationId),
+    getVersion(versionId2, organizationId),
   ]);
 
   if (!version1 || !version2) {

@@ -1,15 +1,14 @@
-import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/config";
-import { db } from "@/lib/db";
-import {
-  type alerts,
-  organizationMembers,
-  type TargetCategory,
-  type targets,
-} from "@/lib/db/schema";
+import type { alerts, TargetCategory, targets } from "@/lib/db/schema";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 import { getAlertsWithFilters } from "@/lib/services/alerts";
+import { createAuditLog } from "@/lib/services/audit";
+import {
+  errorResponse,
+  getClientIp,
+  getUserAgent,
+  requireOrgAccess,
+} from "@/lib/utils/api-helpers";
 
 function generateCSV(
   alertsData: Array<{
@@ -117,12 +116,6 @@ function generatePDFContent(
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const organizationId = searchParams.get("organizationId");
     const format = searchParams.get("format") || "csv";
@@ -135,36 +128,16 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
 
     if (!organizationId) {
-      return NextResponse.json(
-        { error: "organizationId is required" },
-        { status: 400 },
-      );
+      return errorResponse("organizationId is required", 400);
     }
 
     if (format !== "csv" && format !== "pdf") {
-      return NextResponse.json(
-        { error: "format must be 'csv' or 'pdf'" },
-        { status: 400 },
-      );
+      return errorResponse("format must be 'csv' or 'pdf'", 400);
     }
 
-    // Verify user is member of organization
-    const [member] = await db
-      .select()
-      .from(organizationMembers)
-      .where(
-        and(
-          eq(organizationMembers.userId, session.user.id),
-          eq(organizationMembers.organizationId, organizationId),
-        ),
-      )
-      .limit(1);
+    const user = await requireOrgAccess(organizationId);
 
-    if (!member) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Get all alerts matching filters (no limit for export)
+    // Get all alerts matching filters (no limit for exports)
     const result = await getAlertsWithFilters({
       organizationId,
       status: status ? (status as AlertStatus) : undefined,
@@ -176,6 +149,28 @@ export async function GET(request: NextRequest) {
       search: search || undefined,
       limit: 10000, // Large limit for exports
       offset: 0,
+    });
+
+    // Audit log for export
+    await createAuditLog({
+      organizationId,
+      userId: user.id,
+      action: "export.alerts",
+      metadata: {
+        format,
+        alertCount: result.alerts.length,
+        filters: {
+          status,
+          severity,
+          jurisdiction,
+          category,
+          dateFrom,
+          dateTo,
+          search,
+        },
+        ipAddress: getClientIp(request),
+        userAgent: getUserAgent(request),
+      },
     });
 
     if (format === "csv") {
@@ -198,10 +193,13 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
+    }
     console.error("Error exporting alerts:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return errorResponse("Internal server error", 500);
   }
 }

@@ -11,6 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PLAN_CONFIGS, type PlanType } from "@/lib/services/stripe";
@@ -457,12 +463,14 @@ export function BillingClient({
         </CardHeader>
         <CardContent>
           {invoices.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No invoices found</p>
-              <p className="text-sm mt-2">
-                Invoices will appear here once you have a paid subscription
-              </p>
-            </div>
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>No invoices found</EmptyTitle>
+                <EmptyDescription>
+                  Invoices will appear here once you have a paid subscription
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="space-y-2">
               {invoices.map((invoice) => (

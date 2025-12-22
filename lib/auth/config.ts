@@ -5,7 +5,14 @@ import type { DefaultSession } from "next-auth";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
-import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
+import {
+  accounts,
+  organizationMembers,
+  sessions,
+  users,
+  verificationTokens,
+} from "@/lib/db/schema";
+import { createAuditLog } from "@/lib/services/audit";
 
 declare module "next-auth" {
   interface Session {
@@ -56,6 +63,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Check if email is verified
         if (!user.emailVerified) {
           throw new Error("EMAIL_NOT_VERIFIED");
+        }
+
+        // Get user's first organization for audit logging
+        const [userOrg] = await db
+          .select()
+          .from(organizationMembers)
+          .where(eq(organizationMembers.userId, user.id))
+          .limit(1);
+
+        // Audit log for login (fire and forget)
+        if (userOrg) {
+          createAuditLog({
+            organizationId: userOrg.organizationId,
+            userId: user.id,
+            action: "user.login",
+            metadata: {
+              email: user.email,
+            },
+          }).catch((error) => {
+            // Don't fail login if audit logging fails
+            console.error("Failed to create audit log for login:", error);
+          });
         }
 
         return {

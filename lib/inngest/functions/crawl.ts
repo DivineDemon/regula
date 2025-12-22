@@ -159,12 +159,13 @@ export const crawlTarget = inngest.createFunction(
         "detect-changes",
         async () => {
           // Use traditional version-based change detection
-          const newVersion = await getVersion(version.id);
+          const newVersion = await getVersion(version.id, organizationId);
 
           // If there's a previous version, compare hashes first
           if (newVersion?.previousVersionId) {
             const previousVersion = await getVersion(
               newVersion.previousVersionId,
+              organizationId,
             );
 
             if (previousVersion) {
@@ -248,7 +249,7 @@ export const crawlTarget = inngest.createFunction(
 
             if (changeDetectionResult.graphBased && !currentVersionId) {
               // Use the main URL version
-              const mainVersion = await getVersion(version.id);
+              const mainVersion = await getVersion(version.id, organizationId);
               currentVersionId = mainVersion?.id || version.id;
               previousVersionId = mainVersion?.previousVersionId || version.id;
             }

@@ -6,7 +6,9 @@ import {
   Bell,
   Building2,
   CreditCard,
+  FileText,
   LayoutDashboard,
+  Search,
   Target,
   User,
   Users,
@@ -22,8 +24,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { UserRole } from "@/lib/auth/roles";
 
-const menuItems = [
+type MenuItem = {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  adminOnly?: boolean;
+};
+
+const menuItems: MenuItem[] = [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -39,9 +49,14 @@ const menuItems = [
     url: "/alerts",
     icon: AlertCircle,
   },
+  {
+    title: "Search",
+    url: "/search",
+    icon: Search,
+  },
 ];
 
-const settingsItems = [
+const settingsItems: MenuItem[] = [
   {
     title: "Organization",
     url: "/settings/organization",
@@ -72,10 +87,21 @@ const settingsItems = [
     url: "/settings/billing",
     icon: CreditCard,
   },
+  {
+    title: "Audit Logs",
+    url: "/settings/audit-logs",
+    icon: FileText,
+    adminOnly: true,
+  },
 ];
 
-export function DashboardNav() {
+interface DashboardNavProps {
+  userRole?: string;
+}
+
+export function DashboardNav({ userRole }: DashboardNavProps) {
   const pathname = usePathname();
+  const isAdmin = userRole === UserRole.ADMIN;
 
   return (
     <SidebarContent>
@@ -84,7 +110,8 @@ export function DashboardNav() {
         <SidebarGroupContent>
           <SidebarMenu>
             {menuItems.map((item) => {
-              const isActive = pathname === item.url;
+              const isActive =
+                pathname === item.url || pathname.startsWith(`${item.url}/`);
               return (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
@@ -104,43 +131,45 @@ export function DashboardNav() {
         <SidebarGroupLabel>Settings</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {settingsItems.map((item) => {
-              // Check for exact match
-              if (pathname === item.url) {
+            {settingsItems
+              .filter((item) => !item.adminOnly || isAdmin)
+              .map((item) => {
+                // Check for exact match
+                if (pathname === item.url) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        render={<Link href={item.url} />}
+                        isActive={true}
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                }
+                // Check if this is a child route (pathname starts with item.url + "/")
+                // but only if no other more specific item matches
+                const isChildRoute = pathname.startsWith(`${item.url}/`);
+                const hasMoreSpecificMatch = settingsItems.some(
+                  (otherItem) =>
+                    otherItem.url !== item.url &&
+                    otherItem.url.startsWith(`${item.url}/`) &&
+                    pathname.startsWith(otherItem.url),
+                );
+                const isActive = isChildRoute && !hasMoreSpecificMatch;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       render={<Link href={item.url} />}
-                      isActive={true}
+                      isActive={isActive}
                     >
                       <item.icon />
                       <span>{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
-              }
-              // Check if this is a child route (pathname starts with item.url + "/")
-              // but only if no other more specific item matches
-              const isChildRoute = pathname.startsWith(`${item.url}/`);
-              const hasMoreSpecificMatch = settingsItems.some(
-                (otherItem) =>
-                  otherItem.url !== item.url &&
-                  otherItem.url.startsWith(`${item.url}/`) &&
-                  pathname.startsWith(otherItem.url),
-              );
-              const isActive = isChildRoute && !hasMoreSpecificMatch;
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    render={<Link href={item.url} />}
-                    isActive={isActive}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+              })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

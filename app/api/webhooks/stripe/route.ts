@@ -204,11 +204,17 @@ async function handleSubscriptionUpdate(
       stripeCustomerId: subscription.customer as string,
       // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_start in this API version
       currentPeriodStart: (subscription as any).current_period_start
-        ? new Date((subscription as any).current_period_start * 1000)
+        ? new Date(
+            // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_start in this API version
+            (subscription as any).current_period_start * 1000,
+          )
         : null,
       // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_end in this API version
       currentPeriodEnd: (subscription as any).current_period_end
-        ? new Date((subscription as any).current_period_end * 1000)
+        ? new Date(
+            // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_end in this API version
+            (subscription as any).current_period_end * 1000,
+          )
         : null,
     });
   }

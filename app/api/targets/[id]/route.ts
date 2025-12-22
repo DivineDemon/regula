@@ -1,27 +1,14 @@
 import { and, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { organizationMembers, targets } from "@/lib/db/schema";
-
-// Helper function to verify user has access to organization
-async function verifyOrganizationAccess(
-  userId: string,
-  organizationId: string,
-) {
-  const [member] = await db
-    .select()
-    .from(organizationMembers)
-    .where(
-      and(
-        eq(organizationMembers.userId, userId),
-        eq(organizationMembers.organizationId, organizationId),
-      ),
-    )
-    .limit(1);
-
-  return !!member;
-}
+import { targets } from "@/lib/db/schema";
+import { createAuditLog } from "@/lib/services/audit";
+import {
+  errorResponse,
+  getClientIp,
+  getUserAgent,
+  requireOrgAccess,
+  successResponse,
+} from "@/lib/utils/api-helpers";
 
 // GET - Get a single target
 export async function GET(
@@ -29,35 +16,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get("organizationId");
 
     if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID is required" },
-        { status: 400 },
-      );
+      return errorResponse("Organization ID is required", 400);
     }
 
-    // Verify user has access to organization
-    const hasAccess = await verifyOrganizationAccess(
-      session.user.id,
-      organizationId,
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Access denied to this organization" },
-        { status: 403 },
-      );
-    }
+    await requireOrgAccess(organizationId);
 
     // Get target
     const [target] = await db
@@ -69,54 +36,37 @@ export async function GET(
       .limit(1);
 
     if (!target) {
-      return NextResponse.json({ error: "Target not found" }, { status: 404 });
+      return errorResponse("Target not found", 404);
     }
 
-    return NextResponse.json({ target }, { status: 200 });
+    return successResponse({ target });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
+    }
     console.error("Get target error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch target. Please try again." },
-      { status: 500 },
-    );
+    return errorResponse("Failed to fetch target. Please try again.", 500);
   }
 }
 
-// DELETE - Soft delete a target (set status to paused, or we can add a deletedAt field later)
+// DELETE - Delete a target
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get("organizationId");
 
     if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID is required" },
-        { status: 400 },
-      );
+      return errorResponse("Organization ID is required", 400);
     }
 
-    // Verify user has access to organization
-    const hasAccess = await verifyOrganizationAccess(
-      session.user.id,
-      organizationId,
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Access denied to this organization" },
-        { status: 403 },
-      );
-    }
+    const user = await requireOrgAccess(organizationId);
 
     // Verify target belongs to organization
     const [existingTarget] = await db
@@ -128,23 +78,35 @@ export async function DELETE(
       .limit(1);
 
     if (!existingTarget) {
-      return NextResponse.json({ error: "Target not found" }, { status: 404 });
+      return errorResponse("Target not found", 404);
     }
 
-    // Soft delete: set status to paused (or we can add a deletedAt field later)
-    // For now, we'll actually delete it since the schema doesn't have deletedAt
-    // In production, you might want to add a deletedAt timestamp field
+    // Delete target
     await db.delete(targets).where(eq(targets.id, id));
 
-    return NextResponse.json(
-      { message: "Target deleted successfully" },
-      { status: 200 },
-    );
+    // Audit log
+    await createAuditLog({
+      organizationId,
+      userId: user.id,
+      action: "target.deleted",
+      metadata: {
+        targetId: id,
+        url: existingTarget.url,
+        label: existingTarget.label,
+        ipAddress: getClientIp(request),
+        userAgent: getUserAgent(request),
+      },
+    });
+
+    return successResponse({ message: "Target deleted successfully" });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
+    }
     console.error("Delete target error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete target. Please try again." },
-      { status: 500 },
-    );
+    return errorResponse("Failed to delete target. Please try again.", 500);
   }
 }

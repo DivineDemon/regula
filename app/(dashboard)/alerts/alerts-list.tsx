@@ -21,6 +21,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -509,17 +516,19 @@ export function AlertsList({ organizationId }: AlertsListProps) {
           <p className="text-muted-foreground">Loading alerts...</p>
         </div>
       ) : alerts.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center p-12">
-            <AlertCircle className="mb-4 size-12 text-muted-foreground" />
-            <p className="text-lg font-medium">No alerts found</p>
-            <p className="mt-2 text-sm text-muted-foreground">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <AlertCircle className="size-6" />
+            </EmptyMedia>
+            <EmptyTitle>No alerts found</EmptyTitle>
+            <EmptyDescription>
               {hasActiveFilters
                 ? "Try adjusting your filters to see more results."
                 : "Alerts will appear here when changes are detected in your monitored targets."}
-            </p>
-          </CardContent>
-        </Card>
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <div className="space-y-4">
           {/* Select All Checkbox */}

@@ -1,66 +1,58 @@
-import { and, eq } from "drizzle-orm";
-import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/config";
-import { db } from "@/lib/db";
-import { organizationMembers } from "@/lib/db/schema";
+import type { NextRequest } from "next/server";
+import { z } from "zod";
 import {
   addAlertComment,
   assignAlertToUsers,
   getAlertWithDetails,
   updateAlertStatus,
 } from "@/lib/services/alerts";
+import { createAuditLog } from "@/lib/services/audit";
+import {
+  errorResponse,
+  getClientIp,
+  getUserAgent,
+  requireOrgAccess,
+  successResponse,
+} from "@/lib/utils/api-helpers";
+
+const updateAlertSchema = z.object({
+  organizationId: z.string(),
+  status: z.enum(["new", "triaged", "actioned", "closed"]).optional(),
+  assignTo: z.array(z.string()).optional(),
+  comment: z.string().optional(),
+});
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth();
     const { id } = await params;
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const organizationId = searchParams.get("organizationId");
 
     if (!organizationId) {
-      return NextResponse.json(
-        { error: "organizationId is required" },
-        { status: 400 },
-      );
+      return errorResponse("organizationId is required", 400);
     }
 
-    // Verify user is member of organization
-    const [member] = await db
-      .select()
-      .from(organizationMembers)
-      .where(
-        and(
-          eq(organizationMembers.userId, session.user.id),
-          eq(organizationMembers.organizationId, organizationId),
-        ),
-      )
-      .limit(1);
-
-    if (!member) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    await requireOrgAccess(organizationId);
 
     const alert = await getAlertWithDetails(id, organizationId);
 
     if (!alert) {
-      return NextResponse.json({ error: "Alert not found" }, { status: 404 });
+      return errorResponse("Alert not found", 404);
     }
 
-    return NextResponse.json(alert);
+    return successResponse(alert);
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
+    }
     console.error("Error fetching alert:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return errorResponse("Internal server error", 500);
   }
 }
 
@@ -69,68 +61,104 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth();
     const { id } = await params;
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
-    const { organizationId, status, assignTo, comment } = body;
+    const validatedData = updateAlertSchema.parse(body);
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "organizationId is required" },
-        { status: 400 },
-      );
-    }
-
-    // Verify user is member of organization
-    const [member] = await db
-      .select()
-      .from(organizationMembers)
-      .where(
-        and(
-          eq(organizationMembers.userId, session.user.id),
-          eq(organizationMembers.organizationId, organizationId),
-        ),
-      )
-      .limit(1);
-
-    if (!member) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const user = await requireOrgAccess(validatedData.organizationId);
 
     // Update status if provided
-    if (status) {
-      const updated = await updateAlertStatus(id, organizationId, status);
+    if (validatedData.status) {
+      const previousAlert = await getAlertWithDetails(
+        id,
+        validatedData.organizationId,
+      );
+      const updated = await updateAlertStatus(
+        id,
+        validatedData.organizationId,
+        validatedData.status,
+      );
       if (!updated) {
-        return NextResponse.json({ error: "Alert not found" }, { status: 404 });
+        return errorResponse("Alert not found", 404);
       }
+
+      // Audit log for status change
+      await createAuditLog({
+        organizationId: validatedData.organizationId,
+        userId: user.id,
+        action: "alert.status_changed",
+        metadata: {
+          alertId: id,
+          previousValue: previousAlert?.alert.status,
+          newValue: validatedData.status,
+          ipAddress: getClientIp(request),
+          userAgent: getUserAgent(request),
+        },
+      });
     }
 
     // Assign to users if provided
-    if (assignTo && Array.isArray(assignTo)) {
-      await assignAlertToUsers(id, organizationId, assignTo);
+    if (validatedData.assignTo && validatedData.assignTo.length > 0) {
+      await assignAlertToUsers(
+        id,
+        validatedData.organizationId,
+        validatedData.assignTo,
+      );
+
+      // Audit log for assignment
+      await createAuditLog({
+        organizationId: validatedData.organizationId,
+        userId: user.id,
+        action: "alert.assigned",
+        metadata: {
+          alertId: id,
+          assignedTo: validatedData.assignTo,
+          ipAddress: getClientIp(request),
+          userAgent: getUserAgent(request),
+        },
+      });
     }
 
     // Add comment if provided
-    if (comment) {
-      await addAlertComment(id, organizationId, session.user.id, comment);
+    if (validatedData.comment) {
+      await addAlertComment(
+        id,
+        validatedData.organizationId,
+        user.id,
+        validatedData.comment,
+      );
+
+      // Audit log for comment
+      await createAuditLog({
+        organizationId: validatedData.organizationId,
+        userId: user.id,
+        action: "alert.comment_added",
+        metadata: {
+          alertId: id,
+          ipAddress: getClientIp(request),
+          userAgent: getUserAgent(request),
+        },
+      });
     }
 
     // Return updated alert
-    const alert = await getAlertWithDetails(id, organizationId);
+    const alert = await getAlertWithDetails(id, validatedData.organizationId);
 
-    return NextResponse.json(alert);
+    return successResponse(alert);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return errorResponse("Validation error", 400, error.issues);
+    }
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
+    }
     console.error("Error updating alert:", error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Internal server error",
-      },
-      { status: 500 },
+    return errorResponse(
+      error instanceof Error ? error.message : "Internal server error",
+      500,
     );
   }
 }

@@ -61,7 +61,7 @@ export default async function DashboardLayout({
             </div>
           </div>
         </SidebarHeader>
-        <DashboardNav />
+        <DashboardNav userRole={userOrgs[0]?.role} />
         <SidebarFooter>
           <div className="space-y-2 px-2 py-2">
             <div className="group-data-[collapsible=icon]:hidden">

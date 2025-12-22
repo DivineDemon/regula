@@ -1,13 +1,19 @@
 import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { organizationMembers, targets } from "@/lib/db/schema";
+import { targets } from "@/lib/db/schema";
 import type { TargetCategory, TargetStatus } from "@/lib/db/schema/targets";
 import { triggerCrawl } from "@/lib/inngest/functions/crawl";
+import { createAuditLog } from "@/lib/services/audit";
 import { quotaService } from "@/lib/services/quotas";
+import {
+  errorResponse,
+  getClientIp,
+  getUserAgent,
+  requireOrgAccess,
+  successResponse,
+} from "@/lib/utils/api-helpers";
 
 const createTargetSchema = z.object({
   organizationId: z.string(),
@@ -35,56 +41,17 @@ const updateTargetSchema = z.object({
   status: z.enum(["active", "pending", "error", "paused"]).optional(),
 });
 
-// Helper function to verify user has access to organization
-async function verifyOrganizationAccess(
-  userId: string,
-  organizationId: string,
-) {
-  const [member] = await db
-    .select()
-    .from(organizationMembers)
-    .where(
-      and(
-        eq(organizationMembers.userId, userId),
-        eq(organizationMembers.organizationId, organizationId),
-      ),
-    )
-    .limit(1);
-
-  return !!member;
-}
-
 // GET - List all targets for an organization
 export async function GET(request: Request) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get("organizationId");
 
     if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID is required" },
-        { status: 400 },
-      );
+      return errorResponse("Organization ID is required", 400);
     }
 
-    // Verify user has access to organization
-    const hasAccess = await verifyOrganizationAccess(
-      session.user.id,
-      organizationId,
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Access denied to this organization" },
-        { status: 403 },
-      );
-    }
+    const _user = await requireOrgAccess(organizationId);
 
     // Get all targets for the organization
     const targetsList = await db
@@ -93,40 +60,26 @@ export async function GET(request: Request) {
       .where(eq(targets.organizationId, organizationId))
       .orderBy(desc(targets.createdAt));
 
-    return NextResponse.json({ targets: targetsList }, { status: 200 });
+    return successResponse({ targets: targetsList });
   } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
+    }
     console.error("Get targets error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch targets. Please try again." },
-      { status: 500 },
-    );
+    return errorResponse("Failed to fetch targets. Please try again.", 500);
   }
 }
 
 // POST - Create a new target
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const validatedData = createTargetSchema.parse(body);
 
-    // Verify user has access to organization
-    const hasAccess = await verifyOrganizationAccess(
-      session.user.id,
-      validatedData.organizationId,
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Access denied to this organization" },
-        { status: 403 },
-      );
-    }
+    const user = await requireOrgAccess(validatedData.organizationId);
 
     // Check quota before creating target
     const quotaCheck = await quotaService.checkQuota({
@@ -135,10 +88,7 @@ export async function POST(request: Request) {
     });
 
     if (!quotaCheck.allowed) {
-      return NextResponse.json(
-        { error: quotaCheck.reason || "Quota limit reached" },
-        { status: 403 },
-      );
+      return errorResponse(quotaCheck.reason || "Quota limit reached", 403);
     }
 
     // Create target
@@ -156,6 +106,20 @@ export async function POST(request: Request) {
         status: "pending" as TargetStatus,
       })
       .returning();
+
+    // Audit log
+    await createAuditLog({
+      organizationId: validatedData.organizationId,
+      userId: user.id,
+      action: "target.created",
+      metadata: {
+        targetId: newTarget.id,
+        url: newTarget.url,
+        label: newTarget.label,
+        ipAddress: getClientIp(request),
+        userAgent: getUserAgent(request),
+      },
+    });
 
     // Trigger initial crawl immediately (non-blocking)
     // This ensures the target starts monitoring right away
@@ -177,46 +141,29 @@ export async function POST(request: Request) {
       }
     });
 
-    return NextResponse.json({ target: newTarget }, { status: 201 });
+    return successResponse({ target: newTarget }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation error", details: error.issues },
-        { status: 400 },
-      );
+      return errorResponse("Validation error", 400, error.issues);
+    }
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
     }
     console.error("Create target error:", error);
-    return NextResponse.json(
-      { error: "Failed to create target. Please try again." },
-      { status: 500 },
-    );
+    return errorResponse("Failed to create target. Please try again.", 500);
   }
 }
 
 // PATCH - Update a target
 export async function PATCH(request: Request) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const validatedData = updateTargetSchema.parse(body);
 
-    // Verify user has access to organization
-    const hasAccess = await verifyOrganizationAccess(
-      session.user.id,
-      validatedData.organizationId,
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Access denied to this organization" },
-        { status: 403 },
-      );
-    }
+    const user = await requireOrgAccess(validatedData.organizationId);
 
     // Verify target belongs to organization
     const [existingTarget] = await db
@@ -231,8 +178,12 @@ export async function PATCH(request: Request) {
       .limit(1);
 
     if (!existingTarget) {
-      return NextResponse.json({ error: "Target not found" }, { status: 404 });
+      return errorResponse("Target not found", 404);
     }
+
+    // Track changes for audit log
+    const previousValues: Record<string, unknown> = {};
+    const newValues: Record<string, unknown> = {};
 
     // Update target
     const updateData: Partial<{
@@ -247,17 +198,36 @@ export async function PATCH(request: Request) {
       updatedAt: new Date(),
     };
 
-    if (validatedData.url !== undefined) updateData.url = validatedData.url;
-    if (validatedData.label !== undefined)
+    if (validatedData.url !== undefined) {
+      previousValues.url = existingTarget.url;
+      newValues.url = validatedData.url;
+      updateData.url = validatedData.url;
+    }
+    if (validatedData.label !== undefined) {
+      previousValues.label = existingTarget.label;
+      newValues.label = validatedData.label;
       updateData.label = validatedData.label;
-    if (validatedData.jurisdiction !== undefined)
+    }
+    if (validatedData.jurisdiction !== undefined) {
+      previousValues.jurisdiction = existingTarget.jurisdiction;
+      newValues.jurisdiction = validatedData.jurisdiction ?? null;
       updateData.jurisdiction = validatedData.jurisdiction ?? null;
-    if (validatedData.category !== undefined)
+    }
+    if (validatedData.category !== undefined) {
+      previousValues.category = existingTarget.category;
+      newValues.category = validatedData.category ?? null;
       updateData.category = validatedData.category ?? null;
-    if (validatedData.crawlFrequency !== undefined)
+    }
+    if (validatedData.crawlFrequency !== undefined) {
+      previousValues.crawlFrequency = existingTarget.crawlFrequency;
+      newValues.crawlFrequency = validatedData.crawlFrequency;
       updateData.crawlFrequency = validatedData.crawlFrequency;
-    if (validatedData.status !== undefined)
+    }
+    if (validatedData.status !== undefined) {
+      previousValues.status = existingTarget.status;
+      newValues.status = validatedData.status;
       updateData.status = validatedData.status;
+    }
 
     const [updatedTarget] = await db
       .update(targets)
@@ -265,18 +235,32 @@ export async function PATCH(request: Request) {
       .where(eq(targets.id, validatedData.targetId))
       .returning();
 
-    return NextResponse.json({ target: updatedTarget }, { status: 200 });
+    // Audit log
+    await createAuditLog({
+      organizationId: validatedData.organizationId,
+      userId: user.id,
+      action: "target.updated",
+      metadata: {
+        targetId: updatedTarget.id,
+        previousValue: previousValues,
+        newValue: newValues,
+        ipAddress: getClientIp(request),
+        userAgent: getUserAgent(request),
+      },
+    });
+
+    return successResponse({ target: updatedTarget });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation error", details: error.issues },
-        { status: 400 },
-      );
+      return errorResponse("Validation error", 400, error.issues);
+    }
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return errorResponse("Unauthorized", 401);
+    }
+    if (error instanceof Error && error.message.includes("Access denied")) {
+      return errorResponse("Access denied to this organization", 403);
     }
     console.error("Update target error:", error);
-    return NextResponse.json(
-      { error: "Failed to update target. Please try again." },
-      { status: 500 },
-    );
+    return errorResponse("Failed to update target. Please try again.", 500);
   }
 }

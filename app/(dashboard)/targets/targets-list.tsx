@@ -20,6 +20,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
   Table,
   TableBody,
   TableCell,
@@ -223,15 +231,23 @@ export function TargetsList({
         </CardHeader>
         <CardContent>
           {targets.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                No targets configured yet
-              </p>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <PlusIcon className="size-4" />
-                Add Your First Target
-              </Button>
-            </div>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <PlusIcon className="size-6" />
+                </EmptyMedia>
+                <EmptyTitle>No targets configured yet</EmptyTitle>
+                <EmptyDescription>
+                  Get started by adding your first monitoring target
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <PlusIcon className="size-4" />
+                  Add Your First Target
+                </Button>
+              </EmptyContent>
+            </Empty>
           ) : (
             <div className="space-y-4">
               <div className="rounded-md border">

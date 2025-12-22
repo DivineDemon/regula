@@ -1,7 +1,9 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,8 +13,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -27,31 +37,29 @@ const inviteSchema = z.object({
   role: z.enum([UserRole.ADMIN, UserRole.ANALYST, UserRole.VIEWER]),
 });
 
+type InviteFormData = z.infer<typeof inviteSchema>;
+
 interface InviteMemberFormProps {
   organizationId: string;
 }
 
 export function InviteMemberForm({ organizationId }: InviteMemberFormProps) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<UserRole>(UserRole.VIEWER);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<InviteFormData>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: {
+      email: "",
+      role: UserRole.VIEWER,
+    },
+  });
+
+  const onSubmit = async (data: InviteFormData) => {
     setError(null);
     setSuccess(false);
-
-    // Validate with Zod
-    const result = inviteSchema.safeParse({ email, role });
-
-    if (!result.success) {
-      setError(result.error.issues[0]?.message || "Invalid input");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -62,21 +70,21 @@ export function InviteMemberForm({ organizationId }: InviteMemberFormProps) {
         },
         body: JSON.stringify({
           organizationId,
-          email: result.data.email,
-          role: result.data.role,
+          email: data.email,
+          role: data.role,
         }),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to send invitation");
+        setError(responseData.error || "Failed to send invitation");
         setIsLoading(false);
         return;
       }
 
       setSuccess(true);
-      setEmail("");
+      form.reset();
       setIsLoading(false);
       router.refresh();
     } catch (_err) {
@@ -94,61 +102,81 @@ export function InviteMemberForm({ organizationId }: InviteMemberFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {error && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
 
-          {success && (
-            <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
-              Invitation sent successfully!
-            </div>
-          )}
+            {success && (
+              <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
+                Invitation sent successfully!
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="user@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="email"
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="user@example.com"
+                        disabled={isLoading}
+                        autoComplete="email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={UserRole.VIEWER}>Viewer</SelectItem>
+                        <SelectItem value={UserRole.ANALYST}>
+                          Analyst
+                        </SelectItem>
+                        <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Viewers can view content. Analysts can create and manage
+                      targets and alerts. Admins have full access including
+                      member management.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={role}
-                onValueChange={(value) => setRole(value as UserRole)}
-                disabled={isLoading}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UserRole.VIEWER}>Viewer</SelectItem>
-                  <SelectItem value={UserRole.ANALYST}>Analyst</SelectItem>
-                  <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Viewers can view content. Analysts can create and manage targets
-                and alerts. Admins have full access including member management.
-              </p>
-            </div>
-          </div>
-
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Sending..." : "Send Invitation"}
-          </Button>
-        </form>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Sending..." : "Send Invitation"}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

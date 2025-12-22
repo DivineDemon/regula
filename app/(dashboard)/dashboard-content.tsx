@@ -17,6 +17,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 
@@ -313,14 +320,18 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
         </CardHeader>
         <CardContent>
           {metrics.alerts.recent.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8">
-              <AlertCircle className="mb-4 h-12 w-12 text-muted-foreground" />
-              <p className="text-lg font-medium">No alerts yet</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Alerts will appear here when changes are detected in your
-                monitored targets.
-              </p>
-            </div>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <AlertCircle className="size-6" />
+                </EmptyMedia>
+                <EmptyTitle>No alerts yet</EmptyTitle>
+                <EmptyDescription>
+                  Alerts will appear here when changes are detected in your
+                  monitored targets.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="space-y-4">
               {metrics.alerts.recent.map((alert) => (

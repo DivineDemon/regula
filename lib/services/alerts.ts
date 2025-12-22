@@ -151,9 +151,22 @@ export async function generateAlert(params: {
 }
 
 /**
- * Get alert by ID
+ * Get alert by ID with organizationId verification
  */
-export async function getAlert(alertId: string) {
+export async function getAlert(alertId: string, organizationId?: string) {
+  if (organizationId) {
+    const [alert] = await db
+      .select()
+      .from(alerts)
+      .where(
+        and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)),
+      )
+      .limit(1);
+
+    return alert || null;
+  }
+
+  // Fallback for internal use (without org check)
   const [alert] = await db
     .select()
     .from(alerts)
@@ -176,12 +189,21 @@ export async function getAlertsByOrganization(organizationId: string) {
 
 /**
  * Get alerts for a specific target
+ * Verifies organizationId through target relationship
  */
-export async function getAlertsByTarget(targetId: string) {
+export async function getAlertsByTarget(
+  targetId: string,
+  organizationId: string,
+) {
   return db
     .select()
     .from(alerts)
-    .where(eq(alerts.targetId, targetId))
+    .where(
+      and(
+        eq(alerts.targetId, targetId),
+        eq(alerts.organizationId, organizationId),
+      ),
+    )
     .orderBy(desc(alerts.createdAt));
 }
 

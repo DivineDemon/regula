@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
-import { versions } from "@/lib/db/schema";
+import { targets, versions } from "@/lib/db/schema";
 import type { CrawlResult } from "./firecrawl";
 import { s3Keys, storage } from "./s3";
 
@@ -124,30 +124,39 @@ export async function storeVersion(params: {
 
 /**
  * Retrieve version content (from DB or S3)
+ * Verifies organizationId through target relationship
  */
 export async function getVersionContent(
   versionId: string,
-  _organizationId: string,
+  organizationId: string,
 ): Promise<string | null> {
   const [version] = await db
-    .select()
+    .select({ version: versions })
     .from(versions)
-    .where(eq(versions.id, versionId))
+    .innerJoin(targets, eq(versions.targetId, targets.id))
+    .where(
+      and(
+        eq(versions.id, versionId),
+        eq(targets.organizationId, organizationId),
+      ),
+    )
     .limit(1);
 
   if (!version) {
     return null;
   }
 
+  const versionData = version.version;
+
   // If content is in DB, return it
-  if (version.content) {
-    return version.content;
+  if (versionData.content) {
+    return versionData.content;
   }
 
   // If content is in S3, retrieve it
-  if (version.metadata) {
+  if (versionData.metadata) {
     try {
-      const metadata = JSON.parse(version.metadata) as VersionMetadata;
+      const metadata = JSON.parse(versionData.metadata) as VersionMetadata;
       if (
         metadata.contentStoredInS3 &&
         metadata.s3Key &&
@@ -170,9 +179,26 @@ export async function getVersionContent(
 }
 
 /**
- * Get version by ID
+ * Get version by ID with organizationId verification
  */
-export async function getVersion(versionId: string) {
+export async function getVersion(versionId: string, organizationId?: string) {
+  if (organizationId) {
+    const [version] = await db
+      .select({ version: versions })
+      .from(versions)
+      .innerJoin(targets, eq(versions.targetId, targets.id))
+      .where(
+        and(
+          eq(versions.id, versionId),
+          eq(targets.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+
+    return version?.version || null;
+  }
+
+  // Fallback for internal use (without org check)
   const [version] = await db
     .select()
     .from(versions)
@@ -184,69 +210,128 @@ export async function getVersion(versionId: string) {
 
 /**
  * Get all versions for a target, ordered by crawl date (newest first)
+ * Verifies organizationId through target relationship
  */
-export async function getVersionsByTarget(targetId: string) {
+export async function getVersionsByTarget(
+  targetId: string,
+  organizationId: string,
+) {
   return db
-    .select()
+    .select({ version: versions })
     .from(versions)
-    .where(eq(versions.targetId, targetId))
+    .innerJoin(targets, eq(versions.targetId, targets.id))
+    .where(
+      and(
+        eq(versions.targetId, targetId),
+        eq(targets.organizationId, organizationId),
+      ),
+    )
     .orderBy(desc(versions.crawledAt));
 }
 
 /**
  * Get version history for a target (latest N versions)
+ * Verifies organizationId through target relationship
  */
 export async function getVersionHistory(
   targetId: string,
+  organizationId: string,
   limit = 10,
 ): Promise<Array<typeof versions.$inferSelect>> {
-  return db
-    .select()
+  const results = await db
+    .select({ version: versions })
     .from(versions)
-    .where(eq(versions.targetId, targetId))
+    .innerJoin(targets, eq(versions.targetId, targets.id))
+    .where(
+      and(
+        eq(versions.targetId, targetId),
+        eq(targets.organizationId, organizationId),
+      ),
+    )
     .orderBy(desc(versions.crawledAt))
     .limit(limit);
+
+  return results.map((r) => r.version);
 }
 
 /**
  * Get the latest version for a target
+ * Verifies organizationId through target relationship
  */
-export async function getLatestVersion(targetId: string) {
+export async function getLatestVersion(
+  targetId: string,
+  organizationId: string,
+) {
   const [version] = await db
-    .select()
+    .select({ version: versions })
     .from(versions)
-    .where(eq(versions.targetId, targetId))
+    .innerJoin(targets, eq(versions.targetId, targets.id))
+    .where(
+      and(
+        eq(versions.targetId, targetId),
+        eq(targets.organizationId, organizationId),
+      ),
+    )
     .orderBy(desc(versions.crawledAt))
     .limit(1);
 
-  return version || null;
+  return version?.version || null;
 }
 
 /**
  * Get the previous version for comparison
+ * Verifies organizationId through target relationship
  */
-export async function getPreviousVersion(versionId: string) {
+export async function getPreviousVersion(
+  versionId: string,
+  organizationId: string,
+) {
   const [currentVersion] = await db
-    .select()
+    .select({ version: versions })
     .from(versions)
-    .where(eq(versions.id, versionId))
+    .innerJoin(targets, eq(versions.targetId, targets.id))
+    .where(
+      and(
+        eq(versions.id, versionId),
+        eq(targets.organizationId, organizationId),
+      ),
+    )
     .limit(1);
 
-  if (!currentVersion?.previousVersionId) {
+  if (!currentVersion?.version?.previousVersionId) {
     return null;
   }
 
-  return getVersion(currentVersion.previousVersionId);
+  return getVersion(currentVersion.version.previousVersionId, organizationId);
 }
 
 /**
  * Update version with diff metadata
+ * Verifies organizationId through target relationship
  */
 export async function updateVersionDiffMetadata(
   versionId: string,
+  organizationId: string,
   hasChanges: boolean,
   diffMetadata: Record<string, unknown>,
 ) {
+  // Verify version belongs to organization through target
+  const [version] = await db
+    .select()
+    .from(versions)
+    .innerJoin(targets, eq(versions.targetId, targets.id))
+    .where(
+      and(
+        eq(versions.id, versionId),
+        eq(targets.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+
+  if (!version) {
+    throw new Error("Version not found or access denied");
+  }
+
   await db
     .update(versions)
     .set({

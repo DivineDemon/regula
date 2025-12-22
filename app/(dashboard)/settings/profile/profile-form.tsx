@@ -1,8 +1,10 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { type ZodIssue, z } from "zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,8 +13,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
@@ -33,38 +43,21 @@ export function ProfileForm({
   initialEmail,
 }: ProfileFormProps) {
   const router = useRouter();
-  const [name, setName] = useState(initialName);
-  const [email, setEmail] = useState(initialEmail);
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof ProfileFormData, string>>
-  >({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: initialName,
+      email: initialEmail,
+    },
+  });
+
+  const onSubmit = async (data: ProfileFormData) => {
     setError(null);
-    setErrors({});
     setSuccess(false);
-
-    // Validate with Zod
-    const result = profileSchema.safeParse({ name, email });
-
-    if (!result.success) {
-      const fieldErrors: Partial<Record<keyof ProfileFormData, string>> = {};
-      result.error.issues.forEach((err: ZodIssue) => {
-        const field = (
-          typeof err.path[0] === "string" ? err.path[0] : String(err.path[0])
-        ) as keyof ProfileFormData;
-        if (field) {
-          fieldErrors[field] = err.message;
-        }
-      });
-      setErrors(fieldErrors);
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -74,15 +67,15 @@ export function ProfileForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: result.data.name,
-          email: result.data.email,
+          name: data.name,
+          email: data.email,
         }),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to update profile");
+        setError(responseData.error || "Failed to update profile");
         setIsLoading(false);
         return;
       }
@@ -103,64 +96,70 @@ export function ProfileForm({
         <CardDescription>Update your name and email address</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {error && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
 
-          {success && (
-            <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
-              Profile updated successfully!
-            </div>
-          )}
+            {success && (
+              <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
+                Profile updated successfully!
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="name"
-                aria-invalid={errors.name ? "true" : "false"}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="John Doe"
+                        disabled={isLoading}
+                        autoComplete="name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.name && (
-                <p className="text-xs text-destructive">{errors.name}</p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="email"
-                aria-invalid={errors.email ? "true" : "false"}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        disabled={isLoading}
+                        autoComplete="email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Changing your email will require verification
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.email && (
-                <p className="text-xs text-destructive">{errors.email}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Changing your email will require verification
-              </p>
             </div>
-          </div>
 
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Changes"}
-          </Button>
-        </form>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

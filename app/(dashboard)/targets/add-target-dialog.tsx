@@ -15,8 +15,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -56,22 +63,12 @@ export function AddTargetDialog({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-    reset,
-  } = useForm({
+  const form = useForm({
     resolver: zodResolver(targetFormSchema),
     defaultValues: {
-      crawlFrequency: "daily",
+      crawlFrequency: "daily" as const,
     },
   });
-
-  const category = watch("category");
-  const crawlFrequency = watch("crawlFrequency");
 
   const validateUrl = async (url: string) => {
     setIsValidating(true);
@@ -131,7 +128,7 @@ export function AddTargetDialog({
         return;
       }
 
-      reset();
+      form.reset();
       setValidationError(null);
       onSuccess();
     } catch (_error) {
@@ -151,131 +148,150 @@ export function AddTargetDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="url">
-              URL <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="url"
-              {...register("url")}
-              placeholder="https://example.com/regulations"
-              disabled={isSubmitting || isValidating}
-            />
-            {errors.url && (
-              <p className="text-sm text-destructive">{errors.url.message}</p>
-            )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {validationError && (
               <p className="text-sm text-destructive">{validationError}</p>
             )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="label">
-              Label <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="label"
-              {...register("label")}
-              placeholder="e.g., UK FCA AML Regulations"
-              disabled={isSubmitting}
-            />
-            {errors.label && (
-              <p className="text-sm text-destructive">{errors.label.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="jurisdiction">Jurisdiction</Label>
-            <Input
-              id="jurisdiction"
-              {...register("jurisdiction")}
-              placeholder="e.g., UK, US, EU"
-              disabled={isSubmitting}
-            />
-            {errors.jurisdiction && (
-              <p className="text-sm text-destructive">
-                {errors.jurisdiction.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              value={category || ""}
-              onValueChange={(value) =>
-                setValue("category", value as TargetFormData["category"])
-              }
-            >
-              <SelectTrigger id="category" disabled={isSubmitting}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="aml">AML</SelectItem>
-                <SelectItem value="kyc">KYC</SelectItem>
-                <SelectItem value="licensing">Licensing</SelectItem>
-                <SelectItem value="fees">Fees</SelectItem>
-                <SelectItem value="regulations">Regulations</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.category && (
-              <p className="text-sm text-destructive">
-                {errors.category.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="crawlFrequency">
-              Crawl Frequency <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={crawlFrequency || "daily"}
-              onValueChange={(value) =>
-                setValue(
-                  "crawlFrequency",
-                  value as TargetFormData["crawlFrequency"],
-                )
-              }
-            >
-              <SelectTrigger id="crawlFrequency" disabled={isSubmitting}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hourly">Hourly</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.crawlFrequency && (
-              <p className="text-sm text-destructive">
-                {errors.crawlFrequency.message}
-              </p>
-            )}
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting || isValidating}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              type="submit"
-              disabled={isSubmitting || isValidating}
-            >
-              {isSubmitting || isValidating ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  {isValidating ? "Validating..." : "Creating..."}
-                </>
-              ) : (
-                "Create Target"
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    URL <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://example.com/regulations"
+                      disabled={isSubmitting || isValidating}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </form>
+            />
+
+            <FormField
+              control={form.control}
+              name="label"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Label <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., UK FCA AML Regulations"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="jurisdiction"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Jurisdiction</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., UK, US, EU"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="aml">AML</SelectItem>
+                      <SelectItem value="kyc">KYC</SelectItem>
+                      <SelectItem value="licensing">Licensing</SelectItem>
+                      <SelectItem value="fees">Fees</SelectItem>
+                      <SelectItem value="regulations">Regulations</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="crawlFrequency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Crawl Frequency <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || "daily"}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="hourly">Hourly</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSubmitting || isValidating}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                type="submit"
+                disabled={isSubmitting || isValidating}
+              >
+                {isSubmitting || isValidating ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    {isValidating ? "Validating..." : "Creating..."}
+                  </>
+                ) : (
+                  "Create Target"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </form>
+        </Form>
       </AlertDialogContent>
     </AlertDialog>
   );

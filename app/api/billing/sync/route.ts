@@ -133,6 +133,7 @@ export async function POST(request: Request) {
             (inv) => (inv as any).subscription,
           );
 
+          // biome-ignore lint/suspicious/noExplicitAny: Stripe Invoice type doesn't include subscription property in this API version
           if (invoiceWithSub && (invoiceWithSub as any).subscription) {
             // biome-ignore lint/suspicious/noExplicitAny: Stripe Invoice type doesn't include subscription property in this API version
             stripeSubscriptionId = (invoiceWithSub as any)
@@ -197,11 +198,17 @@ export async function POST(request: Request) {
           stripeCustomerId: finalCustomerId,
           // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_start in this API version
           currentPeriodStart: (stripeSubscription as any).current_period_start
-            ? new Date((stripeSubscription as any).current_period_start * 1000)
+            ? new Date(
+                // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_start in this API version
+                (stripeSubscription as any).current_period_start * 1000,
+              )
             : null,
           // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_end in this API version
           currentPeriodEnd: (stripeSubscription as any).current_period_end
-            ? new Date((stripeSubscription as any).current_period_end * 1000)
+            ? new Date(
+                // biome-ignore lint/suspicious/noExplicitAny: Stripe types don't include current_period_end in this API version
+                (stripeSubscription as any).current_period_end * 1000,
+              )
             : null,
         });
       } else {
