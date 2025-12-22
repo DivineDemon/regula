@@ -261,7 +261,7 @@ export function EditTargetDialog({
                   <FormLabel>Category</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value || ""}
+                    value={field.value ?? ""}
                     disabled={isSubmitting}
                   >
                     <FormControl>
@@ -293,7 +293,7 @@ export function EditTargetDialog({
                   </FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value || "daily"}
+                    value={field.value ?? "daily"}
                     disabled={isSubmitting}
                   >
                     <FormControl>
@@ -321,7 +321,7 @@ export function EditTargetDialog({
                   <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value || "pending"}
+                    value={field.value ?? "pending"}
                     disabled={isSubmitting}
                   >
                     <FormControl>

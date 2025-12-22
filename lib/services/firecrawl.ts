@@ -1,4 +1,5 @@
 import FirecrawlApp from "@mendable/firecrawl-js";
+import { generateContentHash } from "./versions";
 
 if (!process.env.FIRECRAWL_API_KEY) {
   throw new Error("FIRECRAWL_API_KEY environment variable is not set");
@@ -149,6 +150,14 @@ export async function crawlUrl(
         };
       };
 
+      console.log(
+        `Firecrawl response for ${url}: statusCode=${
+          data.statusCode
+        }, hasMarkdown=${!!data.markdown}, hasHtml=${!!data.html}, hasContent=${!!data.content}, finalUrl=${
+          data.url || url
+        }`,
+      );
+
       // Extract metadata
       const metadata: CrawlResult["metadata"] = {
         title: data.metadata?.title,
@@ -177,6 +186,40 @@ export async function crawlUrl(
         // Fallback: extract text from HTML
         content = extractTextFromHtml(data.html);
       }
+
+      // For raw GitHub URLs, if content is wrapped in markdown code blocks, unwrap it
+      if (
+        url.includes("raw.githubusercontent.com") &&
+        content.startsWith("```") &&
+        content.endsWith("```")
+      ) {
+        console.log(
+          `Detected markdown code block wrapper for raw GitHub URL, unwrapping...`,
+        );
+        // Remove the opening ``` and closing ```
+        const lines = content.split("\n");
+        if (lines[0]?.trim() === "```") {
+          lines.shift(); // Remove first line
+        }
+        if (lines[lines.length - 1]?.trim() === "```") {
+          lines.pop(); // Remove last line
+        }
+        content = lines.join("\n");
+        console.log(
+          `Unwrapped content length: ${
+            content.length
+          }, first 100 chars: ${content.substring(0, 100)}`,
+        );
+      }
+
+      console.log(
+        `Final content length: ${
+          content.length
+        }, contentHash will be: ${generateContentHash(content).substring(
+          0,
+          8,
+        )}...`,
+      );
 
       return {
         url: data.url || url,
@@ -208,7 +251,9 @@ export async function crawlUrl(
       // Wait before retrying with exponential backoff
       const delay = getRetryDelay(attempt);
       console.warn(
-        `Crawl attempt ${attempt + 1} failed for ${url}, retrying in ${delay}ms...`,
+        `Crawl attempt ${
+          attempt + 1
+        } failed for ${url}, retrying in ${delay}ms...`,
         error,
       );
       await sleep(delay);

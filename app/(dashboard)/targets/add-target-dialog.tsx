@@ -71,6 +71,10 @@ export function AddTargetDialog({
   const form = useForm({
     resolver: zodResolver(targetFormSchema),
     defaultValues: {
+      url: "",
+      label: "",
+      jurisdiction: "",
+      category: undefined,
       crawlFrequency: "daily" as const,
     },
   });
@@ -239,7 +243,7 @@ export function AddTargetDialog({
                   <FormLabel>Category</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value || ""}
+                    value={field.value ?? ""}
                     disabled={isSubmitting}
                   >
                     <FormControl>
@@ -285,7 +289,7 @@ export function AddTargetDialog({
                   </div>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value || "daily"}
+                    value={field.value ?? "daily"}
                     disabled={isSubmitting}
                     aria-label="Crawl frequency"
                   >

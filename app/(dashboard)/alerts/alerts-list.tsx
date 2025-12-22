@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
+import { cn } from "@/lib/utils";
 
 interface Alert {
   id: string;
@@ -289,10 +290,11 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                 {selectedAlerts.size} selected
               </span>
               <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Button variant="outline" disabled={bulkUpdating}>
-                    Bulk Actions
-                  </Button>
+                <DropdownMenuTrigger
+                  className={cn(buttonVariants({ variant: "outline" }))}
+                  disabled={bulkUpdating}
+                >
+                  Bulk Actions
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem

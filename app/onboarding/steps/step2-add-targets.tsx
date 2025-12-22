@@ -244,7 +244,7 @@ export function Step2AddTargets({
                   <FormLabel>Category</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value || ""}
+                    value={field.value ?? ""}
                     disabled={isSubmitting}
                   >
                     <FormControl>
