@@ -43,37 +43,51 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 - **In-app alert inbox** with filtering, sorting, and search
 - **Email notifications** with immediate alerts or digest modes (daily/weekly)
 - **Webhook integration** for custom integrations (Slack, Teams, custom systems)
+- **Customizable notification preferences** per organization
+- **Alert threshold filtering** (all, low, medium, high)
 - **Customizable filters** by severity, jurisdiction, category, and target
 
 ### 👥 Compliance Workspace
 - **Alert management** with status tracking (new → triaged → actioned → closed)
 - **Team collaboration** with assignments, comments, and notes
-- **Audit-ready history** with complete regulatory change timeline
+- **Alert detail pages** with version comparison viewer
+- **Audit-ready history** with complete regulatory change timeline via audit logs
 - **Advanced search & filtering** across all alerts and versions
 - **Export capabilities** (CSV, PDF) for compliance reporting and audits
+- **Version comparison** with side-by-side diff viewing
 
 ### 🏢 Enterprise-Ready Architecture
 - **Multi-tenant SaaS** with complete data isolation
 - **Role-based access control** (Admin, Analyst, Viewer roles)
 - **Organization management** with invitations and member administration
 - **Usage tracking & quotas** with configurable limits per subscription tier
-- **Audit logging** for all critical actions
+- **Usage dashboard** with detailed metrics and quota monitoring
+- **Audit logging** for all critical actions with filtering and export
+- **GDPR compliance** with data export and deletion capabilities
+- **Consent management** for data processing
+- **Data privacy** controls and settings
 
 ### 💳 Subscription & Billing
 - **Flexible pricing tiers** (Free, Starter, Growth, Enterprise)
 - **Usage-based metering** with quota tracking and warnings
 - **Stripe integration** for secure payments and invoicing
 - **Plan management** with easy upgrades and downgrades
+- **Payment method management** via Stripe
+- **Invoice history** and download
+- **Billing dashboard** with subscription details
 
 ## 🛠️ Tech Stack
 
 ### Frontend
 - **Next.js 16** with App Router and React Server Components
 - **TypeScript** for type safety
-- **Tailwind CSS** with custom design system
-- **shadcn/ui** components built on Radix UI
+- **Tailwind CSS 4** with custom design system and oklch color space
+- **shadcn/ui** components built on **Base UI** and Radix UI
 - **React Hook Form** with Zod validation
-- **Recharts** for data visualization
+- **Recharts** with **shadcn/ui Chart** components for data visualization
+- **Sonner** for toast notifications
+- **next-themes** for dark mode support
+- **@react-pdf/renderer** for PDF export generation
 
 ### Backend
 - **Next.js API Routes** and Server Actions
@@ -249,8 +263,33 @@ The application is organized into service modules in `lib/services/`:
 - **`email.ts`** - Email template and sending logic
 - **`adaptive-crawl.ts`** - Intelligent crawl scheduling
 - **`stripe.ts`** - Payment and subscription management
+- **`subscriptions.ts`** - Subscription plan management
 - **`quotas.ts`** - Usage tracking and quota enforcement
+- **`usage.ts`** - Usage metrics and reporting
+- **`usage-warnings.ts`** - Quota warning notifications
 - **`audit.ts`** - Audit logging for compliance
+- **`dashboard.ts`** - Dashboard metrics aggregation
+- **`content-discovery.ts`** - Content discovery and sitemap parsing
+- **`content-relevance.ts`** - Content relevance scoring
+- **`pattern-detection.ts`** - Pattern detection in regulatory content
+- **`sitemap-discovery.ts`** - Sitemap discovery and parsing
+- **`s3.ts`** - Document storage on AWS S3
+- **`redis.ts`** - Redis caching and rate limiting
+- **`gdpr.ts`** - GDPR compliance (data export/deletion)
+- **`consent.ts`** - Consent management
+- **`data-retention.ts`** - Data retention policies
+
+### UI Components
+
+The application uses a comprehensive set of shadcn/ui components:
+
+- **Layout**: `sidebar`, `card`, `separator`, `sheet`
+- **Forms**: `form`, `field`, `input`, `textarea`, `select`, `combobox`, `label`, `input-group`
+- **Buttons & Actions**: `button`, `dropdown-menu`, `alert-dialog`
+- **Data Display**: `table`, `badge`, `empty`, `skeleton`, `progress`, `tooltip`
+- **Charts**: `chart` (ChartContainer, ChartTooltip, ChartTooltipContent) with Recharts integration
+- **Notifications**: `sonner` (toast notifications)
+- **Theme**: Dark mode support via `next-themes` with system preference detection
 
 ## 📁 Project Structure
 
@@ -258,40 +297,59 @@ The application is organized into service modules in `lib/services/`:
 regula/
 ├── app/                          # Next.js App Router
 │   ├── (dashboard)/             # Dashboard routes (protected)
-│   │   ├── alerts/              # Alert management
+│   │   ├── alerts/              # Alert management & detail pages
 │   │   ├── targets/             # Target configuration
-│   │   ├── dashboard/           # Dashboard & metrics
+│   │   ├── dashboard/           # Dashboard with chart components
 │   │   └── settings/            # Settings pages
+│   │       ├── profile/         # User profile settings
+│   │       ├── organization/    # Org settings & member management
+│   │       ├── billing/         # Subscription & billing
+│   │       ├── notifications/   # Notification preferences
+│   │       ├── usage/           # Usage dashboard
+│   │       ├── audit-logs/      # Audit log viewer
+│   │       ├── data-privacy/    # Data privacy settings
+│   │       └── consent/         # Consent management
 │   ├── api/                     # API routes
-│   │   ├── alerts/              # Alert endpoints
+│   │   ├── alerts/              # Alert endpoints (CRUD, export, bulk)
 │   │   ├── targets/             # Target management
-│   │   ├── auth/                # Authentication
+│   │   ├── versions/            # Version comparison & documents
+│   │   ├── auth/                # Authentication & registration
 │   │   ├── billing/             # Stripe webhooks & billing
+│   │   ├── dashboard/           # Dashboard metrics
+│   │   ├── gdpr/                # GDPR data export/deletion
+│   │   ├── consent/             # Consent management API
+│   │   ├── organizations/       # Org & member management
+│   │   ├── notification-preferences/  # Notification settings
 │   │   └── inngest/             # Inngest webhook handler
-│   └── onboarding/              # User onboarding flow
+│   ├── onboarding/              # User onboarding wizard
+│   ├── legal/                   # Legal pages (terms, privacy, etc.)
+│   └── accept-invitation/       # Organization invitation acceptance
 ├── components/                   # React components
-│   ├── ui/                      # shadcn/ui components
-│   └── ...                      # Feature components
+│   ├── ui/                      # shadcn/ui components (Base UI & Radix)
+│   └── ...                      # Feature components (dashboard-nav, etc.)
 ├── lib/
 │   ├── db/
-│   │   ├── schema/              # Drizzle ORM schemas
+│   │   ├── schema/              # Drizzle ORM schemas (16 tables)
 │   │   └── migrations/          # Database migrations
-│   ├── services/                # Business logic services
-│   ├── auth/                    # Auth configuration
+│   ├── services/                # Business logic services (20+ services)
+│   ├── auth/                    # Auth configuration & roles
 │   ├── inngest/                 # Background job functions
-│   └── utils/                   # Utility functions
+│   ├── utils/                   # Utility functions
+│   └── constants.ts             # Application constants
 ├── docs/                        # Project documentation
-└── hooks/                       # React hooks
+└── hooks/                       # React hooks (use-mobile, etc.)
 ```
 
 ## 🔐 Security & Multi-Tenancy
 
 - **Data Isolation**: Row-level security ensures complete tenant data separation
-- **Authentication**: NextAuth.js with secure session management
+- **Authentication**: NextAuth.js v5 with secure session management
 - **Authorization**: Role-based access control (RBAC) at organization level
 - **Encryption**: Sensitive data encrypted at rest and in transit
 - **Audit Logging**: Complete audit trail for compliance and security
 - **Rate Limiting**: Redis-based rate limiting to prevent abuse
+- **Legal Pages**: Terms of Service, Privacy Policy, Disclaimer, Data Processing Agreement, Acceptable Use Policy, Cookie Policy
+- **GDPR Compliance**: Data export, deletion, and consent management capabilities
 
 ## 🔄 Background Processing
 
@@ -315,12 +373,17 @@ Key database tables:
 - **`organizations`** - Tenant/company information
 - **`users`** - User accounts with authentication
 - **`members`** - Organization membership and roles
+- **`invitations`** - Organization invitation management
 - **`targets`** - Regulatory sources to monitor
 - **`versions`** - Content snapshots with metadata
+- **`content_graphs`** - Content relationship graphs
 - **`alerts`** - Generated alerts with summaries and scores
 - **`alert_assignments`** - Team assignment tracking
+- **`alert_comments`** - Alert comments and collaboration
 - **`subscriptions`** - Billing and plan information
+- **`usage_metrics`** - Usage tracking and quota monitoring
 - **`audit_logs`** - Compliance audit trail
+- **`notification_preferences`** - User notification settings
 
 See `lib/db/schema/` for complete schema definitions.
 
@@ -353,14 +416,27 @@ bun run db:studio    # Open Drizzle Studio
 This project uses:
 - **Biome** for linting and formatting (configured in `biome.json`)
 - **TypeScript** strict mode for type safety
-- **ESLint** rules via Biome
+- **React Compiler** (Babel plugin) for automatic optimizations
+- Component-based architecture with separated chart components
+- Theme-aware design using CSS variables and oklch color space
 
 ## 🧭 Key Workflows
+
+### User Onboarding
+
+1. User registers with email and creates organization
+2. Email verification sent
+3. Onboarding wizard guides through:
+   - Welcome and organization setup
+   - Adding first regulatory targets
+   - Configuring alert preferences
+   - Running initial crawl
+   - Waiting for first alert
 
 ### Adding a New Target
 
 1. User navigates to Targets page
-2. Clicks "Add Target" and provides URL
+2. Clicks "Add Target" and provides URL, label, jurisdiction, category
 3. System validates URL accessibility
 4. Target created and first crawl scheduled
 5. Inngest worker executes crawl via Firecrawl
@@ -375,7 +451,18 @@ This project uses:
 4. **Creation**: Alert added to inbox and notification queued
 5. **Delivery**: Email/webhook sent, alert visible in inbox
 6. **Management**: User can assign, comment, and update status
-7. **Archive**: Closed alerts retained for audit and export
+7. **Comparison**: User can compare versions side-by-side
+8. **Archive**: Closed alerts retained for audit and export
+
+### Dashboard Metrics
+
+The dashboard provides real-time metrics including:
+- **Key Metrics Cards**: Active alerts, targets, high-impact alerts, new alerts
+- **Alerts Over Time**: Area chart showing alert trends
+- **Alerts by Status**: Bar chart showing distribution across statuses
+- **Alerts by Severity**: Bar chart showing high/medium/low distribution
+- **Recent Alerts**: Latest alerts with quick access
+- All charts use theme-aware colors (chart-1 through chart-5) and responsive design
 
 ## 📚 Documentation
 
