@@ -2,6 +2,7 @@ import {
   type ContentRelevanceModel,
   filterContentByRelevance,
   learnRelevanceFromTarget,
+  prioritizeContentSources,
   type TargetConfig,
 } from "./content-relevance";
 import { crawlUrl } from "./firecrawl";
@@ -24,6 +25,7 @@ export interface ContentSource {
     lastModified?: Date;
     size?: number;
     section?: string;
+    [key: string]: unknown; // Allow additional metadata properties
   };
 }
 
@@ -134,6 +136,368 @@ const rssFeedStrategy: DiscoveryStrategy = {
 };
 
 /**
+ * Check if URL points to a document
+ */
+function isDocumentUrl(url: string): boolean {
+  const docExtensions = [
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".csv",
+    ".xml",
+    ".json",
+    ".txt",
+  ];
+  return docExtensions.some((ext) => url.toLowerCase().endsWith(ext));
+}
+
+/**
+ * Check if URL/page is likely a link page (document library, archive, etc.)
+ */
+function isLinkPage(url: string, html?: string): boolean {
+  // Check URL patterns
+  const urlPatterns = [
+    /document/i,
+    /download/i,
+    /resource/i,
+    /library/i,
+    /archive/i,
+    /publication/i,
+    /regulation/i,
+    /compliance/i,
+    /guideline/i,
+    /policy/i,
+  ];
+  if (urlPatterns.some((pattern) => pattern.test(url))) {
+    return true;
+  }
+
+  // Check HTML content if available
+  if (html) {
+    const contentPatterns = [
+      /document.*library/i,
+      /download.*section/i,
+      /resource.*center/i,
+      /archive.*page/i,
+    ];
+    if (contentPatterns.some((pattern) => pattern.test(html))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Discover content through link pages
+ * Finds pages that contain links to PDFs/documents
+ */
+async function discoverViaLinkPages(
+  targetUrl: string,
+  maxPages = 20,
+): Promise<ContentSource[]> {
+  const sources: ContentSource[] = [];
+  const visited = new Set<string>();
+  const queue: string[] = [targetUrl];
+
+  while (queue.length > 0 && visited.size < maxPages) {
+    const currentUrl = queue.shift();
+    if (!currentUrl || visited.has(currentUrl)) continue;
+    visited.add(currentUrl);
+
+    try {
+      const result = await crawlUrl(currentUrl);
+      const html = result.content;
+
+      // Extract all links
+      const linkRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>/gi;
+      const links: string[] = [];
+      let match: RegExpExecArray | null = linkRegex.exec(html);
+      while (match !== null) {
+        try {
+          const linkUrl = new URL(match[1], currentUrl).href;
+          links.push(linkUrl);
+        } catch {
+          // Invalid URL, skip
+        }
+        match = linkRegex.exec(html);
+      }
+
+      // Categorize links
+      for (const linkUrl of links) {
+        // Direct document links
+        if (isDocumentUrl(linkUrl)) {
+          const docType = linkUrl.toLowerCase().endsWith(".pdf")
+            ? ("pdf" as const)
+            : linkUrl.toLowerCase().endsWith(".json")
+              ? ("api" as const)
+              : linkUrl.toLowerCase().endsWith(".xml")
+                ? ("api" as const)
+                : ("html" as const);
+
+          sources.push({
+            url: linkUrl,
+            type: docType,
+            discoveredAt: new Date(),
+            metadata: { source: "link_page", parentUrl: currentUrl },
+          });
+        }
+        // Pages that might contain more links
+        else if (isLinkPage(linkUrl, html) && !visited.has(linkUrl)) {
+          queue.push(linkUrl);
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to crawl link page ${currentUrl}:`, error);
+    }
+  }
+
+  return sources;
+}
+
+/**
+ * Link page discovery strategy
+ */
+const linkPageStrategy: DiscoveryStrategy = {
+  name: "link_page_crawl",
+  priority: 8,
+  confidence: async (url) => {
+    // High confidence if URL looks like a document library
+    return /(document|library|resource|archive|publication)/i.test(url)
+      ? 0.8
+      : 0.3;
+  },
+  discover: async (targetUrl) => {
+    return discoverViaLinkPages(targetUrl);
+  },
+};
+
+/**
+ * Extract URLs from JSON API response
+ */
+function extractUrlsFromJsonApi(
+  data: unknown,
+  baseUrl: string,
+): ContentSource[] {
+  const sources: ContentSource[] = [];
+
+  // Handle various JSON API structures
+  const items = Array.isArray(data)
+    ? data
+    : data && typeof data === "object" && "items" in data
+      ? (data as { items: unknown[] }).items
+      : data && typeof data === "object" && "data" in data
+        ? (data as { data: unknown[] }).data
+        : data && typeof data === "object" && "results" in data
+          ? (data as { results: unknown[] }).results
+          : [];
+
+  for (const item of items) {
+    if (item && typeof item === "object") {
+      const url =
+        "url" in item
+          ? String(item.url)
+          : "link" in item
+            ? String(item.link)
+            : "document_url" in item
+              ? String(item.document_url)
+              : "pdf_url" in item
+                ? String(item.pdf_url)
+                : null;
+
+      if (url) {
+        try {
+          const absoluteUrl = new URL(url, baseUrl).href;
+          const isPdf = absoluteUrl.toLowerCase().endsWith(".pdf");
+          sources.push({
+            url: absoluteUrl,
+            type: isPdf ? ("pdf" as const) : ("html" as const),
+            discoveredAt: new Date(),
+            metadata: {
+              title:
+                "title" in item
+                  ? String(item.title)
+                  : "name" in item
+                    ? String(item.name)
+                    : undefined,
+            },
+          });
+        } catch {
+          // Invalid URL, skip
+        }
+      }
+    }
+  }
+
+  return sources;
+}
+
+/**
+ * Extract URLs from RSS/Atom feed
+ */
+function extractUrlsFromFeed(xml: string, baseUrl: string): ContentSource[] {
+  const sources: ContentSource[] = [];
+
+  // RSS feed pattern
+  const rssItemPattern =
+    /<item[^>]*>[\s\S]*?<link[^>]*>([^<]+)<\/link>[\s\S]*?<\/item>/gi;
+  let match: RegExpExecArray | null = rssItemPattern.exec(xml);
+  while (match !== null) {
+    try {
+      const linkUrl = new URL(match[1], baseUrl).href;
+      sources.push({
+        url: linkUrl,
+        type: "html",
+        discoveredAt: new Date(),
+      });
+    } catch {
+      // Invalid URL, skip
+    }
+    match = rssItemPattern.exec(xml);
+  }
+
+  // Atom feed pattern
+  const atomEntryPattern =
+    /<entry[^>]*>[\s\S]*?<link[^>]+href=["']([^"']+)["'][^>]*\/?>[\s\S]*?<\/entry>/gi;
+  match = atomEntryPattern.exec(xml);
+  while (match !== null) {
+    try {
+      const linkUrl = new URL(match[1], baseUrl).href;
+      sources.push({
+        url: linkUrl,
+        type: "html",
+        discoveredAt: new Date(),
+      });
+    } catch {
+      // Invalid URL, skip
+    }
+  }
+
+  return sources;
+}
+
+/**
+ * Discover content via API endpoints
+ * Handles: REST APIs, GraphQL, RSS/Atom feeds, JSON APIs
+ */
+async function discoverViaApiEndpoints(
+  baseUrl: string,
+): Promise<ContentSource[]> {
+  const sources: ContentSource[] = [];
+
+  // Common API patterns
+  const apiPatterns = [
+    "/api/documents",
+    "/api/regulations",
+    "/api/publications",
+    "/api/v1/documents",
+    "/documents.json",
+    "/regulations.json",
+    "/feed.xml",
+    "/rss.xml",
+    "/atom.xml",
+    "/api/feed",
+  ];
+
+  for (const pattern of apiPatterns) {
+    try {
+      const apiUrl = new URL(pattern, baseUrl).href;
+      const response = await fetch(apiUrl, {
+        headers: { Accept: "application/json, application/xml" },
+      });
+
+      if (!response.ok) continue;
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (contentType.includes("json")) {
+        const json = await response.json();
+        sources.push(...extractUrlsFromJsonApi(json, apiUrl));
+      } else if (contentType.includes("xml")) {
+        const xml = await response.text();
+        sources.push(...extractUrlsFromFeed(xml, apiUrl));
+      }
+    } catch (error) {
+      // API endpoint doesn't exist or failed, continue
+      console.debug(`API endpoint ${pattern} not available:`, error);
+    }
+  }
+
+  return sources;
+}
+
+/**
+ * API endpoint discovery strategy
+ */
+const apiEndpointStrategy: DiscoveryStrategy = {
+  name: "api_endpoint_discovery",
+  priority: 7,
+  confidence: async () => {
+    // Medium confidence - many sites have APIs
+    return 0.5;
+  },
+  discover: async (targetUrl) => {
+    return discoverViaApiEndpoints(new URL(targetUrl).origin);
+  },
+};
+
+/**
+ * Extract documents from archives (ZIP, RAR, etc.)
+ * Note: Requires library like 'yauzl' or 'adm-zip' for full implementation
+ */
+async function extractFromArchive(
+  archiveUrl: string,
+): Promise<ContentSource[]> {
+  const sources: ContentSource[] = [];
+
+  // Check if URL is an archive
+  if (!/\.(zip|rar|7z|tar)$/i.test(archiveUrl)) {
+    return sources;
+  }
+
+  // For now, we'll detect archives but note that extraction requires a library
+  // In a full implementation, you would:
+  // 1. Download the archive
+  // 2. Extract entries using a library like 'yauzl' or 'adm-zip'
+  // 3. Filter for document files
+  // 4. Create content sources for each document
+
+  console.warn(
+    `Archive detected at ${archiveUrl}. Archive extraction requires additional library (e.g., 'yauzl' or 'adm-zip').`,
+  );
+
+  // Return the archive URL as a source so it can be crawled
+  // The system will attempt to crawl it, and Firecrawl might handle it
+  sources.push({
+    url: archiveUrl,
+    type: "html", // Treat as HTML for now
+    discoveredAt: new Date(),
+    metadata: {
+      archive: true,
+      note: "Archive extraction requires additional library",
+    },
+  });
+
+  return sources;
+}
+
+/**
+ * Archive extraction discovery strategy
+ */
+const archiveStrategy: DiscoveryStrategy = {
+  name: "archive_extraction",
+  priority: 6,
+  confidence: async (url) => {
+    return /\.(zip|rar|7z|tar)$/i.test(url) ? 0.9 : 0;
+  },
+  discover: async (targetUrl) => {
+    return extractFromArchive(targetUrl);
+  },
+};
+
+/**
  * Breadth-first crawl discovery strategy (fallback)
  */
 const breadthFirstStrategy: DiscoveryStrategy = {
@@ -190,6 +554,9 @@ function extractLinks(content: string): Array<{ url: string; text: string }> {
  */
 const strategies: DiscoveryStrategy[] = [
   sitemapStrategy,
+  linkPageStrategy,
+  apiEndpointStrategy,
+  archiveStrategy,
   rssFeedStrategy,
   breadthFirstStrategy,
 ];
@@ -306,13 +673,36 @@ export async function discoverContentAdaptively(
   // Step 4: Deduplicate and merge results
   const uniqueSources = deduplicateSources(allSources);
 
-  // Limit sources to prevent excessive processing (prioritize most relevant)
-  // Take top 500 sources after deduplication to balance coverage and performance
-  const limitedSources = uniqueSources.slice(0, 500);
+  // Step 5: Prioritize sources by relevance
+  const prioritizedSources = prioritizeContentSources(
+    uniqueSources.map((s) => ({
+      url: s.url,
+      type: s.type,
+      metadata: s.metadata,
+    })),
+    targetConfig,
+  );
 
-  if (uniqueSources.length > 500) {
+  // Map back to ContentSource format
+  const prioritizedContentSources = prioritizedSources.map((prioritized) => {
+    const original = uniqueSources.find((s) => s.url === prioritized.url);
+    return (
+      original || {
+        url: prioritized.url,
+        type: (prioritized.type as "html" | "pdf" | "api" | "feed") || "html",
+        discoveredAt: new Date(),
+        metadata: prioritized.metadata,
+      }
+    );
+  });
+
+  // Limit sources to prevent excessive processing (prioritize most relevant)
+  // Take top 500 sources after prioritization to balance coverage and performance
+  const limitedSources = prioritizedContentSources.slice(0, 500);
+
+  if (prioritizedContentSources.length > 500) {
     console.log(
-      `Limiting sources from ${uniqueSources.length} to 500 for performance`,
+      `Limiting sources from ${prioritizedContentSources.length} to 500 for performance (prioritized by relevance)`,
     );
   }
 

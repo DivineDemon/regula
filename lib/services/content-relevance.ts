@@ -251,3 +251,92 @@ function generateTargetId(url: string): string {
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+/**
+ * Calculate relevance score for a content source
+ */
+export function calculateRelevanceScore(
+  source: { url: string; type?: string; metadata?: { title?: string } },
+  config: TargetConfig,
+): number {
+  let score = 0;
+
+  // Document types get higher priority
+  if (source.type === "pdf") score += 10;
+  if (source.type === "html") score += 5;
+  if (source.type === "api") score += 3;
+
+  // URL patterns matching jurisdiction/category
+  if (config.jurisdiction) {
+    const jurisdictionLower = config.jurisdiction.toLowerCase();
+    if (source.url.toLowerCase().includes(jurisdictionLower)) {
+      score += 5;
+    }
+  }
+  if (config.category) {
+    const categoryLower = config.category.toLowerCase();
+    if (source.url.toLowerCase().includes(categoryLower)) {
+      score += 5;
+    }
+  }
+
+  // Keywords in URL
+  const keywords = [
+    "regulation",
+    "compliance",
+    "guideline",
+    "policy",
+    "law",
+    "advisory",
+    "bulletin",
+    "guidance",
+    "rule",
+    "regulatory",
+  ];
+  keywords.forEach((keyword) => {
+    if (source.url.toLowerCase().includes(keyword)) {
+      score += 2;
+    }
+  });
+
+  // Title matching (if available)
+  if (source.metadata?.title) {
+    const titleLower = source.metadata.title.toLowerCase();
+    keywords.forEach((keyword) => {
+      if (titleLower.includes(keyword)) {
+        score += 1;
+      }
+    });
+  }
+
+  // Recency (newer is better, but this is a simple implementation)
+  // In a full implementation, you'd use discoveredAt timestamp
+  score += 1; // Base score for being discovered
+
+  return score;
+}
+
+/**
+ * Score and prioritize content sources
+ */
+export function prioritizeContentSources(
+  sources: Array<{
+    url: string;
+    type?: string;
+    metadata?: { title?: string };
+  }>,
+  config: TargetConfig,
+): Array<{
+  url: string;
+  type?: string;
+  metadata?: { title?: string };
+  score?: number;
+}> {
+  return sources
+    .map((source) => ({
+      ...source,
+      score: calculateRelevanceScore(source, config),
+    }))
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .map(({ score, ...source }) => source);
+}
