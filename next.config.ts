@@ -9,6 +9,21 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Enable code splitting and optimization
+  experimental: {
+    optimizePackageImports: [
+      "@radix-ui/react-label",
+      "@radix-ui/react-slot",
+      "lucide-react",
+      "recharts",
+    ],
+  },
+  // Turbopack configuration (Next.js 16 default)
+  // Code splitting is handled automatically by Turbopack
+  turbopack: {
+    // Turbopack handles code splitting automatically
+    // No manual configuration needed for most cases
+  },
 };
 
 export default nextConfig;

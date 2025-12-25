@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --noEmit",
     "format": "biome format --write",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:apply": "bun run scripts/run-migrations.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },

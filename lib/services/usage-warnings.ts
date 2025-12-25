@@ -87,9 +87,13 @@ export const usageWarningService = {
       targets: "Targets",
     };
 
-    const usagePercent = Math.round(
-      (quotaInfo.usage.targets / quotaInfo.limits.targets) * 100,
-    );
+    const usagePercent =
+      quotaInfo.limits.targets === "Infinity" ||
+      typeof quotaInfo.limits.targets !== "number"
+        ? 0
+        : Math.round(
+            (quotaInfo.usage.targets / quotaInfo.limits.targets) * 100,
+          );
 
     const subject = `[Regula] ${levelLabels[level]}: ${metricLabels[metric]} quota at ${usagePercent}%`;
 

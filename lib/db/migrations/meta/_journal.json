@@ -36,6 +36,20 @@
       "when": 1766444915277,
       "tag": "0004_red_black_cat",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1766693063659,
+      "tag": "0005_gigantic_dreaming_celestial",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1766693923633,
+      "tag": "0006_spotty_namora",
+      "breakpoints": true
     }
   ]
 }

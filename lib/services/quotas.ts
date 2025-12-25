@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, count, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { organizations } from "@/lib/db/schema";
+import { alerts, organizations, targets, versions } from "@/lib/db/schema";
 import { PLAN_CONFIGS, type PlanType } from "./stripe";
 import { usageService } from "./usage";
 
@@ -76,24 +76,73 @@ export const quotaService = {
     const plan = org.plan as PlanType;
     const planConfig = PLAN_CONFIGS[plan];
 
-    // Get current usage
+    // Get current usage - calculate directly from database
     const targetCount = await usageService.getTargetCount(organizationId);
-    const usage = await usageService.getCurrentUsage(organizationId);
+
+    // Get crawls count (versions created this month)
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [crawlsResult] = await db
+      .select({ count: count() })
+      .from(versions)
+      .innerJoin(targets, eq(versions.targetId, targets.id))
+      .where(
+        and(
+          eq(targets.organizationId, organizationId),
+          gte(versions.crawledAt, startOfMonth),
+        ),
+      );
+
+    const crawlsCount = Number(crawlsResult?.count ?? 0);
+
+    // Get alerts count (alerts created this month)
+    const [alertsResult] = await db
+      .select({ count: count() })
+      .from(alerts)
+      .where(
+        and(
+          eq(alerts.organizationId, organizationId),
+          gte(alerts.createdAt, startOfMonth),
+        ),
+      );
+
+    const alertsCount = Number(alertsResult?.count ?? 0);
+
+    // Get storage bytes (sum of content lengths from versions)
+    const [storageResult] = await db
+      .select({
+        totalBytes: sql<number>`COALESCE(SUM(LENGTH(${versions.content})), 0)`,
+      })
+      .from(versions)
+      .innerJoin(targets, eq(versions.targetId, targets.id))
+      .where(eq(targets.organizationId, organizationId));
+
+    const storageBytes = Number(storageResult?.totalBytes ?? 0);
+
+    // Handle Infinity for JSON serialization (Infinity becomes null in JSON)
+    const targetsLimit =
+      planConfig.targets === Infinity
+        ? ("Infinity" as const)
+        : planConfig.targets;
+    const retentionDaysLimit =
+      planConfig.retentionDays === Infinity
+        ? ("Infinity" as const)
+        : planConfig.retentionDays;
 
     return {
       plan: planConfig.name,
       planType: plan,
       limits: {
-        targets: planConfig.targets,
-        retentionDays: planConfig.retentionDays,
+        targets: targetsLimit,
+        retentionDays: retentionDaysLimit,
         crawlFrequency: planConfig.crawlFrequency,
         realTimeAlerts: planConfig.realTimeAlerts,
       },
       usage: {
         targets: targetCount,
-        crawls: usage.crawls,
-        alerts: usage.alerts,
-        storageBytes: usage.storageBytes,
+        crawls: crawlsCount,
+        alerts: alertsCount,
+        storageBytes: storageBytes,
       },
       usagePercentages: {
         targets:
@@ -113,7 +162,8 @@ export const quotaService = {
 
     // Check targets
     if (
-      quotaInfo.limits.targets !== Infinity &&
+      quotaInfo.limits.targets !== "Infinity" &&
+      typeof quotaInfo.limits.targets === "number" &&
       quotaInfo.usage.targets >= quotaInfo.limits.targets
     ) {
       return true;

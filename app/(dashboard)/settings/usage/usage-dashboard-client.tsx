@@ -93,7 +93,7 @@ export function UsageDashboardClient({
 
   const targetsUsagePercent = usageData.usagePercentages.targets;
   const targetsLimit =
-    usageData.limits.targets === "Infinity"
+    usageData.limits.targets === "Infinity" || usageData.limits.targets === null
       ? "Unlimited"
       : String(usageData.limits.targets);
   const isTargetsWarning = targetsUsagePercent >= 80;
@@ -147,7 +147,7 @@ export function UsageDashboardClient({
               )}
             </div>
             <CardDescription>
-              {usageData.usage.targets} / {targetsLimit} targets
+              {usageData.usage.targets ?? 0} / {targetsLimit} targets
             </CardDescription>
           </CardHeader>
           <CardContent>

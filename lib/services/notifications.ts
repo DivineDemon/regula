@@ -7,6 +7,7 @@ import {
 } from "@/lib/db/schema";
 import { email } from "./email";
 import { sendWebhook, type WebhookPayload } from "./webhook";
+import { triggerAllWebhooksForAlert } from "./webhook-configs";
 
 /**
  * Get notification preferences for a user or organization
@@ -157,6 +158,30 @@ export async function sendRealtimeAlertNotification(params: {
       console.error("Unexpected error in webhook delivery:", error);
     });
   }
+
+  // Trigger all configured webhooks (from webhook-configs table)
+  const webhookPayload: WebhookPayload = {
+    type: "alert.created",
+    alertId,
+    organizationId,
+    targetLabel,
+    summary,
+    impactScore,
+    alertUrl,
+    timestamp: new Date().toISOString(),
+  };
+
+  triggerAllWebhooksForAlert(organizationId, webhookPayload).catch((error) => {
+    console.error("Error triggering webhook configs:", error);
+  });
+
+  // Send Slack notification if configured
+  // Note: This would need to be stored in notification preferences or a separate config
+  // For now, we'll skip this as it requires additional configuration
+
+  // Send Teams notification if configured
+  // Note: This would need to be stored in notification preferences or a separate config
+  // For now, we'll skip this as it requires additional configuration
 }
 
 /**

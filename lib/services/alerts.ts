@@ -12,6 +12,15 @@ import {
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 import type { organizations } from "@/lib/db/schema/organizations";
 import type { TargetCategory } from "@/lib/db/schema/targets";
+import {
+  checkAlertMatchesTemplate,
+  getAlertTemplates,
+} from "./alert-templates";
+import { CACHE_KEYS, CACHE_TTL, withCache } from "./cache-helpers";
+import {
+  checkAlertMatchesRule,
+  getActiveCustomAlertRules,
+} from "./custom-alert-rules";
 import type { DiffMetadata } from "./diff";
 import { calculateImpactScoreFromDiff } from "./impact-scoring";
 import { type SummarizationResult, summarizeRegulatoryContent } from "./llm";
@@ -106,6 +115,78 @@ export async function generateAlert(params: {
     },
   });
 
+  // Step 3.5: Check custom alert rules and templates
+  let templateId: string | undefined;
+  let initialStatus: AlertStatus = "new";
+  let autoAssignTo: string[] | undefined;
+
+  // Check custom alert rules
+  const customRules = await getActiveCustomAlertRules(organizationId);
+  for (const rule of customRules) {
+    const matches = await checkAlertMatchesRule(rule.id, organizationId, {
+      alert: {} as typeof alerts.$inferSelect, // Will be created below
+      target,
+      summary: summarizationResult.summary,
+      impactScore: impactScore.numericScore,
+    });
+
+    if (matches && rule.actions) {
+      const actions = rule.actions as {
+        autoStatus?: AlertStatus;
+        autoAssignTo?: string[];
+        applyTemplate?: string;
+        addTags?: string[];
+      };
+
+      if (actions.autoStatus) {
+        initialStatus = actions.autoStatus;
+      }
+      if (actions.autoAssignTo) {
+        autoAssignTo = actions.autoAssignTo;
+      }
+      if (actions.applyTemplate) {
+        templateId = actions.applyTemplate;
+      }
+    }
+  }
+
+  // Check templates if no template was set by rules
+  if (!templateId) {
+    const templates = await withCache(
+      CACHE_KEYS.alertTemplates(organizationId),
+      CACHE_TTL.alertTemplates,
+      () => getAlertTemplates(organizationId),
+    );
+
+    for (const template of templates) {
+      const matches = await checkAlertMatchesTemplate(
+        template.id,
+        organizationId,
+        {
+          impactScore: impactScore.numericScore,
+          summary: summarizationResult.summary,
+          category: target.category ?? undefined,
+          jurisdiction: target.jurisdiction ?? undefined,
+        },
+      );
+
+      if (matches) {
+        templateId = template.id;
+        const config = template.config as {
+          autoStatus?: AlertStatus;
+          autoAssignTo?: string[];
+        };
+        if (config.autoStatus && initialStatus === "new") {
+          initialStatus = config.autoStatus;
+        }
+        if (config.autoAssignTo && !autoAssignTo) {
+          autoAssignTo = config.autoAssignTo;
+        }
+        break; // Use first matching template
+      }
+    }
+  }
+
   // Step 4: Create alert record in database
   const alertId = nanoid();
   const [alert] = await db
@@ -117,7 +198,8 @@ export async function generateAlert(params: {
       versionId: currentVersionId,
       summary: summarizationResult.summary,
       impactScore: impactScore.numericScore,
-      status: "new",
+      status: initialStatus,
+      templateId,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -125,6 +207,15 @@ export async function generateAlert(params: {
 
   if (!alert) {
     throw new Error("Failed to create alert record");
+  }
+
+  // Auto-assign if configured
+  if (autoAssignTo && autoAssignTo.length > 0) {
+    await assignAlertToUsers(alertId, organizationId, autoAssignTo).catch(
+      (error) => {
+        console.error("Error auto-assigning alert:", error);
+      },
+    );
   }
 
   // Step 5: Send real-time notifications (fire and forget)

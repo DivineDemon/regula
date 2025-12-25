@@ -42,10 +42,14 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 ### 🔔 Multi-Channel Alerting
 - **In-app alert inbox** with filtering, sorting, and search
 - **Email notifications** with immediate alerts or digest modes (daily/weekly)
+- **Slack integration** with rich formatted messages and impact-based color coding
+- **Microsoft Teams integration** with card-based notifications
 - **Webhook integration** for custom integrations (Slack, Teams, custom systems)
 - **Customizable notification preferences** per organization
 - **Alert threshold filtering** (all, low, medium, high)
 - **Customizable filters** by severity, jurisdiction, category, and target
+- **Alert snoozing** to temporarily hide alerts until a specified date
+- **Alert tags** for flexible organization and categorization
 
 ### 👥 Compliance Workspace
 - **Alert management** with status tracking (new → triaged → actioned → closed)
@@ -259,7 +263,15 @@ The application is organized into service modules in `lib/services/`:
 - **`llm.ts`** - AI-powered summarization and analysis
 - **`impact-scoring.ts`** - Relevance and impact scoring
 - **`alerts.ts`** - Alert creation and management
+- **`alert-snoozing.ts`** - Alert snoozing functionality
+- **`alert-tags.ts`** - Tag-based alert organization
+- **`alert-templates.ts`** - Alert template management
+- **`alert-relationships.ts`** - Alert relationship tracking
 - **`notifications.ts`** - Multi-channel notification delivery
+- **`slack-integration.ts`** - Slack webhook integration
+- **`teams-integration.ts`** - Microsoft Teams webhook integration
+- **`webhook.ts`** - Generic webhook handler
+- **`webhook-configs.ts`** - Webhook configuration management
 - **`email.ts`** - Email template and sending logic
 - **`adaptive-crawl.ts`** - Intelligent crawl scheduling
 - **`stripe.ts`** - Payment and subscription management
@@ -269,12 +281,17 @@ The application is organized into service modules in `lib/services/`:
 - **`usage-warnings.ts`** - Quota warning notifications
 - **`audit.ts`** - Audit logging for compliance
 - **`dashboard.ts`** - Dashboard metrics aggregation
+- **`analytics.ts`** - Analytics and reporting
+- **`api-keys.ts`** - API key management
+- **`compliance-health.ts`** - Compliance health scoring
+- **`custom-alert-rules.ts`** - Custom alert rule engine
 - **`content-discovery.ts`** - Content discovery and sitemap parsing
 - **`content-relevance.ts`** - Content relevance scoring
 - **`pattern-detection.ts`** - Pattern detection in regulatory content
 - **`sitemap-discovery.ts`** - Sitemap discovery and parsing
 - **`s3.ts`** - Document storage on AWS S3
 - **`redis.ts`** - Redis caching and rate limiting
+- **`cache-helpers.ts`** - Cache utility functions
 - **`gdpr.ts`** - GDPR compliance (data export/deletion)
 - **`consent.ts`** - Consent management
 - **`data-retention.ts`** - Data retention policies
@@ -331,7 +348,7 @@ regula/
 │   ├── db/
 │   │   ├── schema/              # Drizzle ORM schemas (16 tables)
 │   │   └── migrations/          # Database migrations
-│   ├── services/                # Business logic services (20+ services)
+│   ├── services/                # Business logic services (30+ services)
 │   ├── auth/                    # Auth configuration & roles
 │   ├── inngest/                 # Background job functions
 │   ├── utils/                   # Utility functions
