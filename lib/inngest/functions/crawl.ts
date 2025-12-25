@@ -7,6 +7,7 @@ import { generateAlert } from "@/lib/services/alerts";
 import { detectChanges } from "@/lib/services/diff";
 import type { CrawlResult } from "@/lib/services/firecrawl";
 import { crawlUrl } from "@/lib/services/firecrawl";
+import { quotaService } from "@/lib/services/quotas";
 import { getVersion, storeVersion } from "@/lib/services/versions";
 
 /**
@@ -139,7 +140,57 @@ export const crawlTarget = inngest.createFunction(
         });
       }
 
-      // Step 3: Store the version
+      // Step 3: Check crawl quota before storing version
+      const crawlQuotaCheck = await step.run("check-crawl-quota", async () => {
+        return quotaService.checkQuota({
+          organizationId,
+          action: "create_crawl",
+        });
+      });
+
+      if (!crawlQuotaCheck.allowed) {
+        // Update target status to indicate quota exceeded
+        await db
+          .update(targets)
+          .set({
+            status: "error",
+            lastCrawlStatus: "failed",
+            lastCrawlError: crawlQuotaCheck.reason || "Crawl quota exceeded",
+            updatedAt: new Date(),
+          })
+          .where(eq(targets.id, targetId));
+
+        throw new Error(crawlQuotaCheck.reason || "Crawl quota exceeded");
+      }
+
+      // Step 4: Check storage quota before storing
+      const storageQuotaCheck = await step.run(
+        "check-storage-quota",
+        async () => {
+          return quotaService.checkQuota({
+            organizationId,
+            action: "store_data",
+          });
+        },
+      );
+
+      if (!storageQuotaCheck.allowed) {
+        // Update target status to indicate quota exceeded
+        await db
+          .update(targets)
+          .set({
+            status: "error",
+            lastCrawlStatus: "failed",
+            lastCrawlError:
+              storageQuotaCheck.reason || "Storage quota exceeded",
+            updatedAt: new Date(),
+          })
+          .where(eq(targets.id, targetId));
+
+        throw new Error(storageQuotaCheck.reason || "Storage quota exceeded");
+      }
+
+      // Step 5: Store the version
       const version = await step.run("store-version", async () => {
         return storeVersion({
           targetId,
@@ -148,7 +199,7 @@ export const crawlTarget = inngest.createFunction(
         });
       });
 
-      // Step 4: Check for changes
+      // Step 6: Check for changes
       // Note: Adaptive crawl runs in background, so we only do traditional change detection here
       // Graph-based changes will be detected by the background adaptive crawl function
       const changeDetectionResult = await step.run(
@@ -267,7 +318,7 @@ export const crawlTarget = inngest.createFunction(
         }
       }
 
-      // Step 5: Generate alert if changes were detected
+      // Step 7: Generate alert if changes were detected
       console.log(
         `Alert generation check for target ${targetId}: hasChanges=${
           changeDetectionResult.hasChanges

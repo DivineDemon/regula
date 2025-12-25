@@ -1,6 +1,8 @@
-# Regula
-
-> Real-time regulatory intelligence platform for emerging-market FinTechs
+<div align="center">
+  <img src="./public/favicon.svg" alt="Regula Logo" width="120" height="120" />
+  <h1>Regula</h1>
+  <p>Real-time regulatory intelligence platform for emerging-market FinTechs</p>
+</div>
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
@@ -220,28 +222,7 @@ INNGEST_EVENT_KEY=eventkey-...
 
 ### System Components
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Next.js Application                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │   Web UI     │  │  API Routes  │  │ Server Actions│     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-┌───────▼──────┐  ┌────────▼────────┐  ┌─────▼─────┐
-│  PostgreSQL  │  │  Inngest Workers│  │   Redis   │
-│   Database   │  │  (Background)   │  │   Cache   │
-└──────────────┘  └─────────────────┘  └───────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-┌───────▼──────┐  ┌────────▼────────┐  ┌─────▼─────┐
-│  Firecrawl   │  │  Google Gemini  │  │    S3     │
-│   (Crawler)  │  │      (LLM)      │  │  Storage  │
-└──────────────┘  └─────────────────┘  └───────────┘
-```
+![Architecture Diagram](./public/architecture.png)
 
 ### Data Flow
 

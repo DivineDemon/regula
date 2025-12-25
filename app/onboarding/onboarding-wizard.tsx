@@ -1,9 +1,10 @@
 "use client";
 
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Logo } from "@/components/logo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Step1Welcome } from "./steps/step1-welcome";
@@ -82,9 +83,7 @@ export function OnboardingWizard({
         {/* Header */}
         <div className="text-center">
           <div className="mb-4 flex justify-center">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Sparkles className="size-8 text-primary" />
-            </div>
+            <Logo size={64} />
           </div>
           <h1 className="text-3xl font-bold">Welcome to Regula</h1>
           <p className="mt-2 text-muted-foreground">

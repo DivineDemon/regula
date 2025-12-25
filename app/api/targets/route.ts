@@ -2,11 +2,12 @@ import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { targets } from "@/lib/db/schema";
+import { organizations, targets } from "@/lib/db/schema";
 import type { TargetCategory, TargetStatus } from "@/lib/db/schema/targets";
 import { triggerCrawl } from "@/lib/inngest/functions/crawl";
 import { createAuditLog } from "@/lib/services/audit";
 import { quotaService } from "@/lib/services/quotas";
+import { isCrawlFrequencyAllowed, type PlanType } from "@/lib/services/stripe";
 import {
   errorResponse,
   getClientIp,
@@ -89,6 +90,32 @@ export async function POST(request: Request) {
 
     if (!quotaCheck.allowed) {
       return errorResponse(quotaCheck.reason || "Quota limit reached", 403);
+    }
+
+    // Validate crawl frequency against plan limits
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, validatedData.organizationId))
+      .limit(1);
+
+    if (org) {
+      const plan = org.plan as PlanType;
+      if (
+        !isCrawlFrequencyAllowed(
+          plan,
+          validatedData.crawlFrequency as
+            | "hourly"
+            | "daily"
+            | "weekly"
+            | "monthly",
+        )
+      ) {
+        return errorResponse(
+          `Your plan does not allow ${validatedData.crawlFrequency} crawl frequency. Please upgrade your plan or choose a different frequency.`,
+          403,
+        );
+      }
     }
 
     // Create target
@@ -179,6 +206,34 @@ export async function PATCH(request: Request) {
 
     if (!existingTarget) {
       return errorResponse("Target not found", 404);
+    }
+
+    // Validate crawl frequency against plan limits if it's being updated
+    if (validatedData.crawlFrequency !== undefined) {
+      const [org] = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, validatedData.organizationId))
+        .limit(1);
+
+      if (org) {
+        const plan = org.plan as PlanType;
+        if (
+          !isCrawlFrequencyAllowed(
+            plan,
+            validatedData.crawlFrequency as
+              | "hourly"
+              | "daily"
+              | "weekly"
+              | "monthly",
+          )
+        ) {
+          return errorResponse(
+            `Your plan does not allow ${validatedData.crawlFrequency} crawl frequency. Please upgrade your plan or choose a different frequency.`,
+            403,
+          );
+        }
+      }
     }
 
     // Track changes for audit log

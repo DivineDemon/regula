@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { organizationMembers, organizations, targets } from "@/lib/db/schema";
+import { targets } from "@/lib/db/schema";
+import { getCurrentOrganization } from "@/lib/utils/organization";
 import { OnboardingWizard } from "./onboarding-wizard";
 
 export default async function OnboardingPage() {
@@ -12,25 +14,10 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  // Get user's organizations
-  const userOrgs = await db
-    .select({
-      organization: organizations,
-      role: organizationMembers.role,
-    })
-    .from(organizationMembers)
-    .innerJoin(
-      organizations,
-      eq(organizationMembers.organizationId, organizations.id),
-    )
-    .where(eq(organizationMembers.userId, session.user.id));
-
-  if (userOrgs.length === 0) {
-    redirect("/register");
-  }
-
-  // Get the current organization (first one for now)
-  const currentOrg = userOrgs[0]?.organization;
+  // Get current organization from cookie or fallback to first
+  const cookieStore = await cookies();
+  const cookieOrgId = cookieStore.get("currentOrganizationId")?.value ?? null;
+  const currentOrg = await getCurrentOrganization(session.user.id, cookieOrgId);
 
   if (!currentOrg) {
     redirect("/dashboard");

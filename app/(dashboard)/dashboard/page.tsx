@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations, targets } from "@/lib/db/schema";
+import { getCurrentOrganization } from "@/lib/utils/organization";
 import { DashboardContent } from "../dashboard-content";
 
 export default async function DashboardPage() {
@@ -12,8 +14,17 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Get user's organizations
-  const userOrgs = await db
+  // Get current organization from cookie or fallback to first
+  const cookieStore = await cookies();
+  const cookieOrgId = cookieStore.get("currentOrganizationId")?.value ?? null;
+  const currentOrg = await getCurrentOrganization(session.user.id, cookieOrgId);
+
+  if (!currentOrg) {
+    redirect("/register");
+  }
+
+  // Get user's organizations for organization switcher
+  const _userOrgs = await db
     .select({
       organization: organizations,
       role: organizationMembers.role,
@@ -24,17 +35,6 @@ export default async function DashboardPage() {
       eq(organizationMembers.organizationId, organizations.id),
     )
     .where(eq(organizationMembers.userId, session.user.id));
-
-  if (userOrgs.length === 0) {
-    redirect("/register");
-  }
-
-  // Get the current organization (first one for now)
-  const currentOrg = userOrgs[0]?.organization;
-
-  if (!currentOrg) {
-    redirect("/register");
-  }
 
   // Check if user has targets - if not, redirect to onboarding
   const existingTargets = await db

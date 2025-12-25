@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
 
@@ -23,10 +23,25 @@ export async function getUserOrganizations(userId: string) {
 }
 
 /**
- * Get the user's current organization (first one, or can be enhanced with session storage)
+ * Get the user's current organization from cookie, or fallback to first one
  */
-export async function getCurrentOrganization(userId: string) {
+export async function getCurrentOrganization(
+  userId: string,
+  cookieOrgId?: string | null,
+) {
   const userOrgs = await getUserOrganizations(userId);
+
+  // If cookie has organization ID and user is member of it, use that
+  if (cookieOrgId) {
+    const orgFromCookie = userOrgs.find(
+      (org) => org.organization.id === cookieOrgId,
+    );
+    if (orgFromCookie) {
+      return orgFromCookie.organization;
+    }
+  }
+
+  // Fallback to first organization
   return userOrgs[0]?.organization ?? null;
 }
 
@@ -41,8 +56,10 @@ export async function getUserRoleInOrganization(
     .select()
     .from(organizationMembers)
     .where(
-      eq(organizationMembers.userId, userId) &&
+      and(
+        eq(organizationMembers.userId, userId),
         eq(organizationMembers.organizationId, organizationId),
+      ),
     )
     .limit(1);
 

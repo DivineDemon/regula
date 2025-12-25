@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
-import { type WebhookStatus, webhookConfigs } from "@/lib/db/schema";
+import { alerts, type WebhookStatus, webhookConfigs } from "@/lib/db/schema";
 import { sendWebhook, type WebhookPayload } from "./webhook";
 
 export interface CreateWebhookConfigParams {
@@ -136,8 +136,17 @@ export async function triggerWebhookForAlert(
   if (filters) {
     // Check alert status filter
     if (filters.alertStatuses && filters.alertStatuses.length > 0) {
-      // This would need to be passed in the payload or fetched
-      // For now, we'll skip this check
+      // Fetch alert to get its status
+      const [alert] = await db
+        .select({ status: alerts.status })
+        .from(alerts)
+        .where(eq(alerts.id, payload.alertId))
+        .limit(1);
+
+      // If alert not found or status doesn't match filter, skip this webhook
+      if (!alert || !filters.alertStatuses.includes(alert.status)) {
+        return null;
+      }
     }
 
     // Check impact score filter

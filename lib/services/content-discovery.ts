@@ -17,7 +17,7 @@ import { generateContentHash } from "./versions";
  */
 export interface ContentSource {
   url: string;
-  type: "html" | "pdf" | "api" | "feed";
+  type: "html" | "pdf" | "text" | "api" | "feed";
   fingerprint?: string;
   discoveredAt: Date;
   metadata?: {
@@ -468,11 +468,65 @@ async function extractFromArchive(
     `Archive detected at ${archiveUrl}. Archive extraction requires additional library (e.g., 'yauzl' or 'adm-zip').`,
   );
 
+  // Detect content type from URL extension
+  let contentType: "html" | "pdf" | "text" = "html"; // Default
+  const urlLower = archiveUrl.toLowerCase();
+
+  if (urlLower.endsWith(".pdf")) {
+    contentType = "pdf";
+  } else if (
+    urlLower.endsWith(".txt") ||
+    urlLower.endsWith(".md") ||
+    urlLower.endsWith(".text")
+  ) {
+    contentType = "text";
+  } else if (
+    urlLower.endsWith(".html") ||
+    urlLower.endsWith(".htm") ||
+    urlLower.endsWith(".xhtml")
+  ) {
+    contentType = "html";
+  } else {
+    // Try to detect from HTTP HEAD request
+    try {
+      const response = await fetch(archiveUrl, {
+        method: "HEAD",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.ai)",
+        },
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
+
+      if (response.ok) {
+        const contentTypeHeader = response.headers.get("content-type");
+        if (contentTypeHeader) {
+          if (contentTypeHeader.includes("application/pdf")) {
+            contentType = "pdf";
+          } else if (
+            contentTypeHeader.includes("text/html") ||
+            contentTypeHeader.includes("text/xhtml")
+          ) {
+            contentType = "html";
+          } else if (contentTypeHeader.includes("text/plain")) {
+            contentType = "text";
+          }
+        }
+      }
+    } catch (error) {
+      // If HEAD request fails, use default
+      console.warn(
+        `Failed to detect content type for ${archiveUrl}, defaulting to HTML:`,
+        error,
+      );
+    }
+  }
+
   // Return the archive URL as a source so it can be crawled
   // The system will attempt to crawl it, and Firecrawl might handle it
   sources.push({
     url: archiveUrl,
-    type: "html", // Treat as HTML for now
+    type: contentType,
     discoveredAt: new Date(),
     metadata: {
       archive: true,
@@ -843,18 +897,44 @@ function generateNodeId(url: string): string {
 }
 
 /**
- * Generate fingerprint for URL (simple implementation)
+ * Generate fingerprint for URL using HEAD request with last-modified header
  */
 async function generateFingerprint(url: string): Promise<string> {
-  // For now, use URL + current date as fingerprint
-  // In production, could fetch HEAD request and use last-modified header
   try {
-    const response = await fetch(url, { method: "HEAD" });
-    const lastModified = response.headers.get("last-modified");
-    if (lastModified) {
-      return `${url}:${lastModified}`;
+    // Fetch HEAD request to get last-modified header
+    const response = await fetch(url, {
+      method: "HEAD",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.ai)",
+      },
+      // Add timeout to prevent hanging
+      signal: AbortSignal.timeout(10000), // 10 second timeout
+    });
+
+    if (response.ok) {
+      const lastModified = response.headers.get("last-modified");
+      const etag = response.headers.get("etag");
+      const contentLength = response.headers.get("content-length");
+
+      // Use a combination of URL, last-modified, etag, and content-length for fingerprint
+      // This provides better change detection than URL alone
+      const fingerprintParts = [url];
+      if (lastModified) fingerprintParts.push(`lm:${lastModified}`);
+      if (etag) fingerprintParts.push(`etag:${etag}`);
+      if (contentLength) fingerprintParts.push(`cl:${contentLength}`);
+
+      return fingerprintParts.join("|");
     }
-  } catch {}
+  } catch (error) {
+    // If HEAD request fails (CORS, network error, etc.), fall back to URL-based fingerprint
+    console.warn(
+      `Failed to fetch HEAD request for ${url}, using URL-based fingerprint:`,
+      error,
+    );
+  }
+
+  // Fallback: use URL as fingerprint if HEAD request fails
   return url;
 }
 

@@ -827,21 +827,42 @@ function extractAndNormalizeContent(
       break;
 
     case "docx":
-    case "xlsx":
-      // Office documents - Firecrawl may handle these, but if not, we'll need a library
-      // For now, try to use Firecrawl's output, or log that extraction is needed
+    case "xlsx": {
+      // Office documents - Firecrawl may handle these, but if not, extract using libraries
       if (rawContent && rawContent.length > 0) {
         extracted = rawContent;
         metadata.officeDocument = true;
-        metadata.note =
-          "Office document - full text extraction may require additional library";
       } else {
-        // Firecrawl didn't extract content, would need library like 'mammoth' or 'xlsx'
-        extracted = `[Office document detected: ${contentType}. Full text extraction requires additional library.]`;
-        metadata.officeDocument = true;
-        metadata.extractionNeeded = true;
+        // Firecrawl didn't extract content, try to extract using libraries
+        // Note: This requires 'mammoth' for .docx and 'xlsx' for .xlsx packages
+        // Install: npm install mammoth xlsx
+        try {
+          if (contentType === "docx") {
+            // TODO: Implement DOCX extraction using mammoth library
+            // const mammoth = await import("mammoth");
+            // const result = await mammoth.extractRawText({ buffer: fileBuffer });
+            // extracted = result.value;
+            extracted = `[Office document detected: ${contentType}. Full text extraction requires 'mammoth' library. Install with: npm install mammoth]`;
+          } else if (contentType === "xlsx") {
+            // TODO: Implement XLSX extraction using xlsx library
+            // const XLSX = await import("xlsx");
+            // const workbook = XLSX.read(fileBuffer, { type: "buffer" });
+            // extracted = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+            extracted = `[Office document detected: ${contentType}. Full text extraction requires 'xlsx' library. Install with: npm install xlsx]`;
+          } else {
+            extracted = `[Office document detected: ${contentType}. Extraction not implemented.]`;
+          }
+          metadata.officeDocument = true;
+          metadata.extractionNeeded = true;
+        } catch (error) {
+          console.error(`Failed to extract office document content:`, error);
+          extracted = `[Office document detected: ${contentType}. Extraction failed.]`;
+          metadata.officeDocument = true;
+          metadata.extractionNeeded = true;
+        }
       }
       break;
+    }
 
     default:
       // Fallback: treat as text

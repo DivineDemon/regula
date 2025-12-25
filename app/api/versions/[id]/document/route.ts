@@ -73,9 +73,38 @@ export async function GET(
 
     // Check if there are attachments (PDFs)
     if (metadata?.attachments && metadata.attachments.length > 0) {
-      // For now, return the first attachment URL
-      // In a real implementation, you might want to generate a presigned URL
-      const attachment = metadata.attachments[0];
+      // Get the requested attachment index (default to first)
+      const attachmentIndex = Number.parseInt(
+        request.nextUrl.searchParams.get("attachmentIndex") || "0",
+        10,
+      );
+      const attachment = metadata.attachments[attachmentIndex];
+
+      if (!attachment) {
+        return NextResponse.json(
+          { error: "Attachment not found" },
+          { status: 404 },
+        );
+      }
+
+      // If attachment URL is stored in S3, generate a presigned URL
+      // Check if the URL is an S3 key (starts with organizations/)
+      if (attachment.url.startsWith("organizations/")) {
+        const presignedUrl = await storage.getPresignedUrl(
+          attachment.url,
+          3600, // 1 hour expiry
+        );
+
+        if (presignedUrl) {
+          return NextResponse.json({
+            url: presignedUrl,
+            contentType: attachment.type || "application/pdf",
+            filename: attachment.filename,
+          });
+        }
+      }
+
+      // Otherwise, return the direct URL (external URL)
       return NextResponse.json({
         url: attachment.url,
         contentType: attachment.type || "application/pdf",

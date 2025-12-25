@@ -1,9 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
-import { organizationMembers, organizations } from "@/lib/db/schema";
+import { organizationMembers } from "@/lib/db/schema";
+import { getCurrentOrganization } from "@/lib/utils/organization";
 import { AuditLogsViewer } from "./audit-logs-viewer";
 
 export default async function AuditLogsPage() {
@@ -13,19 +15,27 @@ export default async function AuditLogsPage() {
     redirect("/login");
   }
 
-  // Get user's first organization (for now, we'll use the first one)
-  // In the future, this can be enhanced with organization context from session/cookie
+  // Get current organization from cookie or fallback to first
+  const cookieStore = await cookies();
+  const cookieOrgId = cookieStore.get("currentOrganizationId")?.value ?? null;
+  const currentOrg = await getCurrentOrganization(session.user.id, cookieOrgId);
+
+  if (!currentOrg) {
+    redirect("/dashboard");
+  }
+
+  // Get user's role in the current organization
   const [userOrg] = await db
     .select({
-      organization: organizations,
       role: organizationMembers.role,
     })
     .from(organizationMembers)
-    .innerJoin(
-      organizations,
-      eq(organizationMembers.organizationId, organizations.id),
+    .where(
+      and(
+        eq(organizationMembers.userId, session.user.id),
+        eq(organizationMembers.organizationId, currentOrg.id),
+      ),
     )
-    .where(eq(organizationMembers.userId, session.user.id))
     .limit(1);
 
   if (!userOrg) {
@@ -53,7 +63,7 @@ export default async function AuditLogsPage() {
         </p>
       </div>
 
-      <AuditLogsViewer organizationId={userOrg.organization.id} />
+      <AuditLogsViewer organizationId={currentOrg.id} />
     </div>
   );
 }

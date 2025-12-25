@@ -1,11 +1,17 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  alerts,
   notificationPreferences,
   organizationMembers,
+  organizations,
+  targets,
   users,
 } from "@/lib/db/schema";
 import { email } from "./email";
+import { sendSlackAlertNotification } from "./slack-integration";
+import { PLAN_CONFIGS, type PlanType } from "./stripe";
+import { sendTeamsAlertNotification } from "./teams-integration";
 import { sendWebhook, type WebhookPayload } from "./webhook";
 import { triggerAllWebhooksForAlert } from "./webhook-configs";
 
@@ -83,6 +89,26 @@ export async function sendRealtimeAlertNotification(params: {
     impactScore,
     alertUrl,
   } = params;
+
+  // Check if organization's plan allows real-time alerts
+  const [org] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, organizationId))
+    .limit(1);
+
+  if (!org) {
+    return; // Organization not found
+  }
+
+  const plan = org.plan as PlanType;
+  const planConfig = PLAN_CONFIGS[plan];
+
+  // If plan doesn't allow real-time alerts, skip sending real-time notifications
+  // (users will get digest emails instead)
+  if (!planConfig.realTimeAlerts) {
+    return;
+  }
 
   // Get all organization members
   const members = await db
@@ -175,13 +201,63 @@ export async function sendRealtimeAlertNotification(params: {
     console.error("Error triggering webhook configs:", error);
   });
 
-  // Send Slack notification if configured
-  // Note: This would need to be stored in notification preferences or a separate config
-  // For now, we'll skip this as it requires additional configuration
+  // Send Slack notification if webhook URL is a Slack webhook
+  if (orgPrefs.webhookEnabled && orgPrefs.webhookUrl) {
+    const webhookUrl = orgPrefs.webhookUrl;
+    // Check if it's a Slack webhook URL (starts with https://hooks.slack.com)
+    if (webhookUrl.startsWith("https://hooks.slack.com/")) {
+      // Get alert details for jurisdiction and category (from target)
+      const [alertData] = await db
+        .select({
+          target: targets,
+        })
+        .from(alerts)
+        .innerJoin(targets, eq(alerts.targetId, targets.id))
+        .where(eq(alerts.id, alertId))
+        .limit(1);
 
-  // Send Teams notification if configured
-  // Note: This would need to be stored in notification preferences or a separate config
-  // For now, we'll skip this as it requires additional configuration
+      sendSlackAlertNotification({
+        webhookUrl,
+        alertId,
+        targetLabel,
+        summary,
+        impactScore,
+        alertUrl,
+        jurisdiction: alertData?.target.jurisdiction ?? undefined,
+        category: alertData?.target.category ?? undefined,
+      }).catch((error) => {
+        console.error("Error sending Slack notification:", error);
+      });
+    }
+    // Check if it's a Teams webhook URL (contains webhook.office.com or incoming.office.com)
+    else if (
+      webhookUrl.includes("webhook.office.com") ||
+      webhookUrl.includes("incoming.office.com")
+    ) {
+      // Get alert details for jurisdiction and category (from target)
+      const [alertData] = await db
+        .select({
+          target: targets,
+        })
+        .from(alerts)
+        .innerJoin(targets, eq(alerts.targetId, targets.id))
+        .where(eq(alerts.id, alertId))
+        .limit(1);
+
+      sendTeamsAlertNotification({
+        webhookUrl,
+        alertId,
+        targetLabel,
+        summary,
+        impactScore,
+        alertUrl,
+        jurisdiction: alertData?.target.jurisdiction ?? undefined,
+        category: alertData?.target.category ?? undefined,
+      }).catch((error) => {
+        console.error("Error sending Teams notification:", error);
+      });
+    }
+  }
 }
 
 /**

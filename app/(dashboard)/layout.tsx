@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import { Target } from "lucide-react";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { Logo } from "@/components/logo";
 import { LogoutButton } from "@/components/logout-button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
@@ -52,9 +52,7 @@ export default async function DashboardLayout({
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center gap-2 px-2 py-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Target className="size-4" />
-            </div>
+            <Logo size={32} className="group-data-[collapsible=icon]:mx-auto" />
             <div className="flex flex-col group-data-[collapsible=icon]:hidden">
               <span className="text-sm font-semibold">Regula</span>
               <span className="text-xs text-muted-foreground">

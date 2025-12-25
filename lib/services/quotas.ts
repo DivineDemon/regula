@@ -47,11 +47,61 @@ export const quotaService = {
         return { allowed: true };
       }
 
-      case "create_crawl":
-      case "store_data":
-        // For now, we allow unlimited crawls and storage within retention limits
-        // These can be enforced later if needed
+      case "create_crawl": {
+        // Check crawl quota
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const [crawlsResult] = await db
+          .select({ count: count() })
+          .from(versions)
+          .innerJoin(targets, eq(versions.targetId, targets.id))
+          .where(
+            and(
+              eq(targets.organizationId, organizationId),
+              gte(versions.crawledAt, startOfMonth),
+            ),
+          );
+
+        const crawlsCount = Number(crawlsResult?.count ?? 0);
+
+        // If plan has crawl quota, check it
+        if (planConfig.crawlQuota !== undefined) {
+          if (crawlsCount >= planConfig.crawlQuota) {
+            return {
+              allowed: false,
+              reason: `Crawl quota exceeded. Your ${planConfig.name} plan allows ${planConfig.crawlQuota} crawls per month.`,
+            };
+          }
+        }
+
         return { allowed: true };
+      }
+
+      case "store_data": {
+        // Check storage quota
+        const [storageResult] = await db
+          .select({
+            totalBytes: sql<number>`COALESCE(SUM(LENGTH(${versions.content})), 0)`,
+          })
+          .from(versions)
+          .innerJoin(targets, eq(versions.targetId, targets.id))
+          .where(eq(targets.organizationId, organizationId));
+
+        const storageBytes = Number(storageResult?.totalBytes ?? 0);
+
+        // If plan has storage quota, check it
+        if (planConfig.storageQuota !== undefined) {
+          if (storageBytes >= planConfig.storageQuota) {
+            const storageGB = (planConfig.storageQuota / 1073741824).toFixed(1);
+            return {
+              allowed: false,
+              reason: `Storage quota exceeded. Your ${planConfig.name} plan allows ${storageGB}GB of storage.`,
+            };
+          }
+        }
+
+        return { allowed: true };
+      }
 
       default:
         return { allowed: false, reason: "Unknown action" };
@@ -128,6 +178,14 @@ export const quotaService = {
       planConfig.retentionDays === Infinity
         ? ("Infinity" as const)
         : planConfig.retentionDays;
+    const crawlQuotaLimit =
+      planConfig.crawlQuota === undefined
+        ? ("Infinity" as const)
+        : planConfig.crawlQuota;
+    const storageQuotaLimit =
+      planConfig.storageQuota === undefined
+        ? ("Infinity" as const)
+        : planConfig.storageQuota;
 
     return {
       plan: planConfig.name,
@@ -137,6 +195,8 @@ export const quotaService = {
         retentionDays: retentionDaysLimit,
         crawlFrequency: planConfig.crawlFrequency,
         realTimeAlerts: planConfig.realTimeAlerts,
+        crawlQuota: crawlQuotaLimit,
+        storageQuota: storageQuotaLimit,
       },
       usage: {
         targets: targetCount,
@@ -149,7 +209,14 @@ export const quotaService = {
           planConfig.targets === Infinity
             ? 0
             : Math.round((targetCount / planConfig.targets) * 100),
-        // Other metrics don't have hard limits currently
+        crawls:
+          planConfig.crawlQuota === undefined
+            ? 0
+            : Math.round((crawlsCount / planConfig.crawlQuota) * 100),
+        storage:
+          planConfig.storageQuota === undefined
+            ? 0
+            : Math.round((storageBytes / planConfig.storageQuota) * 100),
       },
     };
   },
