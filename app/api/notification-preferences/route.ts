@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { notificationPreferences, organizationMembers } from "@/lib/db/schema";
+import { validateWebhookUrl } from "@/lib/services/webhook";
 
 export async function GET(request: NextRequest) {
   try {
@@ -80,6 +81,7 @@ export async function GET(request: NextRequest) {
       alertThreshold: "all",
       webhookEnabled: false,
       webhookUrl: null,
+      webhookSecret: null,
     });
   } catch (error) {
     console.error("Error fetching notification preferences:", error);
@@ -108,6 +110,7 @@ export async function POST(request: NextRequest) {
       alertThreshold,
       webhookEnabled,
       webhookUrl,
+      webhookSecret,
     } = body;
 
     if (!organizationId) {
@@ -133,6 +136,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Validate webhook URL if provided
+    if (webhookUrl !== undefined && webhookUrl !== null) {
+      if (webhookEnabled && !webhookUrl) {
+        return NextResponse.json(
+          { error: "Webhook URL is required when webhooks are enabled" },
+          { status: 400 },
+        );
+      }
+
+      if (webhookUrl) {
+        const validation = validateWebhookUrl(webhookUrl);
+        if (!validation.valid) {
+          return NextResponse.json(
+            { error: validation.error || "Invalid webhook URL" },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
     // Check if preferences exist
     const [existing] = await db
       .select()
@@ -147,19 +170,36 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       // Update existing preferences
+      const updateData: {
+        emailEnabled?: boolean;
+        emailRealtime?: boolean;
+        emailDigest?: boolean;
+        emailDigestFrequency?: string;
+        alertThreshold?: string;
+        webhookEnabled?: boolean;
+        webhookUrl?: string | null;
+        webhookSecret?: string | null;
+        updatedAt: Date;
+      } = {
+        updatedAt: new Date(),
+      };
+
+      if (emailEnabled !== undefined) updateData.emailEnabled = emailEnabled;
+      if (emailRealtime !== undefined) updateData.emailRealtime = emailRealtime;
+      if (emailDigest !== undefined) updateData.emailDigest = emailDigest;
+      if (emailDigestFrequency !== undefined)
+        updateData.emailDigestFrequency = emailDigestFrequency;
+      if (alertThreshold !== undefined)
+        updateData.alertThreshold = alertThreshold;
+      if (webhookEnabled !== undefined)
+        updateData.webhookEnabled = webhookEnabled;
+      if (webhookUrl !== undefined) updateData.webhookUrl = webhookUrl || null;
+      if (webhookSecret !== undefined)
+        updateData.webhookSecret = webhookSecret || null;
+
       const [updated] = await db
         .update(notificationPreferences)
-        .set({
-          emailEnabled: emailEnabled ?? existing.emailEnabled,
-          emailRealtime: emailRealtime ?? existing.emailRealtime,
-          emailDigest: emailDigest ?? existing.emailDigest,
-          emailDigestFrequency:
-            emailDigestFrequency ?? existing.emailDigestFrequency,
-          alertThreshold: alertThreshold ?? existing.alertThreshold,
-          webhookEnabled: webhookEnabled ?? existing.webhookEnabled,
-          webhookUrl: webhookUrl ?? existing.webhookUrl,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(notificationPreferences.id, existing.id))
         .returning();
 
@@ -179,6 +219,7 @@ export async function POST(request: NextRequest) {
           alertThreshold: alertThreshold ?? "all",
           webhookEnabled: webhookEnabled ?? false,
           webhookUrl: webhookUrl ?? null,
+          webhookSecret: webhookSecret ?? null,
           createdAt: new Date(),
           updatedAt: new Date(),
         })

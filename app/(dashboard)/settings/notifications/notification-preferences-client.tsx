@@ -36,6 +36,7 @@ interface NotificationPreferences {
   alertThreshold: "all" | "low" | "medium" | "high";
   webhookEnabled: boolean;
   webhookUrl: string | null;
+  webhookSecret: string | null;
 }
 
 export function NotificationPreferencesClient({
@@ -53,6 +54,7 @@ export function NotificationPreferencesClient({
     alertThreshold: "all",
     webhookEnabled: false,
     webhookUrl: null,
+    webhookSecret: null,
   });
 
   useEffect(() => {
@@ -325,24 +327,51 @@ export function NotificationPreferencesClient({
             </div>
 
             {preferences.webhookEnabled && (
-              <div className="space-y-2">
-                <Label htmlFor="webhookUrl">Webhook URL</Label>
-                <Input
-                  id="webhookUrl"
-                  type="url"
-                  placeholder="https://example.com/webhook"
-                  value={preferences.webhookUrl || ""}
-                  onChange={(e) =>
-                    setPreferences((prev) => ({
-                      ...prev,
-                      webhookUrl: e.target.value,
-                    }))
-                  }
-                />
-                <p className="text-sm text-muted-foreground">
-                  Your webhook will receive POST requests with alert data when
-                  alerts are created.
-                </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="webhookUrl">Webhook URL</Label>
+                  <Input
+                    id="webhookUrl"
+                    type="url"
+                    placeholder="https://example.com/webhook"
+                    value={preferences.webhookUrl || ""}
+                    onChange={(e) =>
+                      setPreferences((prev) => ({
+                        ...prev,
+                        webhookUrl: e.target.value,
+                      }))
+                    }
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Your webhook will receive POST requests with alert data when
+                    alerts are created.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="webhookSecret">
+                    Webhook Secret (Optional)
+                  </Label>
+                  <Input
+                    id="webhookSecret"
+                    type="password"
+                    placeholder="Enter secret for HMAC signature"
+                    value={preferences.webhookSecret || ""}
+                    onChange={(e) =>
+                      setPreferences((prev) => ({
+                        ...prev,
+                        webhookSecret: e.target.value || null,
+                      }))
+                    }
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    If provided, webhook requests will include an{" "}
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                      X-Regula-Signature
+                    </code>{" "}
+                    header with HMAC-SHA256 signature for verification.
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>

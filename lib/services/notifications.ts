@@ -6,6 +6,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { email } from "./email";
+import { sendWebhook, type WebhookPayload } from "./webhook";
 
 /**
  * Get notification preferences for a user or organization
@@ -41,6 +42,7 @@ export async function getNotificationPreferences(
     alertThreshold: "all" as const,
     webhookEnabled: false,
     webhookUrl: null,
+    webhookSecret: null,
   };
 }
 
@@ -131,24 +133,29 @@ export async function sendRealtimeAlertNotification(params: {
   // Send webhook if enabled at org level
   const orgPrefs = await getNotificationPreferences(undefined, organizationId);
   if (orgPrefs.webhookEnabled && orgPrefs.webhookUrl) {
-    try {
-      await fetch(orgPrefs.webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "alert.created",
-          alertId,
-          organizationId,
-          targetLabel,
-          summary,
-          impactScore,
-          alertUrl,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-    } catch (error) {
-      console.error("Error sending webhook notification:", error);
-    }
+    const webhookPayload: WebhookPayload = {
+      type: "alert.created",
+      alertId,
+      organizationId,
+      targetLabel,
+      summary,
+      impactScore,
+      alertUrl,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Send webhook with retry, timeout, and proper error handling
+    // Fire and forget - don't block alert creation
+    sendWebhook({
+      url: orgPrefs.webhookUrl,
+      payload: webhookPayload,
+      secret: orgPrefs.webhookSecret ?? null,
+      organizationId,
+      alertId,
+    }).catch((error) => {
+      // This should rarely happen as sendWebhook handles errors internally
+      console.error("Unexpected error in webhook delivery:", error);
+    });
   }
 }
 

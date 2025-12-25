@@ -18,6 +18,7 @@ export const notificationPreferences = pgTable("notification_preferences", {
   // Webhook preferences
   webhookEnabled: boolean("webhookEnabled").notNull().default(false),
   webhookUrl: text("webhookUrl"),
+  webhookSecret: text("webhookSecret"), // Optional secret for HMAC signature
   createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
 });

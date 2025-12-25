@@ -1,12 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-  <!-- squircle background (rounded-rect approximation) -->
-  <rect x="0" y="0" width="24" height="24" rx="6" ry="6" fill="#1447e6"/>
-
-  <!-- icon in white, inset with 5px padding (original design scaled down) -->
-  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <!-- outer / middle / inner radii adjusted so there's ~5px padding around the icon -->
-    <circle cx="12" cy="12" r="7" />
-    <circle cx="12" cy="12" r="4.2" />
-    <circle cx="12" cy="12" r="1.4" />
-  </g>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="512" height="512" rx="100" fill="#1447E6"/>
+<path d="M256 412C342.156 412 412 342.156 412 256C412 169.844 342.156 100 256 100C169.844 100 100 169.844 100 256C100 342.156 169.844 412 256 412Z" stroke="white" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M256 360.203C313.55 360.203 360.203 313.55 360.203 256C360.203 198.45 313.55 151.797 256 151.797C198.45 151.797 151.797 198.45 151.797 256C151.797 313.55 198.45 360.203 256 360.203Z" stroke="white" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M256 308.406C284.943 308.406 308.406 284.943 308.406 256C308.406 227.057 284.943 203.594 256 203.594C227.057 203.594 203.594 227.057 203.594 256C203.594 284.943 227.057 308.406 256 308.406Z" stroke="white" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

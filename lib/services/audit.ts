@@ -47,7 +47,10 @@ export type AuditAction =
   // System operations
   | "system.crawl_triggered"
   | "system.crawl_completed"
-  | "system.crawl_failed";
+  | "system.crawl_failed"
+  // Webhook operations
+  | "webhook.delivered"
+  | "webhook.failed";
 
 /**
  * Audit log metadata structure
