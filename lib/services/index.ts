@@ -8,6 +8,7 @@ export * from "./email";
 export * from "./firecrawl";
 export * from "./impact-scoring";
 export * from "./llm";
+export * from "./organization-profile";
 export * from "./quotas";
 export * from "./redis";
 export * from "./s3";

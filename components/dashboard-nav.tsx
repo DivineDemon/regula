@@ -108,12 +108,11 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
                 pathname === item.url || pathname.startsWith(`${item.url}/`);
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    render={<Link href={item.url} />}
-                    isActive={isActive}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
+                  <SidebarMenuButton asChild isActive={isActive}>
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -132,12 +131,11 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
                 if (pathname === item.url) {
                   return (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        render={<Link href={item.url} />}
-                        isActive={true}
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
+                      <SidebarMenuButton asChild isActive={true}>
+                        <Link href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
@@ -154,12 +152,11 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
                 const isActive = isChildRoute && !hasMoreSpecificMatch;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      render={<Link href={item.url} />}
-                      isActive={isActive}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

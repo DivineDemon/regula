@@ -34,12 +34,12 @@ export default function LandingPage() {
             <span className="text-xl font-bold">Regula</span>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/register">Get Started</Link>
-            </Button>
+            <Link href="/login">
+              <Button variant="ghost">Sign In</Button>
+            </Link>
+            <Link href="/register">
+              <Button>Get Started</Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -57,20 +57,17 @@ export default function LandingPage() {
               change, powered by AI-powered analysis.
             </p>
             <div className="mt-10 flex items-center justify-center gap-4">
-              <Button size="lg" className="text-lg px-8" asChild>
-                <Link href="/register">
+              <Link href="/register">
+                <Button size="lg" className="text-lg px-8">
                   Get Started Free
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-lg px-8"
-                asChild
-              >
-                <Link href="/login">Sign In</Link>
-              </Button>
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button size="lg" variant="outline" className="text-lg px-8">
+                  Sign In
+                </Button>
+              </Link>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               No credit card required • Free trial available
@@ -352,17 +349,16 @@ export default function LandingPage() {
                 keep them compliant
               </p>
               <div className="mt-8 flex items-center justify-center gap-4">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="text-lg px-8"
-                  asChild
-                >
-                  <Link href="/register">
+                <Link href="/register">
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    className="text-lg px-8"
+                  >
                     Start Free Trial
                     <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

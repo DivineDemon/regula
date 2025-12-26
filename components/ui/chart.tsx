@@ -80,7 +80,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 
   return (
     <style
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: Safe - only setting CSS variables, not HTML content
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: This is used to safely inject CSS variables for chart theming.
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
@@ -174,7 +174,7 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        "border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl grid min-w-32 items-start",
+        "border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl grid min-w-[8rem] items-start",
         className,
       )}
     >

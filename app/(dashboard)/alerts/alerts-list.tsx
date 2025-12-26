@@ -406,7 +406,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                 <Label>Status</Label>
                 <Select
                   value={filters.status}
-                  onValueChange={(value) =>
+                  onValueChange={(value: string) =>
                     setFilters((prev) => ({ ...prev, status: value || "" }))
                   }
                 >
@@ -427,7 +427,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                 <Label>Severity</Label>
                 <Select
                   value={filters.severity}
-                  onValueChange={(value) =>
+                  onValueChange={(value: string) =>
                     setFilters((prev) => ({ ...prev, severity: value || "" }))
                   }
                 >
@@ -447,7 +447,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                 <Label>Jurisdiction</Label>
                 <Select
                   value={filters.jurisdiction}
-                  onValueChange={(value) =>
+                  onValueChange={(value: string) =>
                     setFilters((prev) => ({
                       ...prev,
                       jurisdiction: value || "",
@@ -472,7 +472,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
                 <Label>Category</Label>
                 <Select
                   value={filters.category}
-                  onValueChange={(value) =>
+                  onValueChange={(value: string) =>
                     setFilters((prev) => ({ ...prev, category: value || "" }))
                   }
                 >

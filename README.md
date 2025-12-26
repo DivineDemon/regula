@@ -276,6 +276,7 @@ The application is organized into service modules in `lib/services/`:
 - **`gdpr.ts`** - GDPR compliance (data export/deletion)
 - **`consent.ts`** - Consent management
 - **`data-retention.ts`** - Data retention policies
+- **`organization-profile.ts`** - Organization profile management (save, get, update, validate)
 
 ### UI Components
 
@@ -422,14 +423,27 @@ This project uses:
 
 ### User Onboarding
 
-1. User registers with email and creates organization
-2. Email verification sent
-3. Onboarding wizard guides through:
-   - Welcome and organization setup
-   - Adding first regulatory targets
-   - Configuring alert preferences
-   - Running initial crawl
-   - Waiting for first alert
+The enhanced onboarding system captures comprehensive fintech company information and uses AI to automatically discover relevant regulatory targets.
+
+**Onboarding Flow:**
+
+1. **User Registration**: User registers with email and creates organization
+2. **Email Verification**: Verification email sent to confirm account
+3. **8-Step Onboarding Wizard**:
+   - **Step 1: Company Profile** - Legal entity name, registration details, fintech category, business model, company size
+   - **Step 2: Services & Products** - Multi-select services offered (money transfer, payment processing, card issuance, etc.)
+   - **Step 3: Geographic Operations** - Countries of operation with operation types, services per country, and regulatory license status
+   - **Step 4: Compliance Mapping** - Service-country-compliance matrix and compliance frameworks (AML, KYC, GDPR, etc.)
+   - **Step 5: Partnerships** - Banking partners, payment networks, remittance partners, technology partners
+   - **Step 6: Review & Submit** - Summary review of all collected information
+   - **Step 7: Target Discovery** - AI-powered discovery of relevant regulatory targets using LLM analysis
+   - **Step 8: Target Selection** - Review and select discovered targets, with option to add manually
+
+**Features:**
+- **Auto-save**: Progress saved to localStorage for resume capability
+- **AI Target Discovery**: LLM analyzes company profile to suggest relevant regulatory monitoring targets
+- **Bulk Target Creation**: Selected targets automatically created in bulk
+- **Profile Persistence**: Complete organization profile stored in database for future reference
 
 ### Adding a New Target
 
@@ -472,6 +486,8 @@ Additional documentation is available in the `docs/` directory:
 - **Business Requirements** - Business and compliance requirements
 - **Use Cases** - User stories and workflows
 - **Roadmap** - Product roadmap and milestones
+- **API Documentation** - Complete API reference (`docs/api.md`)
+- **Onboarding Guide** - Step-by-step onboarding guide (`docs/onboarding-guide.md`)
 
 ## 🤝 Contributing
 

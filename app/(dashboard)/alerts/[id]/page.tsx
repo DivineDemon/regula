@@ -444,7 +444,9 @@ export default function AlertDetailPage({
             <CardContent className="space-y-4">
               <Select
                 value={newStatus}
-                onValueChange={(value) => setNewStatus(value as AlertStatus)}
+                onValueChange={(value: string) =>
+                  setNewStatus(value as AlertStatus)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />

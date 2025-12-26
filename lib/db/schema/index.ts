@@ -1,3 +1,5 @@
+// Export organization profile types
+export * from "../../types/organization-profile";
 export * from "./alert-assignments";
 export * from "./alert-comments";
 export * from "./alert-relationships";
