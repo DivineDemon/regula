@@ -34,7 +34,7 @@ export function Navbar() {
           }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          <div className="w-[182px]">
+          <div className="w-[222px]">
             <Logo size={32} />
           </div>
           <div className="flex items-center justify-center gap-8">
@@ -42,7 +42,7 @@ export function Navbar() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm font-medium text-black dark:text-muted-foreground hover:text-primary dark:hover:text-foreground transition-colors"
               >
                 {item.label}
               </Link>
