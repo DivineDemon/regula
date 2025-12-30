@@ -4,8 +4,8 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Logo } from "@/components/logo";
 import { LogoutButton } from "@/components/logout-button";
-import { ModeToggle } from "@/components/mode-toggle";
 import { OrganizationSwitcher } from "@/components/organization-switcher";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
   Sidebar,
   SidebarFooter,
@@ -75,7 +75,7 @@ export default async function DashboardLayout({
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
           <SidebarTrigger />
-          <ModeToggle />
+          <AnimatedThemeToggler className="h-9 w-9 p-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground flex items-center justify-center transition-colors" />
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <ErrorBoundary>{children}</ErrorBoundary>

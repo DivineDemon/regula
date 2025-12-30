@@ -33,7 +33,7 @@ import {
 import { UserRole } from "@/lib/auth/roles";
 
 const inviteSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   role: z.enum([UserRole.ADMIN, UserRole.ANALYST, UserRole.VIEWER]),
 });
 
