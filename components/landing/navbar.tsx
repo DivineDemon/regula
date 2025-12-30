@@ -1,71 +1,80 @@
 "use client";
 
-import { useScroll } from "framer-motion";
+import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
+import { navbarItems } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { AnimatedThemeToggler } from "../ui/animated-theme-toggler";
+import { buttonVariants } from "../ui/button";
 
 export function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
   const { scrollY } = useScroll();
-  const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = scrollY.on("change", (latest) => {
-      setScrolled(latest > 50);
-    });
-    return () => unsubscribe();
-  }, [scrollY]);
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setIsScrolled(latest > 50);
+  });
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300",
-        scrolled
-          ? "h-14 bg-background/95 backdrop-blur-xl border-b"
-          : "h-16 bg-transparent border-0",
-      )}
-    >
-      <div className="container mx-auto px-4 h-full flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <Logo size={32} />
-          <span className="text-xl font-bold font-heading tracking-tight group-hover:text-primary transition-colors">
-            Regula
-          </span>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
-          {[
-            { label: "Features", href: "#features" },
-            { label: "Comparison", href: "#comparison" },
-            { label: "Testimonials", href: "#testimonials" },
-            { label: "Contact", href: "#contact" },
-          ].map((link) => (
+    <nav className="w-full z-50 fixed top-0 py-5">
+      <div className="max-w-7xl w-full px-12 mx-auto">
+        <motion.div
+          className={cn(
+            "p-2.5 rounded-lg flex items-center justify-between",
+            isScrolled
+              ? "border bg-background/30 backdrop-blur-sm"
+              : "border-0 bg-transparent",
+          )}
+          animate={{
+            width: isScrolled ? "980px" : "100%",
+            marginLeft: isScrolled ? "auto" : "0",
+            marginRight: isScrolled ? "auto" : "0",
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+        >
+          <div className="w-[182px]">
+            <Logo size={32} />
+          </div>
+          <div className="flex items-center justify-center gap-8">
+            {navbarItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          <div className="flex items-center justify-center gap-2">
             <Link
-              key={link.label}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              href="/login"
+              className={cn(
+                buttonVariants({
+                  variant: "ghost",
+                  size: "sm",
+                }),
+              )}
             >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="hidden sm:block">
-            <Button variant="ghost" size="sm">
               Sign In
-            </Button>
-          </Link>
-          <Link href="/register">
-            <Button size="sm" className="shadow-lg shadow-primary/25">
+            </Link>
+            <Link
+              href="/register"
+              className={cn(
+                buttonVariants({
+                  variant: "default",
+                  size: "sm",
+                }),
+              )}
+            >
               Get Started
-            </Button>
-          </Link>
-        </div>
+            </Link>
+            <AnimatedThemeToggler className="h-8 w-8 p-1.5 rounded-full border border-input bg-background hover:bg-accent hover:text-accent-foreground flex items-center justify-center transition-colors" />
+          </div>
+        </motion.div>
       </div>
-    </header>
+    </nav>
   );
 }

@@ -1,59 +1,10 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Twitter } from "lucide-react";
 import { Marquee } from "@/components/ui/marquee";
+import { testimonials } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-const testimonials = [
-  {
-    content:
-      "Regula has transformed how we monitor regulatory changes. We've eliminated hours of manual work and never miss a critical update.",
-    author: "Sarah Chen",
-    handle: "sarahchen",
-    role: "Compliance Director",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-  },
-  {
-    content:
-      "The AI-powered analysis is incredibly accurate. It helps us prioritize which regulatory changes actually impact our operations.",
-    author: "Michael Okafor",
-    handle: "mokafor",
-    role: "Head of Risk",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
-  },
-  {
-    content:
-      "Setting up monitoring for multiple jurisdictions used to take weeks. With Regula, we were up and running in under an hour.",
-    author: "Priya Sharma",
-    handle: "priyasharma",
-    role: "CTO",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya",
-  },
-  {
-    content:
-      "The real-time alerts have been a game-changer. We're always the first to know about regulatory updates in our markets.",
-    author: "David Kim",
-    handle: "davidkim",
-    role: "VP of Compliance",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-  },
-  {
-    content:
-      "Regula's impact scoring saves us countless hours. We focus on what matters most to our business operations.",
-    author: "Maria Rodriguez",
-    handle: "mariarod",
-    role: "Regulatory Affairs Manager",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
-  },
-  {
-    content:
-      "The multi-channel notifications ensure our team never misses critical updates, no matter where they are.",
-    author: "James Wilson",
-    handle: "jameswilson",
-    role: "Chief Compliance Officer",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=James",
-  },
-];
 
 // Split testimonials into two rows for marquee
 const firstRow = testimonials.slice(0, Math.ceil(testimonials.length / 2));
@@ -109,17 +60,35 @@ function TweetLikeCard({
 
 export function Testimonials() {
   return (
-    <section id="testimonials" className="py-24 bg-background">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-3xl text-center mb-16">
-          <h2 className="text-3xl font-bold font-heading sm:text-4xl mb-4">
-            Trusted by Compliance Teams
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            See what FinTech leaders are saying about Regula.
-          </p>
-        </div>
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
+    <section
+      id="testimonials"
+      className="w-full relative flex flex-col max-w-7xl mx-auto bg-muted/30 border-x"
+    >
+      <div className="w-full h-full border-x flex flex-col items-start justify-start">
+        <motion.div
+          className="border-b w-full p-10 md:p-14"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: false, margin: "-100px" }}
+        >
+          <div className="max-w-xl mx-auto flex flex-col items-center justify-center gap-2">
+            <h2 className="text-3xl md:text-4xl font-medium tracking-tighter text-center text-balance pb-1">
+              Trusted by Compliance Teams Worldwide
+            </h2>
+            <p className="text-muted-foreground text-center text-balance font-medium">
+              See what compliance professionals are saying about Regula's impact
+              on their regulatory monitoring workflows.
+            </p>
+          </div>
+        </motion.div>
+        <motion.div
+          className="relative flex w-full p-5 flex-col items-center justify-center overflow-hidden"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: false, margin: "-100px" }}
+        >
           <Marquee pauseOnHover className="[--duration:20s]">
             {firstRow.map((testimonial) => (
               <TweetLikeCard
@@ -142,9 +111,9 @@ export function Testimonials() {
               />
             ))}
           </Marquee>
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background to-transparent" />
-        </div>
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-linear-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-linear-to-l from-background to-transparent" />
+        </motion.div>
       </div>
     </section>
   );

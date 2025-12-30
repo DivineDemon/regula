@@ -1,104 +1,54 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Shield, Zap } from "lucide-react";
+import { Layers } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { HeroVideoDialog } from "@/components/ui/hero-video-dialog";
-import DarkVeil from "../ui/dark-veil";
+import { HeroVideoDialog } from "../ui/hero-video-dialog";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden min-h-screen">
-      <div className="absolute inset-0 z-0">
-        <DarkVeil />
-      </div>
-
-      <div className="relative z-10 container mx-auto px-4 text-center pt-24 pb-32 md:pt-36 md:pb-48">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 rounded-full border bg-background/50 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-muted-foreground mb-8"
-        >
-          <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
-          AI-Powered Regulatory Intelligence for Emerging Markets
-        </motion.div>
-
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl md:text-6xl lg:text-7xl font-bold font-heading tracking-tight mb-6"
-        >
-          Automate Compliance. <br className="hidden md:block" />
-          <span className="text-foreground">Stay Ahead of Regulation.</span>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
-        >
-          Stop manually checking regulator websites. Regula provides real-time
-          monitoring, AI-powered impact analysis, and instant alerts for
-          FinTechs in emerging markets.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex items-center justify-center mb-8"
-        >
-          <Link href="/register">
-            <Button
-              size="lg"
-              className="h-12 px-8 text-base shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all"
-            >
-              Start Free Trial
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </motion.div>
-
-        {/* Trust Indicators */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground mb-8"
-        >
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span>GDPR Compliant</span>
+    <section className="w-full relative flex flex-col max-w-7xl mx-auto border-x">
+      <div className="absolute inset-0 -z-10 h-[600px] md:h-[800px] w-full [background:radial-gradient(125%_125%_at_50%_10%,var(--background)_40%,var(--primary)_100%)] rounded-b-xl" />
+      <div className="w-full px-6 min-h-screen">
+        <div className="w-full h-full border-x flex flex-col items-center justify-center gap-12">
+          <div className="pt-32 max-w-3xl mx-auto h-full w-full flex flex-col gap-10 items-center justify-center">
+            <p className="bg-accent/50 rounded-full text-sm h-8 px-3 flex items-center gap-2">
+              <Layers className="size-4" />
+              Introducing Real-Time Regulatory Monitoring
+            </p>
+            <div className="flex flex-col items-center justify-center gap-5">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-medium tracking-tighter text-balance text-center">
+                Stay Ahead of Regulatory Changes with AI-Powered Compliance
+                Monitoring
+              </h1>
+              <p className="text-base md:text-lg text-center text-muted-foreground font-medium text-balance leading-relaxed tracking-tight">
+                Monitor regulatory websites in real-time, get instant alerts on
+                changes, and leverage AI-powered analysis to understand impact.
+                Built for FinTech teams in emerging markets.
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 flex-wrap justify-center">
+              <Link
+                href="/register"
+                className="bg-primary h-9 flex items-center justify-center text-sm font-normal tracking-wide rounded-full text-primary-foreground dark:text-secondary-foreground w-32 px-4 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_3px_3px_-1.5px_rgba(16,24,40,0.06),0_1px_1px_rgba(16,24,40,0.08)] border border-white/12 hover:bg-primary/80 transition-all ease-out active:scale-95"
+              >
+                Try for Free
+              </Link>
+              <Link
+                href="/login"
+                className="h-9 flex items-center justify-center w-32 px-5 text-sm font-normal tracking-wide rounded-full transition-all ease-out active:scale-95 bg-white dark:bg-background border border-[#E5E7EB] dark:border-[#27272A] hover:bg-white/80 dark:hover:bg-background/80"
+              >
+                Log in
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50">
-            <Shield className="h-4 w-4 text-primary" />
-            <span>SOC 2 Ready</span>
+          <div>
+            <HeroVideoDialog
+              className="w-full h-[819px]"
+              animationStyle="from-center"
+              thumbnailAlt="Regula Regulatory Compliance Monitoring Platform Demo Video"
+              videoSrc="https://www.youtube.com/embed/dQw4w9WgXcQ"
+              thumbnailSrc="https://images.unsplash.com/photo-1551288049-bebda4e38f71"
+            />
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50">
-            <Zap className="h-4 w-4 text-primary" />
-            <span>Real-time Updates</span>
-          </div>
-        </motion.div>
-
-        {/* Hero Video Dialog */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="w-full max-w-5xl mx-auto"
-        >
-          <HeroVideoDialog
-            videoSrc="https://www.youtube.com/embed/dQw4w9WgXcQ"
-            thumbnailSrc="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=450&fit=crop"
-            thumbnailAlt="Regula Demo Video"
-            animationStyle="from-center"
-            className="w-full"
-          />
-        </motion.div>
+        </div>
       </div>
     </section>
   );

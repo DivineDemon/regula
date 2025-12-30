@@ -1,64 +1,54 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
+import Image from "next/image";
 
 export function CTA() {
   return (
-    <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-10">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-[100px] -translate-x-1/2 translate-y-1/2" />
-      </div>
-
-      <div className="container mx-auto px-4 text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="mx-auto max-w-3xl"
-        >
-          <h2 className="text-3xl font-bold font-heading sm:text-4xl lg:text-5xl mb-6">
-            Ready to Automate your Compliance?
-          </h2>
-          <p className="text-xl text-primary-foreground/90 mb-10 leading-relaxed">
-            Join FinTech teams across emerging markets who trust Regula to keep
-            them compliant. Start your free trial today.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/register">
-              <ShimmerButton
-                className="h-14 px-8 text-lg shadow-xl"
-                shimmerColor="rgba(255, 255, 255, 0.5)"
-                background="hsl(var(--secondary))"
-                borderRadius="0.5rem"
-              >
-                <span className="text-secondary-foreground font-semibold">
-                  Start Free Trial
-                </span>
-                <ArrowRight className="ml-2 h-5 w-5 text-secondary-foreground" />
-              </ShimmerButton>
-            </Link>
-            <Link href="#contact">
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-8 text-lg border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
-              >
-                Contact Sales
-              </Button>
-            </Link>
-          </div>
-          <p className="mt-8 text-sm opacity-75">
-            No credit card required • 14-day free trial • Cancel anytime
-          </p>
-        </motion.div>
-      </div>
+    <section className="w-full flex flex-col max-w-7xl mx-auto border-x">
+      <motion.div
+        className="w-full rounded-3xl bg-primary overflow-hidden relative"
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: false, margin: "-100px" }}
+      >
+        <Image
+          src="/agent-cta-background.webp"
+          alt="Regula Regulatory Compliance Platform - Start Your Free Trial"
+          className="w-full z-0"
+          width={1000}
+          height={1000}
+        />
+        <div className="absolute inset-0 -top-32 md:-top-40 flex flex-col items-center justify-center">
+          <motion.h1
+            className="text-white text-4xl md:text-7xl font-medium tracking-tighter max-w-xs md:max-w-xl text-center"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: false, margin: "-100px" }}
+          >
+            Automate. Simplify. Thrive
+          </motion.h1>
+          <motion.div
+            className="absolute bottom-10 flex flex-col items-center justify-center gap-2"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            viewport={{ once: false, margin: "-100px" }}
+          >
+            <a
+              className="bg-white text-black font-semibold text-sm h-10 w-fit px-4 rounded-full flex items-center justify-center shadow-md hover:bg-white/90 transition-colors"
+              href="/register"
+            >
+              Start Your 14-Day Free Trial Today
+            </a>
+            <span className="text-white text-sm">
+              Cancel anytime, no questions asked
+            </span>
+          </motion.div>
+        </div>
+      </motion.div>
     </section>
   );
 }
