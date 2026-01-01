@@ -63,17 +63,13 @@ export default async function DashboardLayout({
         </SidebarHeader>
         <DashboardNav userRole={userOrgs[0]?.role} />
         <SidebarFooter>
-          <div className="space-y-2 px-2 py-2">
-            <div className="group-data-[collapsible=icon]:hidden">
-              <OrganizationSwitcher organizations={userOrgs} />
-            </div>
-            <LogoutButton />
-          </div>
+          <LogoutButton />
+          <OrganizationSwitcher organizations={userOrgs} />
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background px-4">
           <SidebarTrigger />
           <AnimatedThemeToggler className="h-9 w-9 p-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground flex items-center justify-center transition-colors" />
         </header>

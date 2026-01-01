@@ -13,7 +13,7 @@ import {
 const chartConfig = {
   count: {
     label: "Count",
-    color: "var(--chart-1)",
+    color: "var(--primary)",
   },
 } satisfies ChartConfig;
 
@@ -41,7 +41,6 @@ export function AlertsBySeverity({ data }: AlertsBySeverityProps) {
               tickLine={false}
               tickMargin={10}
               axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
             />
             <ChartTooltip
               cursor={false}

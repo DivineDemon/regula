@@ -1,12 +1,17 @@
 "use client";
 
-import { AlertCircle, Clock, Target, TrendingUp } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  Clock,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CookieConsentRequiredBanner } from "@/components/cookie-consent-required-banner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -16,9 +21,9 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
+import { cn } from "@/lib/utils";
 import { AlertsBySeverity } from "./dashboard/alerts-by-severity";
 import { AlertsByStatus } from "./dashboard/alerts-by-status";
-import { AlertsOverTime } from "./dashboard/alerts-over-time";
 
 interface DashboardMetrics {
   alerts: {
@@ -52,8 +57,8 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ organizationId }: DashboardContentProps) {
+  const [loading, setLoading] = useState<boolean>(true);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -74,7 +79,7 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
     };
 
     fetchMetrics();
-    // Refresh every 30 seconds
+
     const interval = setInterval(fetchMetrics, 30000);
     return () => clearInterval(interval);
   }, [organizationId]);
@@ -153,181 +158,167 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
     .filter(([severity]) => severity !== "unknown")
     .map(([severity, count]) => ({
       severity: severity.charAt(0).toUpperCase() + severity.slice(1),
-      severityKey: severity, // Keep original key for color mapping
+      severityKey: severity,
       count,
-      name: severity, // For chart config lookup
+      name: severity,
     }));
 
   const alertsByStatusData = Object.entries(metrics.alerts.byStatus).map(
     ([status, count]) => ({
       status: status.charAt(0).toUpperCase() + status.slice(1),
-      statusKey: status, // Keep original key for color mapping
+      statusKey: status,
       count,
-      name: status, // For chart config lookup
+      name: status,
     }),
   );
-
-  const alertsOverTimeData = metrics.alerts.overTime.map((item) => ({
-    date: new Date(item.date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-    count: item.count,
-  }));
 
   return (
     <>
       <CookieConsentRequiredBanner />
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-muted-foreground">
+      <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+        <div className="w-full flex flex-col items-start justify-start gap-2">
+          <h1 className="w-full text-left text-3xl font-bold">Dashboard</h1>
+          <p className="w-full text-left text-muted-foreground">
             Overview of your regulatory monitoring activity
           </p>
         </div>
-
-        {/* Key Metrics Cards */}
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+        <div className="w-full grid grid-cols-4 gap-5 items-center justify-center">
+          <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+            <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+              <AlertCircle className="size-full" />
+            </div>
+            <div className="flex-1 flex items-center flex-col justify-center gap-">
+              <span className="w-full text-left text-2xl font-bold">
+                {metrics.alerts.active}
+              </span>
+              <span className="w-full text-left text-sm text-muted-foreground">
                 Active Alerts
-              </CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.alerts.active}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.alerts.total} total alerts
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Targets</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.targets.total}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.targets.byStatus.active || 0} active
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              </span>
+            </div>
+          </div>
+          <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+            <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+              <Target className="size-full" />
+            </div>
+            <div className="flex-1 flex items-center flex-col justify-center gap-">
+              <span className="w-full text-left text-2xl font-bold">
+                {metrics.targets.total}
+              </span>
+              <span className="w-full text-left text-sm text-muted-foreground">
+                Total Targets
+              </span>
+            </div>
+          </div>
+          <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+            <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+              <TrendingUp className="size-full" />
+            </div>
+            <div className="flex-1 flex items-center flex-col justify-center gap-">
+              <span className="w-full text-left text-2xl font-bold">
+                {metrics.alerts.bySeverity.high}
+              </span>
+              <span className="w-full text-left text-sm text-muted-foreground">
                 High Impact Alerts
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {metrics.alerts.bySeverity.high || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Require immediate attention
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">New Alerts</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {metrics.alerts.byStatus.new || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">Awaiting triage</p>
-            </CardContent>
-          </Card>
+              </span>
+            </div>
+          </div>
+          <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+            <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+              <Clock className="size-full" />
+            </div>
+            <div className="flex-1 flex items-center flex-col justify-center gap-">
+              <span className="w-full text-left text-2xl font-bold">
+                {metrics.alerts.active}
+              </span>
+              <span className="w-full text-left text-sm text-muted-foreground">
+                New Alerts
+              </span>
+            </div>
+          </div>
         </div>
-
-        {/* Charts */}
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        <div className="w-full grid grid-cols-2 gap-5 items-center justify-center">
           <AlertsByStatus data={alertsByStatusData} />
-
-          {/* Additional Chart */}
           {alertsBySeverityData.length > 0 && (
             <AlertsBySeverity data={alertsBySeverityData} />
           )}
-
-          <div className="w-full col-span-2">
-            <AlertsOverTime data={alertsOverTimeData} />
-          </div>
         </div>
-
-        {/* Recent Alerts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Alerts</CardTitle>
-            <Link href="/alerts">
-              <Button variant="outline">View All</Button>
+        <div className="w-full h-full border rounded-3xl flex flex-col items-start justify-start divide-y">
+          <div className="w-full flex items-center justify-center p-5 border-b">
+            <span className="flex-1 text-left text-lg font-bold">
+              Recent Alerts
+            </span>
+            <Link
+              href="/alerts"
+              className={cn(
+                buttonVariants({
+                  variant: "outline",
+                  size: "sm",
+                }),
+              )}
+            >
+              View All
             </Link>
-          </CardHeader>
-          <CardContent>
-            {metrics.alerts.recent.length === 0 ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <AlertCircle className="size-6" />
-                  </EmptyMedia>
-                  <EmptyTitle>No alerts yet</EmptyTitle>
-                  <EmptyDescription>
-                    Alerts will appear here when changes are detected in your
-                    monitored targets.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <div className="space-y-4">
-                {metrics.alerts.recent.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start justify-between border-b pb-4 last:border-0 last:pb-0"
-                  >
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Link
-                          href={`/alerts/${alert.id}?organizationId=${organizationId}`}
-                          className="font-semibold hover:underline"
-                        >
-                          {alert.target.label}
-                        </Link>
-                        {getStatusBadge(alert.status)}
-                        {getSeverityBadge(alert.impactScore)}
-                        {alert.target.jurisdiction && (
-                          <Badge variant="outline">
-                            {alert.target.jurisdiction}
-                          </Badge>
-                        )}
-                      </div>
-                      {alert.summary && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {alert.summary}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(alert.createdAt).toLocaleString()}
-                      </p>
-                    </div>
+          </div>
+          {metrics.alerts.recent.length === 0 ? (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <AlertCircle className="size-6" />
+                </EmptyMedia>
+                <EmptyTitle>No alerts yet</EmptyTitle>
+                <EmptyDescription>
+                  Alerts will appear here when changes are detected in your
+                  monitored targets.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <div className="w-full grid grid-cols-3 items-start justify-start divide-y gap-2.5 p-2.5">
+              {metrics.alerts.recent.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="w-full col-span-1 flex flex-col items-start justify-start border rounded-lg"
+                >
+                  <div className="w-full flex items-center justify-center p-2.5 border-b">
+                    <span className="flex-1 text-left font-bold">
+                      {alert.target.label}
+                    </span>
                     <Link
                       href={`/alerts/${alert.id}?organizationId=${organizationId}`}
+                      className={cn(
+                        buttonVariants({
+                          variant: "ghost",
+                          size: "icon",
+                        }),
+                      )}
                     >
-                      <Button variant="outline" size="sm">
-                        View
-                      </Button>
+                      <ArrowUpRight />
                     </Link>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  {alert.summary && (
+                    <p className="w-full text-left text-sm text-muted-foreground p-2.5 border-b">
+                      {alert.summary}
+                    </p>
+                  )}
+                  <div className="w-full flex items-center justify-center p-2.5">
+                    <span className="flex-1 text-left text-xs text-muted-foreground">
+                      {new Date(alert.createdAt).toLocaleString()}
+                    </span>
+                    <div className="flex items-center justify-center gap-2">
+                      {getStatusBadge(alert.status)}
+                      {getSeverityBadge(alert.impactScore)}
+                      {alert.target.jurisdiction && (
+                        <Badge variant="outline">
+                          {alert.target.jurisdiction}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
