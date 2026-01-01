@@ -4,12 +4,9 @@ import {
   AlertCircle,
   BarChart3,
   Bell,
-  Building2,
-  CreditCard,
   FileText,
   LayoutDashboard,
   Target,
-  User,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -52,19 +49,9 @@ const menuItems: MenuItem[] = [
 
 const settingsItems: MenuItem[] = [
   {
-    title: "Organization",
-    url: "/settings/organization",
-    icon: Building2,
-  },
-  {
     title: "Members",
     url: "/settings/organization/members",
     icon: Users,
-  },
-  {
-    title: "Profile",
-    url: "/settings/profile",
-    icon: User,
   },
   {
     title: "Notifications",
@@ -75,11 +62,6 @@ const settingsItems: MenuItem[] = [
     title: "Usage",
     url: "/settings/usage",
     icon: BarChart3,
-  },
-  {
-    title: "Billing",
-    url: "/settings/billing",
-    icon: CreditCard,
   },
   {
     title: "Audit Logs",
@@ -108,7 +90,11 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
                 pathname === item.url || pathname.startsWith(`${item.url}/`);
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    tooltip={item.title}
+                  >
                     <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
@@ -131,7 +117,11 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
                 if (pathname === item.url) {
                   return (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={true}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={true}
+                        tooltip={item.title}
+                      >
                         <Link href={item.url}>
                           <item.icon />
                           <span>{item.title}</span>
@@ -152,7 +142,11 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
                 const isActive = isChildRoute && !hasMoreSpecificMatch;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.title}
+                    >
                       <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>

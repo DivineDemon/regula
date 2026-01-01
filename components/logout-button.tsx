@@ -21,7 +21,7 @@ export function LogoutButton() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton onClick={handleLogout}>
+        <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
           <LogOut />
           <span>Logout</span>
         </SidebarMenuButton>

@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
@@ -55,11 +56,14 @@ export default async function OrganizationSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Organization Settings</h1>
-        <p className="mt-2 text-muted-foreground">
-          Manage your organization information
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Organization Settings</h1>
+          <p className="mt-2 text-muted-foreground">
+            Manage your organization information
+          </p>
+        </div>
+        <CreateOrganizationDialog />
       </div>
 
       <OrganizationSettingsForm

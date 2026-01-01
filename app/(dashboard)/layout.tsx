@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Logo } from "@/components/logo";
-import { LogoutButton } from "@/components/logout-button";
-import { OrganizationSwitcher } from "@/components/organization-switcher";
+import { NavUser } from "@/components/nav-user";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
   Sidebar,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
-import { organizationMembers, organizations } from "@/lib/db/schema";
+import { organizationMembers, organizations, users } from "@/lib/db/schema";
 
 export default async function DashboardLayout({
   children,
@@ -27,6 +27,17 @@ export default async function DashboardLayout({
   const session = await auth();
 
   if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  // Get user data
+  const [userData] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (!userData) {
     redirect("/login");
   }
 
@@ -47,6 +58,10 @@ export default async function DashboardLayout({
     redirect("/register");
   }
 
+  // Get current organization from cookie
+  const cookieStore = await cookies();
+  const currentOrgId = cookieStore.get("currentOrganizationId")?.value ?? null;
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -63,8 +78,15 @@ export default async function DashboardLayout({
         </SidebarHeader>
         <DashboardNav userRole={userOrgs[0]?.role} />
         <SidebarFooter>
-          <LogoutButton />
-          <OrganizationSwitcher organizations={userOrgs} />
+          <NavUser
+            user={{
+              name: userData.name,
+              email: userData.email,
+              avatar: userData.image,
+            }}
+            organizations={userOrgs}
+            currentOrganizationId={currentOrgId || undefined}
+          />
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
