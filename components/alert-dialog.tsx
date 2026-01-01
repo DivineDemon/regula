@@ -164,20 +164,33 @@ function AlertDialogCancel({
   variant = "outline",
   size = "default",
   asChild = false,
+  children,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
   Pick<React.ComponentProps<typeof Button>, "variant" | "size"> & {
     asChild?: boolean;
   }) {
+  if (asChild) {
+    return (
+      <AlertDialogPrimitive.Cancel
+        data-slot="alert-dialog-cancel"
+        asChild={asChild}
+        {...props}
+      >
+        {children}
+      </AlertDialogPrimitive.Cancel>
+    );
+  }
+
   return (
     <AlertDialogPrimitive.Cancel
       data-slot="alert-dialog-cancel"
-      asChild={asChild}
+      asChild={true}
       {...props}
     >
-      {asChild ? undefined : (
-        <Button variant={variant} size={size} className={cn(className)} />
-      )}
+      <Button variant={variant} size={size} className={cn(className)}>
+        {children}
+      </Button>
     </AlertDialogPrimitive.Cancel>
   );
 }
