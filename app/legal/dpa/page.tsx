@@ -23,7 +23,7 @@ export default function DataProcessingAddendumPage() {
         <CardHeader>
           <CardTitle className="text-3xl">Data Processing Addendum</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Last updated:{" "}
+            Last updated:&nbsp;
             {new Date().toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
@@ -318,7 +318,7 @@ export default function DataProcessingAddendumPage() {
               rights:
             </p>
             <p className="mt-2">
-              Email:{" "}
+              Email:&nbsp;
               <a
                 href="mailto:privacy@regula.com"
                 className="text-primary hover:underline"
@@ -327,7 +327,7 @@ export default function DataProcessingAddendumPage() {
               </a>
             </p>
             <p className="mt-2">
-              Data Protection Officer:{" "}
+              Data Protection Officer:&nbsp;
               <a
                 href="mailto:dpo@regula.com"
                 className="text-primary hover:underline"

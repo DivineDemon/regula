@@ -153,7 +153,7 @@ export function ConsentManagementClient({
                       );
                       return consent?.granted ? (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Granted on:{" "}
+                          Granted on:&nbsp;
                           {new Date(consent.granted).toLocaleDateString()}
                         </p>
                       ) : null;

@@ -24,7 +24,7 @@ export default function AcceptableUsePolicyPage() {
         <CardHeader>
           <CardTitle className="text-3xl">Acceptable Use Policy</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Last updated:{" "}
+            Last updated:&nbsp;
             {new Date().toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
@@ -170,7 +170,7 @@ export default function AcceptableUsePolicyPage() {
             </h2>
             <p>
               If you become aware of any violation of this AUP, please report it
-              to us immediately at{" "}
+              to us immediately at&nbsp;
               <a
                 href="mailto:abuse@regula.com"
                 className="text-primary hover:underline"
@@ -210,7 +210,7 @@ export default function AcceptableUsePolicyPage() {
             <h2 className="text-2xl font-semibold mb-4">9. Contact Us</h2>
             <p>For questions about this AUP, contact us at:</p>
             <p className="mt-2">
-              Email:{" "}
+              Email:&nbsp;
               <a
                 href="mailto:legal@regula.com"
                 className="text-primary hover:underline"

@@ -293,7 +293,7 @@ export function CookieConsentRequiredBanner() {
         )}
         <div className="px-6 pb-4">
           <p className="text-xs text-muted-foreground">
-            Learn more in our{" "}
+            Learn more in our&nbsp;
             <Link
               href="/legal/cookies"
               className="text-primary hover:underline"
@@ -301,7 +301,7 @@ export function CookieConsentRequiredBanner() {
             >
               Cookie Policy
             </Link>
-            . You can change these preferences anytime in{" "}
+            . You can change these preferences anytime in&nbsp;
             <Link
               href="/settings/consent"
               className="text-primary hover:underline"

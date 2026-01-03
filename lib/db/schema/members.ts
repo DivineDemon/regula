@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { UserRole } from "@/lib/auth/roles";
 import { organizations } from "./organizations";
 import { users } from "./users";
@@ -19,6 +19,8 @@ export const organizationMembers = pgTable(
     joinedAt: timestamp("joinedAt", { mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.userId, table.organizationId] }),
+    pk: {
+      columns: [table.userId, table.organizationId],
+    },
   }),
 );

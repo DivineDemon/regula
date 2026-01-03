@@ -2,16 +2,16 @@
 
 import { Loader2, TrashIcon } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/shared/alert-dialog";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { targets } from "@/lib/db/schema";
 
 type Target = typeof targets.$inferSelect;
@@ -63,16 +63,16 @@ export function DeleteTargetDialog({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="default">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Target</AlertDialogTitle>
-          <AlertDialogDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Target</DialogTitle>
+          <DialogDescription>
             Are you sure you want to delete the target &quot;{target.label}
             &quot;? This action cannot be undone and will stop monitoring this
             target.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         {error && (
           <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
@@ -80,9 +80,13 @@ export function DeleteTargetDialog({
           </div>
         )}
 
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={isDeleting}>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button
             onClick={handleDelete}
             disabled={isDeleting}
             variant="destructive"
@@ -98,9 +102,9 @@ export function DeleteTargetDialog({
                 Delete Target
               </>
             )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

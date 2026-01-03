@@ -24,7 +24,7 @@ export default function TermsOfServicePage() {
         <CardHeader>
           <CardTitle className="text-3xl">Terms of Service</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Last updated:{" "}
+            Last updated:&nbsp;
             {new Date().toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
@@ -208,7 +208,8 @@ export default function TermsOfServicePage() {
               13. Contact Information
             </h2>
             <p>
-              If you have any questions about these Terms, please contact us at{" "}
+              If you have any questions about these Terms, please contact us
+              at&nbsp;
               <a
                 href="mailto:legal@regula.com"
                 className="text-primary hover:underline"

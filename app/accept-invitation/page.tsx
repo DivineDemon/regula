@@ -355,15 +355,15 @@ function AcceptInvitationContent() {
                     </Button>
 
                     <p className="text-center text-xs text-muted-foreground">
-                      By creating an account, you agree to our{" "}
+                      By creating an account, you agree to our&nbsp;
                       <Link
                         href="/legal/terms"
                         className="text-primary hover:underline"
                         target="_blank"
                       >
                         Terms of Service
-                      </Link>{" "}
-                      and{" "}
+                      </Link>
+                      &nbsp; and&nbsp;
                       <Link
                         href="/legal/privacy"
                         className="text-primary hover:underline"

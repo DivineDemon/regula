@@ -1,10 +1,4 @@
-import {
-  index,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { alerts } from "./alerts";
 
 /**
@@ -36,19 +30,19 @@ export const alertRelationships = pgTable(
     createdBy: text("createdBy"), // User ID who created the relationship
   },
   (table) => ({
-    pk: primaryKey({
+    pk: {
       columns: [
         table.sourceAlertId,
         table.targetAlertId,
         table.relationshipType,
       ],
-    }),
-    sourceAlertIdIdx: index("alert_relationships_sourceAlertId_idx").on(
+    },
+    idx1: index("alert_relationships_sourceAlertId_idx").on(
       table.sourceAlertId,
     ),
-    targetAlertIdIdx: index("alert_relationships_targetAlertId_idx").on(
+    idx2: index("alert_relationships_targetAlertId_idx").on(
       table.targetAlertId,
     ),
-    typeIdx: index("alert_relationships_type_idx").on(table.relationshipType),
+    idx3: index("alert_relationships_type_idx").on(table.relationshipType),
   }),
 );

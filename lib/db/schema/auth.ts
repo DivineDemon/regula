@@ -1,10 +1,4 @@
-import {
-  integer,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
 // NextAuth.js v5 requires accounts, sessions, and verificationTokens tables
@@ -26,9 +20,9 @@ export const accounts = pgTable(
     session_state: text("session_state"),
   },
   (table) => ({
-    pk: primaryKey({
+    pk: {
       columns: [table.provider, table.providerAccountId],
-    }),
+    },
   }),
 );
 
@@ -48,6 +42,8 @@ export const verificationTokens = pgTable(
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.identifier, table.token] }),
+    pk: {
+      columns: [table.identifier, table.token],
+    },
   }),
 );

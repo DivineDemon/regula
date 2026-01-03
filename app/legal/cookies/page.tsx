@@ -24,7 +24,7 @@ export default function CookiePolicyPage() {
         <CardHeader>
           <CardTitle className="text-3xl">Cookie Policy</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Last updated:{" "}
+            Last updated:&nbsp;
             {new Date().toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
@@ -191,7 +191,7 @@ export default function CookiePolicyPage() {
               If you have questions about our use of cookies, contact us at:
             </p>
             <p className="mt-2">
-              Email:{" "}
+              Email:&nbsp;
               <a
                 href="mailto:privacy@regula.com"
                 className="text-primary hover:underline"

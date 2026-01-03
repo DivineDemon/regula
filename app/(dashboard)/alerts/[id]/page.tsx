@@ -253,7 +253,7 @@ export default function AlertDetailPage({
           </Button>
           <h1 className="text-3xl font-bold">{alertDetail.target.label}</h1>
           <p className="mt-2 text-muted-foreground">
-            Alert created{" "}
+            Alert created&nbsp;
             {new Date(alertDetail.alert.createdAt).toLocaleString()}
           </p>
         </div>
@@ -495,7 +495,7 @@ export default function AlertDetailPage({
                           {assignment.user.name || assignment.user.email}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Assigned{" "}
+                          Assigned&nbsp;
                           {new Date(assignment.assignedAt).toLocaleDateString()}
                         </p>
                       </div>

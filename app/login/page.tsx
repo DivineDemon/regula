@@ -134,7 +134,9 @@ function LoginContent() {
                 </p>
                 {error === "EMAIL_NOT_VERIFIED" && (
                   <a
-                    href={`/check-email?email=${encodeURIComponent(form.getValues("email"))}`}
+                    href={`/check-email?email=${encodeURIComponent(
+                      form.getValues("email"),
+                    )}`}
                     className="text-primary hover:underline block"
                   >
                     Resend verification email
@@ -193,7 +195,7 @@ function LoginContent() {
 
         <div className="space-y-2">
           <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Don't have an account?&nbsp;
             <a href="/register" className="text-primary hover:underline">
               Sign up
             </a>

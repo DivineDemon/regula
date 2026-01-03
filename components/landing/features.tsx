@@ -25,6 +25,12 @@ const features = [
     component: RealTimeMonitoring,
   },
   {
+    title: "Compliance Ready",
+    description: "Enterprise-grade security and audit capabilities",
+    icon: Shield,
+    component: ComplianceReady,
+  },
+  {
     title: "AI-Powered Analysis",
     description:
       "Intelligent summaries and impact scoring powered by Google Gemini",
@@ -49,12 +55,6 @@ const features = [
     description: "Work together with your compliance team effectively",
     icon: Users,
     component: TeamCollaboration,
-  },
-  {
-    title: "Compliance Ready",
-    description: "Enterprise-grade security and audit capabilities",
-    icon: Shield,
-    component: ComplianceReady,
   },
 ];
 

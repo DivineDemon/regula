@@ -293,7 +293,7 @@ export function CookieConsentBanner() {
         )}
         <div className="px-6 pb-4">
           <p className="text-xs text-muted-foreground">
-            Learn more in our{" "}
+            Learn more in our&nbsp;
             <Link
               href="/legal/cookies"
               className="text-primary hover:underline"

@@ -18,7 +18,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -221,150 +220,144 @@ export function TargetsList({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Monitoring Targets</CardTitle>
-            <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              aria-label="Add new target"
-            >
-              <PlusIcon className="size-4" aria-hidden="true" />
-              Add Target
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {targets.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <PlusIcon className="size-6" />
-                </EmptyMedia>
-                <EmptyTitle>No targets configured yet</EmptyTitle>
-                <EmptyDescription>
-                  Get started by adding your first monitoring target
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                  <PlusIcon className="size-4" />
-                  Add Your First Target
-                </Button>
-              </EmptyContent>
-            </Empty>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableHead
-                            key={header.id}
-                            className={
-                              header.id === "actions" ? "text-right" : undefined
-                            }
-                            scope="col"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                          </TableHead>
-                        ))}
-                      </TableRow>
+      <div className="w-full flex flex-col items-start justify-start border rounded-3xl overflow-hidden">
+        <div className="w-full flex items-center justify-center p-5 border-b">
+          <span className="flex-1 text-left">Monitoring Targets</span>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            aria-label="Add new target"
+          >
+            <PlusIcon className="size-4" aria-hidden="true" />
+            Add Target
+          </Button>
+        </div>
+        {targets.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <PlusIcon className="size-6" />
+              </EmptyMedia>
+              <EmptyTitle>No targets configured yet</EmptyTitle>
+              <EmptyDescription>
+                Get started by adding your first monitoring target
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <PlusIcon className="size-4" />
+                Add Your First Target
+              </Button>
+            </EmptyContent>
+          </Empty>
+        ) : (
+          <div className="w-full h-[calc(100vh-279px)] flex flex-col items-start justify-start overflow-auto">
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className={
+                          header.id === "actions"
+                            ? "text-right bg-card"
+                            : "bg-card"
+                        }
+                        scope="col"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
                     ))}
-                  </TableHeader>
-                  <TableBody>
-                    {table.getRowModel().rows?.length ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow
-                          key={row.id}
-                          data-state={row.getIsSelected() && "selected"}
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell
-                              key={cell.id}
-                              className={
-                                cell.column.id === "actions"
-                                  ? "text-right"
-                                  : undefined
-                              }
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext(),
-                              )}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
                         <TableCell
-                          colSpan={columns.length}
-                          className="h-24 text-center"
+                          key={cell.id}
+                          className={
+                            cell.column.id === "actions"
+                              ? "text-right"
+                              : undefined
+                          }
                         >
-                          No results.
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
                         </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <div className="flex items-center justify-between flex-wrap gap-5 p-5 border-t mt-auto w-full">
+              <div className="text-sm text-muted-foreground">
+                Showing&nbsp;
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  1}
+                &nbsp; to&nbsp;
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) *
+                    table.getState().pagination.pageSize,
+                  targets.length,
+                )}
+                &nbsp; of {targets.length} targets
               </div>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing{" "}
-                  {table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    1}{" "}
-                  to{" "}
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    targets.length,
-                  )}{" "}
-                  of {targets.length} targets
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeftIcon className="size-4" aria-hidden="true" />
-                    <span className="sr-only sm:not-sr-only">Previous</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                    aria-label="Next page"
-                  >
-                    <span className="sr-only sm:not-sr-only">Next</span>
-                    <ChevronRightIcon className="size-4" aria-hidden="true" />
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeftIcon className="size-4" aria-hidden="true" />
+                  <span className="sr-only sm:not-sr-only">Previous</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  aria-label="Next page"
+                >
+                  <span className="sr-only sm:not-sr-only">Next</span>
+                  <ChevronRightIcon className="size-4" aria-hidden="true" />
+                </Button>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
+          </div>
+        )}
+      </div>
       <AddTargetDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         organizationId={organizationId}
         onSuccess={handleTargetAdded}
       />
-
       {editingTarget && (
         <EditTargetDialog
           open={!!editingTarget}
@@ -374,7 +367,6 @@ export function TargetsList({
           onSuccess={handleTargetUpdated}
         />
       )}
-
       {deletingTarget && (
         <DeleteTargetDialog
           open={!!deletingTarget}

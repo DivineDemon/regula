@@ -5,16 +5,16 @@ import { InfoIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/shared/alert-dialog";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -148,26 +148,27 @@ export function AddTargetDialog({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="default" className="max-w-2xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Add New Target</AlertDialogTitle>
-          <AlertDialogDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl p-0 gap-0">
+        <DialogHeader className="w-full p-5 border-b">
+          <DialogTitle>Add New Target</DialogTitle>
+          <DialogDescription>
             Add a new regulatory target to monitor for changes
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="w-full flex flex-col items-start justify-start gap-5 p-5"
+          >
             {validationError && (
               <p className="text-sm text-destructive">{validationError}</p>
             )}
-
             <FormField
               control={form.control}
               name="url"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <div className="flex items-center gap-2">
                     <FormLabel>
                       URL <span className="text-destructive">*</span>
@@ -196,12 +197,11 @@ export function AddTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="label"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>
                     Label <span className="text-destructive">*</span>
                   </FormLabel>
@@ -216,12 +216,11 @@ export function AddTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="jurisdiction"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>Jurisdiction</FormLabel>
                   <FormControl>
                     <Input
@@ -234,12 +233,11 @@ export function AddTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>Category</FormLabel>
                   <Select
                     onValueChange={field.onChange}
@@ -247,8 +245,8 @@ export function AddTargetDialog({
                     disabled={isSubmitting}
                   >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -264,15 +262,14 @@ export function AddTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="crawlFrequency"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <div className="flex items-center gap-2">
                     <FormLabel>
-                      Crawl Frequency{" "}
+                      Crawl Frequency&nbsp;
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <Tooltip>
@@ -294,8 +291,8 @@ export function AddTargetDialog({
                     aria-label="Crawl frequency"
                   >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select crawl frequency" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -309,15 +306,16 @@ export function AddTargetDialog({
                 </FormItem>
               )}
             />
-
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isSubmitting || isValidating}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="submit"
-                disabled={isSubmitting || isValidating}
-              >
+            <DialogFooter className="w-full flex items-center justify-end">
+              <DialogClose asChild>
+                <Button
+                  variant="outline"
+                  disabled={isSubmitting || isValidating}
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmitting || isValidating}>
                 {isSubmitting || isValidating ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
@@ -326,11 +324,11 @@ export function AddTargetDialog({
                 ) : (
                   "Create Target"
                 )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
-      </AlertDialogContent>
-    </AlertDialog>
+      </DialogContent>
+    </Dialog>
   );
 }

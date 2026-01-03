@@ -204,7 +204,7 @@ export function AuditLogsViewer({
               Previous
             </Button>
             <span className="text-sm text-muted-foreground">
-              Showing {Number.parseInt(filters.offset, 10) + 1} to{" "}
+              Showing {Number.parseInt(filters.offset, 10) + 1} to&nbsp;
               {Number.parseInt(filters.offset, 10) + logs.length}
             </span>
             <Button

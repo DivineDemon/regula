@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
         <CardHeader>
           <CardTitle className="text-3xl">Privacy Policy</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Last updated:{" "}
+            Last updated:&nbsp;
             {new Date().toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
@@ -190,7 +190,7 @@ export default function PrivacyPolicyPage() {
               </li>
             </ul>
             <p className="mt-4">
-              To exercise these rights, contact us at{" "}
+              To exercise these rights, contact us at&nbsp;
               <a
                 href="mailto:privacy@regula.com"
                 className="text-primary hover:underline"
@@ -226,14 +226,14 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               We use cookies and similar technologies to enhance your
-              experience. See our{" "}
+              experience. See our&nbsp;
               <Link
                 href="/legal/cookies"
                 className="text-primary hover:underline"
               >
                 Cookie Policy
-              </Link>{" "}
-              for details.
+              </Link>
+              &nbsp; for details.
             </p>
           </section>
 
@@ -272,7 +272,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-2xl font-semibold mb-4">12. Contact Us</h2>
             <p>For privacy-related questions or requests, contact us at:</p>
             <p className="mt-2">
-              Email:{" "}
+              Email:&nbsp;
               <a
                 href="mailto:privacy@regula.com"
                 className="text-primary hover:underline"

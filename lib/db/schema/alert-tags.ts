@@ -1,11 +1,4 @@
-import {
-  index,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  unique,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { alerts } from "./alerts";
 import { organizations } from "./organizations";
 
@@ -24,13 +17,11 @@ export const alertTags = pgTable(
     description: text("description"), // Optional description
     createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
   },
-  (table) => ({
+  (table) => [
     // Ensure unique tag names per organization
-    uniqueOrgTag: unique().on(table.organizationId, table.name),
-    organizationIdIdx: index("alert_tags_organizationId_idx").on(
-      table.organizationId,
-    ),
-  }),
+    unique().on(table.organizationId, table.name),
+    index("alert_tags_organizationId_idx").on(table.organizationId),
+  ],
 );
 
 /**
@@ -50,8 +41,10 @@ export const alertTagAssignments = pgTable(
       .defaultNow(),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.alertId, table.tagId] }),
-    alertIdIdx: index("alert_tag_assignments_alertId_idx").on(table.alertId),
-    tagIdIdx: index("alert_tag_assignments_tagId_idx").on(table.tagId),
+    pk: {
+      columns: [table.alertId, table.tagId],
+    },
+    idx1: index("alert_tag_assignments_alertId_idx").on(table.alertId),
+    idx2: index("alert_tag_assignments_tagId_idx").on(table.tagId),
   }),
 );

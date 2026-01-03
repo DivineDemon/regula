@@ -410,7 +410,7 @@ export function Step8TargetSelection({
                       {target.relevantServices &&
                         target.relevantServices.length > 0 && (
                           <div className="text-xs text-muted-foreground">
-                            Relevant services:{" "}
+                            Relevant services:&nbsp;
                             {target.relevantServices.join(", ")}
                           </div>
                         )}

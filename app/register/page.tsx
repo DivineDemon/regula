@@ -228,14 +228,14 @@ export default function RegisterPage() {
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">
-              By creating an account, you agree to our{" "}
+              By creating an account, you agree to our&nbsp;
               <Link
                 href="/legal/terms"
                 className="text-primary hover:underline"
               >
                 Terms of Service
-              </Link>{" "}
-              and{" "}
+              </Link>
+              &nbsp; and&nbsp;
               <Link
                 href="/legal/privacy"
                 className="text-primary hover:underline"
@@ -248,7 +248,7 @@ export default function RegisterPage() {
         </Form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          Already have an account?&nbsp;
           <a href="/login" className="text-primary hover:underline">
             Sign in
           </a>

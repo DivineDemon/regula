@@ -365,11 +365,11 @@ export function NotificationPreferencesClient({
                     }
                   />
                   <p className="text-sm text-muted-foreground">
-                    If provided, webhook requests will include an{" "}
+                    If provided, webhook requests will include an&nbsp;
                     <code className="text-xs bg-muted px-1 py-0.5 rounded">
                       X-Regula-Signature
-                    </code>{" "}
-                    header with HMAC-SHA256 signature for verification.
+                    </code>
+                    &nbsp; header with HMAC-SHA256 signature for verification.
                   </p>
                 </div>
               </div>

@@ -277,7 +277,7 @@ export function ProfileSummary({
                               </div>
                               {license.expiryDate && (
                                 <div className="text-muted-foreground">
-                                  Expires:{" "}
+                                  Expires:&nbsp;
                                   {new Date(
                                     license.expiryDate,
                                   ).toLocaleDateString()}
@@ -344,8 +344,8 @@ export function ProfileSummary({
                 >
                   <div className="mb-2 font-medium text-sm">
                     {SERVICE_LABELS[mapping.service] ||
-                      mapping.service.replace(/_/g, " ")}{" "}
-                    - {getCountryName(mapping.countryCode)}
+                      mapping.service.replace(/_/g, " ")}
+                    &nbsp; - {getCountryName(mapping.countryCode)}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {mapping.complianceRequirements.length === 0 ? (
@@ -453,7 +453,9 @@ export function ProfileSummary({
               {profile.partnerships.map((partnership, index) => {
                 const key =
                   partnership.name ||
-                  `${partnership.type}-${JSON.stringify(partnership.details)}-${index}`;
+                  `${partnership.type}-${JSON.stringify(
+                    partnership.details,
+                  )}-${index}`;
                 return (
                   <div key={key} className="rounded-lg border p-3">
                     <div className="font-medium text-sm capitalize">
@@ -475,7 +477,7 @@ export function ProfileSummary({
                         {partnership.details.corridors &&
                           partnership.details.corridors.length > 0 && (
                             <div>
-                              Corridors:{" "}
+                              Corridors:&nbsp;
                               {partnership.details.corridors
                                 .map((c) => getCountryName(c))
                                 .join(", ")}

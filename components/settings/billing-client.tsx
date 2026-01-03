@@ -286,7 +286,8 @@ export function BillingClient({
 
           {subscription?.currentPeriodEnd && (
             <div className="text-sm text-muted-foreground">
-              {subscription.status === "canceled" ? "Expires" : "Renews"} on{" "}
+              {subscription.status === "canceled" ? "Expires" : "Renews"}{" "}
+              on&nbsp;
               {formatDate(subscription.currentPeriodEnd)}
             </div>
           )}
@@ -429,7 +430,10 @@ export function BillingClient({
                           <p className="text-sm text-muted-foreground">
                             {formatBrandName(pm.card.brand)}
                             {pm.card.expMonth && pm.card.expYear
-                              ? ` • Expires ${String(pm.card.expMonth).padStart(2, "0")}/${pm.card.expYear}`
+                              ? ` • Expires ${String(pm.card.expMonth).padStart(
+                                  2,
+                                  "0",
+                                )}/${pm.card.expYear}`
                               : ""}
                           </p>
                         </>
@@ -497,7 +501,7 @@ export function BillingClient({
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(invoice.created)} •{" "}
+                      {formatDate(invoice.created)} •&nbsp;
                       {formatCurrency(invoice.amount, invoice.currency)}
                     </p>
                   </div>

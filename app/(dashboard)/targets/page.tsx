@@ -44,14 +44,13 @@ export default async function TargetsPage() {
     .orderBy(desc(targets.createdAt));
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Targets</h1>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <h1 className="w-full text-left text-3xl font-bold">Targets</h1>
+        <p className="w-full text-left text-muted-foreground">
           Manage your regulatory monitoring targets
         </p>
       </div>
-
       <TargetsList
         targets={targetsList}
         organizationId={currentOrg.id}

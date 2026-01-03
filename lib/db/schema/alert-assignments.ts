@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { alerts } from "./alerts";
 import { users } from "./users";
 
@@ -16,6 +16,8 @@ export const alertAssignments = pgTable(
       .defaultNow(),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.alertId, table.userId] }),
+    pk: {
+      columns: [table.alertId, table.userId],
+    },
   }),
 );

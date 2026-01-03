@@ -260,7 +260,7 @@ export function MembersList({
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Invited{" "}
+                      Invited&nbsp;
                       {new Date(invitation.createdAt).toLocaleDateString()}
                     </p>
                     {new Date(invitation.expiresAt) < new Date() && (

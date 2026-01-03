@@ -232,7 +232,7 @@ export function UsageDashboardClient({
           <CardHeader>
             <CardTitle>Storage</CardTitle>
             <CardDescription>
-              Data retention:{" "}
+              Data retention:&nbsp;
               {usageData.limits.retentionDays === "Infinity"
                 ? "Unlimited"
                 : `${usageData.limits.retentionDays} days`}

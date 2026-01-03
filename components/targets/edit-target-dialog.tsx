@@ -5,16 +5,16 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/shared/alert-dialog";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -180,26 +180,25 @@ export function EditTargetDialog({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="default" className="max-w-2xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Edit Target</AlertDialogTitle>
-          <AlertDialogDescription>
-            Update target configuration
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl p-0 gap-0">
+        <DialogHeader className="w-full p-5 border-b">
+          <DialogTitle>Edit Target</DialogTitle>
+          <DialogDescription>Update target configuration</DialogDescription>
+        </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="w-full flex flex-col items-start justify-start gap-5 p-5"
+          >
             {validationError && (
               <p className="text-sm text-destructive">{validationError}</p>
             )}
-
             <FormField
               control={form.control}
               name="url"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>
                     URL <span className="text-destructive">*</span>
                   </FormLabel>
@@ -214,12 +213,11 @@ export function EditTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="label"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>
                     Label <span className="text-destructive">*</span>
                   </FormLabel>
@@ -234,12 +232,11 @@ export function EditTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="jurisdiction"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>Jurisdiction</FormLabel>
                   <FormControl>
                     <Input
@@ -252,12 +249,11 @@ export function EditTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>Category</FormLabel>
                   <Select
                     onValueChange={field.onChange}
@@ -265,8 +261,8 @@ export function EditTargetDialog({
                     disabled={isSubmitting}
                   >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -282,12 +278,11 @@ export function EditTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="crawlFrequency"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>
                     Crawl Frequency <span className="text-destructive">*</span>
                   </FormLabel>
@@ -297,8 +292,8 @@ export function EditTargetDialog({
                     disabled={isSubmitting}
                   >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select crawl frequency" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -312,12 +307,11 @@ export function EditTargetDialog({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={field.onChange}
@@ -325,8 +319,8 @@ export function EditTargetDialog({
                     disabled={isSubmitting}
                   >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -340,15 +334,16 @@ export function EditTargetDialog({
                 </FormItem>
               )}
             />
-
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isSubmitting || isValidating}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="submit"
-                disabled={isSubmitting || isValidating}
-              >
+            <DialogFooter className="w-full flex items-center justify-end">
+              <DialogClose asChild>
+                <Button
+                  variant="outline"
+                  disabled={isSubmitting || isValidating}
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmitting || isValidating}>
                 {isSubmitting || isValidating ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
@@ -357,11 +352,11 @@ export function EditTargetDialog({
                 ) : (
                   "Update Target"
                 )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
-      </AlertDialogContent>
-    </AlertDialog>
+      </DialogContent>
+    </Dialog>
   );
 }

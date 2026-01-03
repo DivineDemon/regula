@@ -226,7 +226,7 @@ export function VersionComparisonViewer({
               {diffResult.affectedSections.length > 0 && (
                 <div>
                   <span className="text-sm font-medium">
-                    Affected Sections:{" "}
+                    Affected Sections:&nbsp;
                   </span>
                   <span className="text-sm">
                     {diffResult.affectedSections.slice(0, 3).join(", ")}

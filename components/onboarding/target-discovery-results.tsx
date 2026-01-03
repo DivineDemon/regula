@@ -333,7 +333,7 @@ export function TargetDiscoveryResults({
                             target.relevantServices.length > 0 && (
                               <div>
                                 <span className="font-medium">
-                                  Relevant services:{" "}
+                                  Relevant services:&nbsp;
                                 </span>
                                 {target.relevantServices.join(", ")}
                               </div>
@@ -342,7 +342,7 @@ export function TargetDiscoveryResults({
                             target.relevantCountries.length > 0 && (
                               <div>
                                 <span className="font-medium">
-                                  Relevant countries:{" "}
+                                  Relevant countries:&nbsp;
                                 </span>
                                 {target.relevantCountries.join(", ")}
                               </div>
