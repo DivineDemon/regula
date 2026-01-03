@@ -1,12 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { AuditLogsViewer } from "@/components/settings/audit-logs-viewer";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { organizationMembers } from "@/lib/db/schema";
 import { getCurrentOrganization } from "@/lib/utils/organization";
-import { AuditLogsViewer } from "./audit-logs-viewer";
 
 export default async function AuditLogsPage() {
   const session = await auth();

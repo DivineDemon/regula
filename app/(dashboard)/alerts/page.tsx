@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { AlertsList } from "@/components/alerts/alerts-list";
 import { auth } from "@/lib/auth/config";
 import { getCurrentOrganization } from "@/lib/utils/organization";
-import { AlertsList } from "./alerts-list";
 
 export default async function AlertsPage() {
   const session = await auth();

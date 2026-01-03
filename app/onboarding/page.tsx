@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { targets } from "@/lib/db/schema";
 import { getCurrentOrganization } from "@/lib/utils/organization";
-import { OnboardingWizard } from "./onboarding-wizard";
 
 export default async function OnboardingPage() {
   const session = await auth();

@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations, targets } from "@/lib/db/schema";
 import { getCurrentOrganization } from "@/lib/utils/organization";
-import { DashboardContent } from "../dashboard-content";
 
 export default async function DashboardPage() {
   const session = await auth();

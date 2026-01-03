@@ -5,7 +5,7 @@ import { Globe, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { ServiceSelector } from "@/components/service-selector";
+import { ServiceSelector } from "@/components/onboarding/service-selector";
 import { Button } from "@/components/ui/button";
 import {
   Form,

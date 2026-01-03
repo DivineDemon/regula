@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { InfoIcon, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -14,7 +14,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/alert-dialog";
+} from "@/components/shared/alert-dialog";
 import {
   Form,
   FormControl,
@@ -31,11 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import type { targets } from "@/lib/db/schema";
+
+type Target = typeof targets.$inferSelect;
 
 const targetFormSchema = z.object({
   url: z.string().url("Invalid URL format"),
@@ -47,23 +45,28 @@ const targetFormSchema = z.object({
   crawlFrequency: z
     .enum(["hourly", "daily", "weekly", "monthly"])
     .default("daily"),
+  status: z
+    .enum(["active", "pending", "running", "error", "paused"])
+    .optional(),
 });
 
 type TargetFormData = z.infer<typeof targetFormSchema>;
 
-interface AddTargetDialogProps {
+interface EditTargetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  target: Target;
   organizationId: string;
   onSuccess: () => void;
 }
 
-export function AddTargetDialog({
+export function EditTargetDialog({
   open,
   onOpenChange,
+  target,
   organizationId,
   onSuccess,
-}: AddTargetDialogProps) {
+}: EditTargetDialogProps) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,15 +74,42 @@ export function AddTargetDialog({
   const form = useForm({
     resolver: zodResolver(targetFormSchema),
     defaultValues: {
-      url: "",
-      label: "",
-      jurisdiction: "",
-      category: undefined,
-      crawlFrequency: "daily" as const,
+      url: target.url,
+      label: target.label,
+      jurisdiction: target.jurisdiction || "",
+      category: target.category || undefined,
+      crawlFrequency: target.crawlFrequency as
+        | "daily"
+        | "hourly"
+        | "weekly"
+        | "monthly",
+      status: target.status === "running" ? "pending" : target.status,
     },
   });
 
+  useEffect(() => {
+    if (open && target) {
+      form.reset({
+        url: target.url,
+        label: target.label,
+        jurisdiction: target.jurisdiction || "",
+        category: target.category || undefined,
+        crawlFrequency: target.crawlFrequency as
+          | "daily"
+          | "hourly"
+          | "weekly"
+          | "monthly",
+        status: target.status === "running" ? "pending" : target.status,
+      });
+    }
+  }, [open, target, form]);
+
   const validateUrl = async (url: string) => {
+    // Skip validation if URL hasn't changed
+    if (url === target.url) {
+      return true;
+    }
+
     setIsValidating(true);
     setValidationError(null);
 
@@ -111,37 +141,39 @@ export function AddTargetDialog({
   };
 
   const onSubmit = async (data: TargetFormData) => {
-    // Validate URL accessibility
-    const isValid = await validateUrl(data.url);
-    if (!isValid) {
-      return;
+    // Validate URL accessibility if URL changed
+    if (data.url !== target.url) {
+      const isValid = await validateUrl(data.url);
+      if (!isValid) {
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
     try {
       const response = await fetch("/api/targets", {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...data,
+          targetId: target.id,
           organizationId,
+          ...data,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         setValidationError(
-          errorData.error || "Failed to create target. Please try again.",
+          errorData.error || "Failed to update target. Please try again.",
         );
         return;
       }
 
-      form.reset();
       setValidationError(null);
       onSuccess();
     } catch (_error) {
-      setValidationError("Failed to create target. Please try again.");
+      setValidationError("Failed to update target. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -151,9 +183,9 @@ export function AddTargetDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent size="default" className="max-w-2xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Add New Target</AlertDialogTitle>
+          <AlertDialogTitle>Edit Target</AlertDialogTitle>
           <AlertDialogDescription>
-            Add a new regulatory target to monitor for changes
+            Update target configuration
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -168,27 +200,13 @@ export function AddTargetDialog({
               name="url"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center gap-2">
-                    <FormLabel>
-                      URL <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <InfoIcon className="size-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs">
-                          Enter the full URL of the regulatory website or page
-                          you want to monitor for changes.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                  <FormLabel>
+                    URL <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="https://example.com/regulations"
                       disabled={isSubmitting || isValidating}
-                      aria-label="Target URL"
                       {...field}
                     />
                   </FormControl>
@@ -270,28 +288,13 @@ export function AddTargetDialog({
               name="crawlFrequency"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center gap-2">
-                    <FormLabel>
-                      Crawl Frequency{" "}
-                      <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <InfoIcon className="size-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs">
-                          How often Regula should check this target for changes.
-                          More frequent checks may increase costs.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                  <FormLabel>
+                    Crawl Frequency <span className="text-destructive">*</span>
+                  </FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value ?? "daily"}
                     disabled={isSubmitting}
-                    aria-label="Crawl frequency"
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -310,6 +313,34 @@ export function AddTargetDialog({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value ?? "pending"}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="error">Error</SelectItem>
+                      <SelectItem value="paused">Paused</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isSubmitting || isValidating}>
                 Cancel
@@ -321,10 +352,10 @@ export function AddTargetDialog({
                 {isSubmitting || isValidating ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
-                    {isValidating ? "Validating..." : "Creating..."}
+                    {isValidating ? "Validating..." : "Updating..."}
                   </>
                 ) : (
-                  "Create Target"
+                  "Update Target"
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>

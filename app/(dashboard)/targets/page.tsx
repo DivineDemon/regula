@@ -1,11 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { TargetsList } from "@/components/targets/targets-list";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations, targets } from "@/lib/db/schema";
 import { getCurrentOrganization } from "@/lib/utils/organization";
-import { TargetsList } from "./targets-list";
 
 export default async function TargetsPage() {
   const session = await auth();

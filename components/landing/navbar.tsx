@@ -3,7 +3,7 @@
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
-import { Logo } from "@/components/logo";
+import { Logo } from "@/components/shared/logo";
 import { navbarItems } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { AnimatedThemeToggler } from "../ui/animated-theme-toggler";

@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { BillingClient } from "@/components/settings/billing-client";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
-import { BillingClient } from "./billing-client";
 
 export default async function BillingSettingsPage() {
   const session = await auth();

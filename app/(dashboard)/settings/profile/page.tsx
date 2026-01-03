@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { ProfileForm } from "@/components/profile/profile-form";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { ProfileForm } from "./profile-form";
 
 export default async function ProfilePage() {
   const session = await auth();

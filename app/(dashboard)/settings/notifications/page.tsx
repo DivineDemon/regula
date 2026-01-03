@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { NotificationPreferencesClient } from "@/components/settings/notification-preferences-client";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
-import { NotificationPreferencesClient } from "./notification-preferences-client";
 
 export default async function NotificationPreferencesPage() {
   const session = await auth();

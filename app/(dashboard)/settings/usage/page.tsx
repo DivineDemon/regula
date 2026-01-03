@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { UsageDashboardClient } from "@/components/usage/usage-dashboard-client";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
-import { UsageDashboardClient } from "./usage-dashboard-client";
 
 export default async function UsageDashboardPage() {
   const session = await auth();

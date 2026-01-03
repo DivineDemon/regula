@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CookieConsentRequiredBanner } from "@/components/cookie-consent-required-banner";
+import { CookieConsentRequiredBanner } from "@/components/dashboard/cookie-consent-required-banner";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -22,8 +22,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 import { cn } from "@/lib/utils";
-import { AlertsBySeverity } from "./dashboard/alerts-by-severity";
-import { AlertsByStatus } from "./dashboard/alerts-by-status";
+import { AlertsBySeverity } from "./alerts-by-severity";
+import { AlertsByStatus } from "./alerts-by-status";
 
 interface DashboardMetrics {
   alerts: {

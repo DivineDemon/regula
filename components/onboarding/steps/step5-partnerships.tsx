@@ -5,7 +5,7 @@ import { Handshake, Plus } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { CountrySelector } from "@/components/country-selector";
+import { CountrySelector } from "@/components/shared/country-selector";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {

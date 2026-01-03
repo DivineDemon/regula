@@ -11,7 +11,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/alert-dialog";
+} from "@/components/shared/alert-dialog";
 import type { targets } from "@/lib/db/schema";
 
 type Target = typeof targets.$inferSelect;

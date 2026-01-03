@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { DashboardNav } from "@/components/dashboard-nav";
-import { ErrorBoundary } from "@/components/error-boundary";
-import { Logo } from "@/components/logo";
-import { NavUser } from "@/components/nav-user";
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
+import { Logo } from "@/components/shared/logo";
+import { NavUser } from "@/components/shared/nav-user";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
   Sidebar,

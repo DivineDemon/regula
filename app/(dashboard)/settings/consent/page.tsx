@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { ConsentManagementClient } from "@/components/settings/consent-management-client";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { ConsentManagementClient } from "./consent-management-client";
 
 export default async function ConsentPage() {
   const session = await auth();

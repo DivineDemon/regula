@@ -3,7 +3,8 @@
 import { FileText, MessageSquare, UserPlus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { DocumentViewer } from "@/components/document-viewer";
+import { DocumentViewer } from "@/components/alerts/document-viewer";
+import { VersionComparisonViewer } from "@/components/alerts/version-comparison-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { VersionComparisonViewer } from "@/components/version-comparison-viewer";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 
 interface AlertDetail {

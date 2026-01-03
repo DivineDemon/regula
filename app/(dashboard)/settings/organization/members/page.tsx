@@ -1,5 +1,7 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { InviteMemberForm } from "@/components/settings/invite-member-form";
+import { MembersList } from "@/components/settings/members-list";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
@@ -9,8 +11,6 @@ import {
   organizations,
   users,
 } from "@/lib/db/schema";
-import { InviteMemberForm } from "./invite-member-form";
-import { MembersList } from "./members-list";
 
 export default async function OrganizationMembersPage() {
   const session = await auth();

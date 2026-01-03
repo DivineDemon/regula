@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { DataPrivacyClient } from "@/components/settings/data-privacy-client";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations } from "@/lib/db/schema";
-import { DataPrivacyClient } from "./data-privacy-client";
 
 export default async function DataPrivacyPage() {
   const session = await auth();

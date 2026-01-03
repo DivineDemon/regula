@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Logo } from "@/components/logo";
+import { Logo } from "@/components/shared/logo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useOnboardingState } from "@/hooks/use-onboarding-state";
