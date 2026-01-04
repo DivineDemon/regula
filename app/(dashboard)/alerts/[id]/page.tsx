@@ -1,13 +1,30 @@
 "use client";
 
-import { FileText, MessageSquare, UserPlus } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  FileText,
+  Loader2,
+  MessageSquare,
+  Send,
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { AssignMemberDialog } from "@/components/alerts/assign-member-dialog";
 import { DocumentViewer } from "@/components/alerts/document-viewer";
 import { VersionComparisonViewer } from "@/components/alerts/version-comparison-viewer";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   Select,
   SelectContent,
@@ -15,9 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
+import { cn } from "@/lib/utils";
 
 interface AlertDetail {
   alert: {
@@ -49,6 +67,7 @@ interface AlertDetail {
       id: string;
       name: string | null;
       email: string;
+      image: string | null;
     };
   }>;
   comments: Array<{
@@ -59,6 +78,7 @@ interface AlertDetail {
       id: string;
       name: string | null;
       email: string;
+      image: string | null;
     };
   }>;
 }
@@ -78,6 +98,7 @@ export default function AlertDetailPage({
   const [newComment, setNewComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [alertId, setAlertId] = useState<string | null>(null);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 
   useEffect(() => {
     params.then((p) => setAlertId(p.id));
@@ -217,10 +238,134 @@ export default function AlertDetailPage({
     );
   };
 
+  const getUserInitials = (name: string | null, email: string) => {
+    if (name) {
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return email[0]?.toUpperCase() || "U";
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Loading alert...</p>
+      <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+        <div className="w-full flex flex-col items-start justify-start gap-2">
+          <div className="w-full flex items-center justify-start gap-5">
+            <Skeleton className="h-10 w-10 rounded-md" />
+            <Skeleton className="h-9 w-64" />
+          </div>
+          <div className="w-full flex items-center justify-start gap-5">
+            <Skeleton className="h-5 flex-1 max-w-md" />
+            <Skeleton className="ml-auto h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+        </div>
+        <div className="w-full grid grid-cols-3 items-start justify-start gap-5">
+          <div className="w-full col-span-2 flex flex-col items-start justify-start gap-5">
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle>
+                  <Skeleton className="h-6 w-48" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-32 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5" />
+                  <Skeleton className="h-6 w-32" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-96 w-full" />
+              </CardContent>
+            </Card>
+            <div className="w-full rounded-3xl bg-card flex flex-col items-center justify-center border">
+              <div className="w-full flex items-center justify-start gap-2.5 p-5 border-b">
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <div className="w-full flex items-start justify-start gap-2.5 p-5 border-b">
+                <Skeleton className="h-20 flex-1" />
+                <Skeleton className="h-10 w-10 rounded-md" />
+              </div>
+              <div className="w-full flex flex-col items-start justify-start gap-2.5 p-5">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items are static and won't be reordered
+                    key={index}
+                    className="w-full flex flex-col items-center justify-center gap-2"
+                  >
+                    <div className="w-full flex items-center justify-start gap-3.5">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex flex-col items-start justify-start gap-1">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="w-full col-span-1 flex flex-col items-start justify-start border rounded-3xl">
+            <div className="w-full flex items-center justify-center p-5 border-b">
+              <div className="flex-1 flex flex-col items-start justify-start gap-1">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <Skeleton className="h-8 w-12" />
+            </div>
+            <div className="w-full p-5 border-b">
+              <Skeleton className="h-20 w-full" />
+            </div>
+            <div className="w-full flex items-center justify-center p-5 border-b">
+              <Skeleton className="h-5 flex-1 max-w-16" />
+              <div className="ml-auto flex items-center justify-center gap-2.5">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-20" />
+              </div>
+            </div>
+            <div className="w-full flex flex-col items-center justify-center gap-2.5 p-5 border-b">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items are static and won't be reordered
+                  key={index}
+                  className="w-full flex items-center justify-center gap-5"
+                >
+                  <Skeleton className="h-4 flex-1 max-w-24" />
+                  <Skeleton className="ml-auto h-4 w-32" />
+                </div>
+              ))}
+            </div>
+            <div className="w-full flex flex-col items-center justify-center">
+              <div className="w-full flex items-center justify-center p-5 border-b">
+                <Skeleton className="h-6 flex-1 max-w-28" />
+                <Skeleton className="ml-auto h-9 w-32" />
+              </div>
+              <div className="w-full flex flex-col items-start justify-start gap-5 p-5">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items are static and won't be reordered
+                  <div key={index} className="w-full">
+                    <Skeleton className="h-4 w-40 mb-1" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -241,94 +386,35 @@ export default function AlertDetailPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/alerts")}
-            className="mb-4"
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <div className="w-full flex items-center justify-center gap-5">
+          <Link
+            href="/alerts"
+            className={cn(
+              buttonVariants({
+                variant: "outline",
+                size: "icon",
+              }),
+            )}
           >
-            ← Back to Alerts
-          </Button>
-          <h1 className="text-3xl font-bold">{alertDetail.target.label}</h1>
-          <p className="mt-2 text-muted-foreground">
+            <ArrowLeft />
+          </Link>
+          <h1 className="w-full text-left text-3xl font-bold">
+            {alertDetail.target.label}
+          </h1>
+        </div>
+        <div className="w-full flex items-center justify-center gap-2.5">
+          <p className="flex-1 text-left text-muted-foreground">
             Alert created&nbsp;
             {new Date(alertDetail.alert.createdAt).toLocaleString()}
           </p>
-        </div>
-        <div className="flex items-center gap-2">
           {getStatusBadge(alertDetail.alert.status)}
           {getSeverityBadge(alertDetail.alert.impactScore)}
         </div>
       </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Alert Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed">
-                {alertDetail.alert.summary || "No summary available."}
-              </p>
-              {alertDetail.alert.impactScore !== null && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium">Impact Score</p>
-                  <p className="text-2xl font-bold">
-                    {(alertDetail.alert.impactScore * 100).toFixed(0)}%
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Target Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Target Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div>
-                <p className="text-sm font-medium">URL</p>
-                <a
-                  href={alertDetail.target.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
-                  {alertDetail.target.url}
-                </a>
-              </div>
-              {alertDetail.target.jurisdiction && (
-                <div>
-                  <p className="text-sm font-medium">Jurisdiction</p>
-                  <p className="text-sm text-muted-foreground">
-                    {alertDetail.target.jurisdiction}
-                  </p>
-                </div>
-              )}
-              {alertDetail.target.category && (
-                <div>
-                  <p className="text-sm font-medium">Category</p>
-                  <p className="text-sm text-muted-foreground">
-                    {alertDetail.target.category}
-                  </p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm font-medium">Version Crawled</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(alertDetail.version.crawledAt).toLocaleString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Version Comparison */}
+      <div className="w-full grid grid-cols-3 items-start justify-start gap-5">
+        <div className="w-full col-span-2 flex flex-col items-start justify-start gap-5">
           {alertDetail.version.previousVersionId && (
             <VersionComparisonViewer
               currentVersionId={alertDetail.version.id}
@@ -336,120 +422,146 @@ export default function AlertDetailPage({
               organizationId={organizationId || ""}
             />
           )}
-
-          {/* Document Viewer */}
           {(() => {
-            try {
-              const metadata = alertDetail.version.metadata
-                ? JSON.parse(alertDetail.version.metadata)
-                : null;
-              const hasAttachments =
-                metadata?.attachments && metadata.attachments.length > 0;
-              const isPDF = metadata?.contentType === "pdf";
+            const metadata = alertDetail.version.metadata
+              ? JSON.parse(alertDetail.version.metadata)
+              : null;
+            const hasAttachments =
+              metadata?.attachments && metadata.attachments.length > 0;
+            const isPDF = metadata?.contentType === "pdf";
 
-              if (hasAttachments || isPDF) {
-                return (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Document Viewer
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <DocumentViewer
-                        versionId={alertDetail.version.id}
-                        organizationId={organizationId || ""}
-                        filename={
-                          metadata?.attachments?.[0]?.filename ||
-                          `document-${alertDetail.version.id}.pdf`
-                        }
-                      />
-                    </CardContent>
-                  </Card>
-                );
-              }
-              return null;
-            } catch {
-              return null;
+            if (hasAttachments || isPDF) {
+              return (
+                <Card className="w-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Document Viewer
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DocumentViewer
+                      versionId={alertDetail.version.id}
+                      organizationId={organizationId || ""}
+                      filename={
+                        metadata?.attachments?.[0]?.filename ||
+                        `document-${alertDetail.version.id}.pdf`
+                      }
+                    />
+                  </CardContent>
+                </Card>
+              );
             }
+
+            return null;
           })()}
-
-          {/* Comments */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="size-5" />
+          <div className="w-full rounded-3xl bg-card flex flex-col items-center justify-center border">
+            <div className="w-full flex items-center justify-center gap-2.5 p-5 border-b">
+              <MessageSquare className="size-4" />
+              <span className="flex-1 text-left text-lg font-bold">
                 Comments ({alertDetail.comments.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Add Comment Form */}
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={3}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() || submittingComment}
-                  >
-                    {submittingComment ? "Adding..." : "Add Comment"}
-                  </Button>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Comments List */}
+              </span>
+            </div>
+            <div className="w-full flex items-start justify-start gap-2.5 p-5 border-b">
+              <Textarea
+                className="flex-1"
+                placeholder="Add a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                rows={3}
+              />
+              <Button
+                size="icon"
+                variant="default"
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || submittingComment}
+              >
+                {submittingComment ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Send />
+                )}
+              </Button>
+            </div>
+            <div className="w-full flex flex-col items-start justify-start gap-2.5 p-5">
               {alertDetail.comments.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No comments yet. Be the first to comment!
-                </p>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <AlertCircle className="size-6" />
+                    </EmptyMedia>
+                    <EmptyTitle>No comments found</EmptyTitle>
+                    <EmptyDescription>
+                      Comments will appear here when you add a comment to the
+                      alert.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               ) : (
-                <div className="space-y-4">
-                  {alertDetail.comments.map((comment) => (
-                    <div key={comment.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">
-                            {comment.user.name || comment.user.email}
-                          </p>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(comment.createdAt).toLocaleString()}
-                          </span>
-                        </div>
+                alertDetail.comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="w-full flex flex-col items-center justify-center gap-2"
+                  >
+                    <div className="w-full flex items-center justify-start gap-3.5">
+                      <Avatar>
+                        <AvatarImage src={comment.user.image || undefined} />
+                        <AvatarFallback>
+                          {getUserInitials(
+                            comment.user.name,
+                            comment.user.email,
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="w-full text-left text-sm font-medium">
+                          {comment.user.name || comment.user.email}
+                        </span>
+                        <span className="w-full text-left text-xs text-muted-foreground">
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </span>
                       </div>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {comment.content}
-                      </p>
                     </div>
-                  ))}
-                </div>
+                    <p className="w-full text-left text-sm text-muted-foreground whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
+                  </div>
+                ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Status Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <div className="w-full h-full col-span-1 flex flex-col items-start justify-start border rounded-3xl">
+          <div className="w-full flex items-center justify-center p-5 border-b">
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <span className="w-full text-left text-lg font-bold">
+                Alert Details
+              </span>
+              <span className="w-full text-left text-sm text-muted-foreground">
+                {alertDetail.alert.id}
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-destructive">
+              {alertDetail.alert.impactScore
+                ? (alertDetail.alert.impactScore * 100).toFixed(0)
+                : "N/A"}
+              %
+            </p>
+          </div>
+          <span className="w-full text-left text-muted-foreground p-5 border-b">
+            {alertDetail.alert.summary || "No summary available."}
+          </span>
+          <div className="w-full flex items-center justify-center p-5 border-b">
+            <span className="flex-1 text-left font-bold">Status</span>
+            <div className="flex items-center justify-center gap-2.5">
               <Select
                 value={newStatus}
                 onValueChange={(value: string) =>
                   setNewStatus(value as AlertStatus)
                 }
               >
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new">New</SelectItem>
@@ -459,38 +571,83 @@ export default function AlertDetailPage({
                 </SelectContent>
               </Select>
               {newStatus !== alertDetail.alert.status && (
-                <Button
-                  onClick={handleStatusUpdate}
-                  disabled={updating}
-                  className="w-full"
-                >
-                  {updating ? "Updating..." : "Update Status"}
+                <Button onClick={handleStatusUpdate} disabled={updating}>
+                  {updating ? "Updating..." : "Update"}
                 </Button>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Assignments */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="size-5" />
+            </div>
+          </div>
+          <div className="w-full flex flex-col items-center justify-center gap-2.5 p-5 border-b">
+            <div className="w-full flex items-center justify-center gap-5">
+              <span className="flex-1 text-left font-bold">URL</span>
+              <Link
+                href={alertDetail.target.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                {alertDetail.target.url.slice(0, 25)}...
+              </Link>
+            </div>
+            <div className="w-full flex items-center justify-center gap-5">
+              <span className="flex-1 text-left font-bold">Jurisdiction</span>
+              <span className="uppercase">
+                {alertDetail.target.jurisdiction || "N/A"}
+              </span>
+            </div>
+            <div className="w-full flex items-center justify-center gap-5">
+              <span className="flex-1 text-left font-bold">Category</span>
+              <span className="uppercase">
+                {alertDetail.target.category || "N/A"}
+              </span>
+            </div>
+            <div className="w-full flex items-center justify-center gap-5">
+              <span className="flex-1 text-left font-bold">Last Updated</span>
+              <span>
+                {new Date(alertDetail.alert.updatedAt).toLocaleString()}
+              </span>
+            </div>
+          </div>
+          <div className="w-full h-full flex flex-col items-start justify-start">
+            <div className="w-full flex items-center justify-center p-5 border-b">
+              <span className="flex-1 text-left text-lg font-bold">
                 Assigned To
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {alertDetail.assignments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No assignments yet
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {alertDetail.assignments.map((assignment) => (
-                    <div
-                      key={assignment.userId}
-                      className="flex items-center justify-between"
-                    >
-                      <div>
+              </span>
+              <Button size="sm" onClick={() => setAssignDialogOpen(true)}>
+                Add Assignment
+              </Button>
+            </div>
+            {alertDetail.assignments.length === 0 ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <AlertCircle className="size-6" />
+                  </EmptyMedia>
+                  <EmptyTitle>No assignments found</EmptyTitle>
+                  <EmptyDescription>
+                    Assignments will appear here when you assign an alert to a
+                    user.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <div className="w-full flex flex-col items-start justify-start gap-2 p-5">
+                {alertDetail.assignments.map((assignment) => (
+                  <div
+                    key={assignment.userId}
+                    className="flex items-center justify-between w-full p-2.5 border rounded-lg hover:bg-card transition-colors"
+                  >
+                    <div className="w-full flex items-center justify-center gap-3.5">
+                      <Avatar>
+                        <AvatarImage src={assignment.user.image || undefined} />
+                        <AvatarFallback>
+                          {getUserInitials(
+                            assignment.user.name,
+                            assignment.user.email,
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col items-start justify-start w-full">
                         <p className="text-sm font-medium">
                           {assignment.user.name || assignment.user.email}
                         </p>
@@ -500,40 +657,23 @@ export default function AlertDetailPage({
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Metadata */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Metadata</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div>
-                <p className="font-medium">Alert ID</p>
-                <p className="text-muted-foreground font-mono text-xs">
-                  {alertDetail.alert.id}
-                </p>
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="font-medium">Created</p>
-                <p className="text-muted-foreground">
-                  {new Date(alertDetail.alert.createdAt).toLocaleString()}
-                </p>
-              </div>
-              <div>
-                <p className="font-medium">Last Updated</p>
-                <p className="text-muted-foreground">
-                  {new Date(alertDetail.alert.updatedAt).toLocaleString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         </div>
       </div>
+      {alertId && organizationId && (
+        <AssignMemberDialog
+          open={assignDialogOpen}
+          onOpenChange={setAssignDialogOpen}
+          organizationId={organizationId}
+          alertId={alertId}
+          currentAssignments={alertDetail.assignments.map((a) => a.userId)}
+          onSuccess={fetchAlert}
+        />
+      )}
     </div>
   );
 }

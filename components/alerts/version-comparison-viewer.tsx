@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
 
 interface VersionComparisonViewerProps {
   currentVersionId: string;
@@ -147,7 +149,7 @@ export function VersionComparisonViewer({
 
   if (loading) {
     return (
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <Skeleton className="h-6 w-48" />
         </CardHeader>
@@ -174,142 +176,159 @@ export function VersionComparisonViewer({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Version Comparison
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setViewMode(
-                  viewMode === "side-by-side" ? "unified" : "side-by-side",
-                )
-              }
+    <>
+      {diffResult && (
+        <div className="w-full grid grid-cols-2 items-start justify-start gap-5">
+          <div className="w-full col-span-1 flex items-center justify-center rounded-lg border p-2.5">
+            <span className="flex-1 text-left font-bold">Changes Detected</span>
+            <span
+              className={cn("text-sm px-4 py-1 rounded-full", {
+                "bg-green-500/20 text-green-600": diffResult.hasChanges,
+                "bg-red-500/20 text-red-600": !diffResult.hasChanges,
+              })}
             >
-              {viewMode === "side-by-side" ? "Unified View" : "Side-by-Side"}
-            </Button>
+              {diffResult.hasChanges ? "Yes" : "No"}
+            </span>
+          </div>
+          <div className="w-full col-span-1 flex items-center justify-center rounded-lg border p-2.5">
+            <span className="flex-1 text-left font-bold">Similarity Score</span>
+            <span
+              className={cn("text-sm px-4 py-1 rounded-full", {
+                "bg-green-500/20 text-green-600":
+                  diffResult.similarityScore &&
+                  diffResult.similarityScore > 0.5,
+                "bg-red-500/20 text-red-600":
+                  diffResult.similarityScore &&
+                  diffResult.similarityScore <= 0.5,
+              })}
+            >
+              {diffResult.similarityScore
+                ? `${(diffResult.similarityScore * 100).toFixed(1)}%`
+                : "N/A"}
+            </span>
+          </div>
+          <div className="w-full col-span-1 flex items-start justify-start rounded-lg border p-2.5">
+            <span className="w-full text-left font-bold">
+              Affected Sections
+            </span>
+            <div className="w-full flex items-end justify-end flex-wrap">
+              {diffResult.affectedSections.map((t) => (
+                <div className="p-0.5 inline-block w-fit" key={t}>
+                  <Badge key={t}>{t}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="w-full col-span-1 flex items-start justify-start rounded-lg border p-2.5">
+            <span className="w-full text-left font-bold">Change Types</span>
+            <div className="w-full flex items-end justify-end flex-wrap">
+              {diffResult.changeTypes.map((t) => (
+                <div className="p-0.5 inline-block w-fit" key={t}>
+                  <Badge key={t}>{t}</Badge>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Diff Summary */}
-        {diffResult && (
-          <div className="rounded-lg border p-4 bg-muted/50">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div>
-                <span className="text-sm font-medium">Changes Detected: </span>
-                <span className="text-sm">
-                  {diffResult.hasChanges ? "Yes" : "No"}
-                </span>
-              </div>
-              {diffResult.similarityScore !== undefined && (
-                <div>
-                  <span className="text-sm font-medium">Similarity: </span>
-                  <span className="text-sm">
-                    {(diffResult.similarityScore * 100).toFixed(1)}%
-                  </span>
-                </div>
-              )}
-              {diffResult.changeTypes.length > 0 && (
-                <div>
-                  <span className="text-sm font-medium">Change Types: </span>
-                  <span className="text-sm">
-                    {diffResult.changeTypes.join(", ")}
-                  </span>
-                </div>
-              )}
-              {diffResult.affectedSections.length > 0 && (
-                <div>
-                  <span className="text-sm font-medium">
-                    Affected Sections:&nbsp;
-                  </span>
-                  <span className="text-sm">
-                    {diffResult.affectedSections.slice(0, 3).join(", ")}
-                    {diffResult.affectedSections.length > 3 && "..."}
-                  </span>
-                </div>
-              )}
+      )}
+      <Card className="w-full">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Version Comparison
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setViewMode(
+                    viewMode === "side-by-side" ? "unified" : "side-by-side",
+                  )
+                }
+              >
+                {viewMode === "side-by-side" ? "Unified View" : "Side-by-Side"}
+              </Button>
             </div>
           </div>
-        )}
-
-        {/* Version Content */}
-        {viewMode === "side-by-side" ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-muted p-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="text-sm font-medium">Previous Version</span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(previousVersion.crawledAt).toLocaleString()}
-                </span>
-              </div>
-              <div className="max-h-[600px] overflow-auto">
-                {renderDiffContent(previousVersion.content, "previous")}
-              </div>
-            </div>
-
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-muted p-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ArrowRight className="h-4 w-4" />
-                  <span className="text-sm font-medium">Current Version</span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(currentVersion.crawledAt).toLocaleString()}
-                </span>
-              </div>
-              <div className="max-h-[600px] overflow-auto">
-                {renderDiffContent(currentVersion.content, "current")}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <div className="bg-muted p-2">
-              <span className="text-sm font-medium">Unified Diff View</span>
-            </div>
-            <div className="max-h-[600px] overflow-auto p-4">
-              <div className="space-y-2">
-                {diffResult?.structuralChanges.map((change, index) => (
-                  <div
-                    key={`change-${change.position}-${change.action}-${index}`}
-                    className={`p-2 rounded ${
-                      change.action === "added"
-                        ? "bg-green-500/20 border-l-4 border-green-500"
-                        : change.action === "removed"
-                          ? "bg-red-500/20 border-l-4 border-red-500"
-                          : "bg-yellow-500/20 border-l-4 border-yellow-500"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      {change.action === "added" && (
-                        <Plus className="h-4 w-4 text-green-600" />
-                      )}
-                      {change.action === "removed" && (
-                        <Minus className="h-4 w-4 text-red-600" />
-                      )}
-                      <span className="text-xs font-medium uppercase">
-                        {change.action} {change.type}
-                      </span>
-                    </div>
-                    {change.content && (
-                      <div className="text-sm font-mono">{change.content}</div>
-                    )}
+        </CardHeader>
+        <CardContent className="w-full flex space-y-5">
+          {viewMode === "side-by-side" ? (
+            <div className="w-full grid grid-cols-2 gap-4">
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      Previous Version
+                    </span>
                   </div>
-                ))}
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(previousVersion.crawledAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="max-h-[600px] overflow-auto">
+                  {renderDiffContent(previousVersion.content, "previous")}
+                </div>
+              </div>
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ArrowRight className="h-4 w-4" />
+                    <span className="text-sm font-medium">Current Version</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(currentVersion.crawledAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="max-h-[600px] overflow-auto">
+                  {renderDiffContent(currentVersion.content, "current")}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <div className="w-full border rounded-lg overflow-hidden">
+              <div className="bg-muted p-2">
+                <span className="text-sm font-medium">Unified Diff View</span>
+              </div>
+              <div className="max-h-[600px] overflow-auto p-4">
+                <div className="space-y-2">
+                  {diffResult?.structuralChanges.map((change, index) => (
+                    <div
+                      key={`change-${change.position}-${change.action}-${index}`}
+                      className={`p-2 rounded ${
+                        change.action === "added"
+                          ? "bg-green-500/20 border-l-4 border-green-500"
+                          : change.action === "removed"
+                            ? "bg-red-500/20 border-l-4 border-red-500"
+                            : "bg-yellow-500/20 border-l-4 border-yellow-500"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        {change.action === "added" && (
+                          <Plus className="h-4 w-4 text-green-600" />
+                        )}
+                        {change.action === "removed" && (
+                          <Minus className="h-4 w-4 text-red-600" />
+                        )}
+                        <span className="text-xs font-medium uppercase">
+                          {change.action} {change.type}
+                        </span>
+                      </div>
+                      {change.content && (
+                        <div className="text-sm font-mono">
+                          {change.content}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 }
