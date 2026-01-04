@@ -18,7 +18,7 @@ export const navbarItems = [
 ];
 
 export const actionOptions = [
-  { value: null, label: "All Actions" },
+  { value: "all", label: "All Actions" },
   { value: "user.login", label: "User Login" },
   { value: "user.logout", label: "User Logout" },
   { value: "target.created", label: "Target Created" },

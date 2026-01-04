@@ -1,21 +1,29 @@
 "use client";
 
 import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
   AlertCircle,
-  Calendar,
   CheckSquare,
+  ChevronDown,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   Download,
-  Filter,
+  Eye,
   Search,
   Square,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,15 +38,15 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 import { cn } from "@/lib/utils";
 
@@ -72,18 +80,8 @@ export function AlertsList({ organizationId }: AlertsListProps) {
   const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [filters, setFilters] = useState({
-    status: "" as string,
-    severity: "" as string,
-    jurisdiction: "" as string,
-    category: "" as string,
-    dateFrom: "" as string,
-    dateTo: "" as string,
-    search: "" as string,
-  });
   const [jurisdictions, setJurisdictions] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
 
   // Fetch jurisdictions and categories
   useEffect(() => {
@@ -116,9 +114,6 @@ export function AlertsList({ organizationId }: AlertsListProps) {
     try {
       const params = new URLSearchParams({
         organizationId,
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, v]) => v !== ""),
-        ),
       });
 
       const response = await fetch(`/api/alerts?${params.toString()}`);
@@ -131,7 +126,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
     } finally {
       setLoading(false);
     }
-  }, [organizationId, filters]);
+  }, [organizationId]);
 
   useEffect(() => {
     fetchAlerts();
@@ -140,12 +135,11 @@ export function AlertsList({ organizationId }: AlertsListProps) {
   const handleExport = async (format: "csv" | "pdf") => {
     setExporting(true);
     try {
+      // For now, export all alerts (server-side export)
+      // TODO: Implement client-side export of filtered data if needed
       const params = new URLSearchParams({
         organizationId,
         format,
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, v]) => v !== ""),
-        ),
       });
 
       const response = await fetch(`/api/alerts/export?${params.toString()}`);
@@ -177,7 +171,7 @@ export function AlertsList({ organizationId }: AlertsListProps) {
       return (
         <Badge
           variant="destructive"
-          className="bg-red-500/10 text-red-700 dark:text-red-400"
+          className="uppercase bg-red-500/10 text-red-700 dark:text-red-400"
         >
           High
         </Badge>
@@ -185,13 +179,13 @@ export function AlertsList({ organizationId }: AlertsListProps) {
     }
     if (score >= 0.4) {
       return (
-        <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+        <Badge className="uppercase bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
           Medium
         </Badge>
       );
     }
     return (
-      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
+      <Badge className="uppercase bg-green-500/10 text-green-700 dark:text-green-400">
         Low
       </Badge>
     );
@@ -205,25 +199,37 @@ export function AlertsList({ organizationId }: AlertsListProps) {
       closed: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
     };
     return (
-      <Badge className={variants[status]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
+      <Badge className={cn("uppercase", variants[status])}>{status}</Badge>
     );
   };
 
-  const clearFilters = () => {
-    setFilters({
-      status: "",
-      severity: "",
-      jurisdiction: "",
-      category: "",
-      dateFrom: "",
-      dateTo: "",
-      search: "",
-    });
-  };
+  const getImpactScoreBadge = (score: number | null) => {
+    if (score === null) {
+      return <span className="text-muted-foreground">—</span>;
+    }
 
-  const hasActiveFilters = Object.values(filters).some((v) => v !== "");
+    const percentage = (score * 100).toFixed(0);
+
+    if (score >= 0.7) {
+      return (
+        <Badge className="bg-red-500/10 text-red-700 dark:text-red-400">
+          {percentage}%
+        </Badge>
+      );
+    }
+    if (score >= 0.4) {
+      return (
+        <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+          {percentage}%
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
+        {percentage}%
+      </Badge>
+    );
+  };
 
   const handleSelectAll = () => {
     if (selectedAlerts.size === alerts.length) {
@@ -274,381 +280,666 @@ export function AlertsList({ organizationId }: AlertsListProps) {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Alerts</h1>
-          <p className="mt-2 text-muted-foreground">
-            View and manage regulatory change alerts ({total} total)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {selectedAlerts.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {selectedAlerts.size} selected
-              </span>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  className={cn(buttonVariants({ variant: "outline" }))}
-                  disabled={bulkUpdating}
-                >
-                  Bulk Actions
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() => handleBulkStatusUpdate("triaged")}
-                  >
-                    Mark as Triaged
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleBulkStatusUpdate("actioned")}
-                  >
-                    Mark as Actioned
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleBulkStatusUpdate("closed")}
-                  >
-                    Mark as Closed
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedAlerts(new Set())}
-              >
-                Clear
-              </Button>
-            </div>
+  // Define columns for the data table
+  const columns: ColumnDef<{ alert: Alert; target: Alert["target"] }>[] = [
+    {
+      id: "select",
+      header: () => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSelectAll}
+          className="h-8 w-8 p-0"
+          aria-label="Select all alerts"
+        >
+          {selectedAlerts.size === alerts.length ? (
+            <CheckSquare className="h-4 w-4" />
+          ) : (
+            <Square className="h-4 w-4" />
           )}
-          <Button
-            variant="outline"
-            onClick={() => handleExport("csv")}
-            disabled={exporting || total === 0}
-          >
-            <Download className="mr-2 size-4" />
-            Export CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleExport("pdf")}
-            disabled={exporting || total === 0}
-          >
-            <Download className="mr-2 size-4" />
-            Export PDF
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="mr-2 size-4" />
-            Filters
-            {hasActiveFilters && (
-              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                {Object.values(filters).filter((v) => v !== "").length}
-              </span>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search
-            className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            placeholder="Search alerts by summary, target, or jurisdiction..."
-            value={filters.search}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            className="pl-10"
-            aria-label="Search alerts"
-          />
-        </div>
-        {filters.search && (
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const alertId = row.original.alert.id;
+        return (
           <Button
             variant="ghost"
-            size="icon"
-            onClick={() => setFilters((prev) => ({ ...prev, search: "" }))}
+            size="sm"
+            onClick={() => handleSelectAlert(alertId)}
+            className="h-6 w-6 p-0"
+            aria-label={`Select alert ${alertId}`}
           >
-            <X className="size-4" />
+            {selectedAlerts.has(alertId) ? (
+              <CheckSquare className="h-4 w-4" />
+            ) : (
+              <Square className="h-4 w-4" />
+            )}
           </Button>
-        )}
+        );
+      },
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => {
+        const target = row.original.target;
+        return (
+          <Link
+            href={`/alerts/${row.original.alert.id}?organizationId=${organizationId}`}
+            className="font-semibold hover:underline"
+            aria-label={`View alert for ${target.label}`}
+          >
+            {target.label}
+          </Link>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: ({ column }) => {
+        const filterValue = column.getFilterValue() as string | undefined;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-auto p-0 font-semibold hover:bg-transparent data-[state=open]:bg-muted"
+              >
+                Status
+                {filterValue && filterValue !== "all" && (
+                  <span className="ml-2 uppercase rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                    {filterValue}
+                  </span>
+                )}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue(undefined)}
+                className={
+                  !filterValue || filterValue === "all" ? "bg-muted" : ""
+                }
+              >
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue("new")}
+                className={filterValue === "new" ? "bg-muted" : ""}
+              >
+                New
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue("triaged")}
+                className={filterValue === "triaged" ? "bg-muted" : ""}
+              >
+                Triaged
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue("actioned")}
+                className={filterValue === "actioned" ? "bg-muted" : ""}
+              >
+                Actioned
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue("closed")}
+                className={filterValue === "closed" ? "bg-muted" : ""}
+              >
+                Closed
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+      cell: ({ row }) => {
+        return getStatusBadge(row.original.alert.status);
+      },
+      filterFn: (row, _, value) => {
+        if (!value || value === "all") return true;
+        return row.original.alert.status === value;
+      },
+    },
+    {
+      accessorKey: "severity",
+      header: ({ column }) => {
+        const filterValue = column.getFilterValue() as string | undefined;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-auto p-0 font-semibold hover:bg-transparent data-[state=open]:bg-muted"
+              >
+                Severity
+                {filterValue && filterValue !== "all" && (
+                  <span className="ml-2 uppercase rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                    {filterValue}
+                  </span>
+                )}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue(undefined)}
+                className={
+                  !filterValue || filterValue === "all" ? "bg-muted" : ""
+                }
+              >
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue("high")}
+                className={filterValue === "high" ? "bg-muted" : ""}
+              >
+                High
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue("medium")}
+                className={filterValue === "medium" ? "bg-muted" : ""}
+              >
+                Medium
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue("low")}
+                className={filterValue === "low" ? "bg-muted" : ""}
+              >
+                Low
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+      cell: ({ row }) => {
+        return getSeverityBadge(row.original.alert.impactScore);
+      },
+      filterFn: (row, _, value) => {
+        if (!value || value === "all") return true;
+        const score = row.original.alert.impactScore;
+        if (score === null) return false;
+        if (value === "high") return score >= 0.7;
+        if (value === "medium") return score >= 0.4 && score < 0.7;
+        if (value === "low") return score < 0.4;
+        return true;
+      },
+    },
+    {
+      accessorKey: "jurisdiction",
+      header: ({ column }) => {
+        const filterValue = column.getFilterValue() as string | undefined;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-auto p-0 font-semibold hover:bg-transparent data-[state=open]:bg-muted"
+              >
+                Jurisdiction
+                {filterValue && filterValue !== "all" && (
+                  <span className="ml-2 uppercase rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                    {filterValue}
+                  </span>
+                )}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue(undefined)}
+                className={
+                  !filterValue || filterValue === "all" ? "bg-muted" : ""
+                }
+              >
+                All
+              </DropdownMenuItem>
+              {jurisdictions
+                .filter((j) => j && j.trim() !== "")
+                .map((j) => (
+                  <DropdownMenuItem
+                    key={j}
+                    onClick={() => column.setFilterValue(j)}
+                    className={cn("uppercase", {
+                      "bg-muted": filterValue === j,
+                    })}
+                  >
+                    {j}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+      cell: ({ row }) => {
+        const jurisdiction = row.original.target.jurisdiction;
+        return jurisdiction ? (
+          <span className="uppercase">{jurisdiction}</span>
+        ) : (
+          "N/A"
+        );
+      },
+      filterFn: (row, _, value) => {
+        if (!value || value === "all") return true;
+        return row.original.target.jurisdiction === value;
+      },
+    },
+    {
+      accessorKey: "category",
+      header: ({ column }) => {
+        const filterValue = column.getFilterValue() as string | undefined;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-auto p-0 font-semibold hover:bg-transparent data-[state=open]:bg-muted"
+              >
+                Category
+                {filterValue && filterValue !== "all" && (
+                  <span className="ml-2 uppercase rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                    {filterValue}
+                  </span>
+                )}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => column.setFilterValue(undefined)}
+                className={
+                  !filterValue || filterValue === "all" ? "bg-muted" : ""
+                }
+              >
+                All
+              </DropdownMenuItem>
+              {categories
+                .filter((c) => c && c.trim() !== "")
+                .map((c) => (
+                  <DropdownMenuItem
+                    key={c}
+                    onClick={() => column.setFilterValue(c)}
+                    className={cn("uppercase", {
+                      "bg-muted": filterValue === c,
+                    })}
+                  >
+                    {c}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+      cell: ({ row }) => {
+        const category = row.original.target.category;
+        return category ? <span className="uppercase">{category}</span> : "N/A";
+      },
+      filterFn: (row, _, value) => {
+        if (!value || value === "all") return true;
+        return row.original.target.category === value;
+      },
+    },
+    {
+      accessorKey: "impact_score",
+      header: "Impact Score",
+      cell: ({ row }) => {
+        return getImpactScoreBadge(row.original.alert.impactScore);
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: "Created At",
+      cell: ({ row }) => {
+        return (
+          <span className="text-sm">
+            {new Date(row.original.alert.createdAt).toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center justify-end">
+            <Link
+              href={`/alerts/${row.original.alert.id}?organizationId=${organizationId}`}
+              aria-label={`View details for alert ${row.original.alert.id}`}
+            >
+              <Button type="button" variant="outline" size="icon">
+                <Eye />
+              </Button>
+            </Link>
+          </div>
+        );
+      },
+      enableSorting: false,
+    },
+  ];
+
+  // Create table instance
+  const table = useReactTable({
+    data: alerts,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const search = filterValue.toLowerCase();
+      const alert = row.original.alert;
+      const target = row.original.target;
+
+      return (
+        alert.summary?.toLowerCase().includes(search) ||
+        target.label.toLowerCase().includes(search) ||
+        target.jurisdiction?.toLowerCase().includes(search) ||
+        target.category?.toLowerCase().includes(search) ||
+        false
+      );
+    },
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
+  });
+
+  return (
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <h1 className="w-full text-left text-3xl font-bold">Alerts</h1>
+        <p className="w-full text-left text-muted-foreground">
+          View and manage regulatory change alerts ({total} total)
+        </p>
       </div>
-
-      {/* Filters Panel */}
-      {showFilters && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between flex-wrap gap-2">
-              <span>Filter Alerts</span>
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  aria-label="Clear all filters"
-                >
-                  Clear All
-                </Button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={filters.status}
-                  onValueChange={(value: string) =>
-                    setFilters((prev) => ({ ...prev, status: value || "" }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="triaged">Triaged</SelectItem>
-                    <SelectItem value="actioned">Actioned</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Severity</Label>
-                <Select
-                  value={filters.severity}
-                  onValueChange={(value: string) =>
-                    setFilters((prev) => ({ ...prev, severity: value || "" }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All severities</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Jurisdiction</Label>
-                <Select
-                  value={filters.jurisdiction}
-                  onValueChange={(value: string) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      jurisdiction: value || "",
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All jurisdictions</SelectItem>
-                    {jurisdictions.map((j) => (
-                      <SelectItem key={j} value={j}>
-                        {j}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select
-                  value={filters.category}
-                  onValueChange={(value: string) =>
-                    setFilters((prev) => ({ ...prev, category: value || "" }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All categories</SelectItem>
-                    {categories.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="size-4" />
-                  Date From
-                </Label>
-                <Input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      dateFrom: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="size-4" />
-                  Date To
-                </Label>
-                <Input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
-                  }
-                />
+      {loading ? (
+        <div className="w-full h-full rounded-3xl flex flex-col items-start justify-start gap-5">
+          {/* Search and Export Buttons Skeleton */}
+          <div className="w-full flex items-center justify-end gap-2.5">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+          {/* Table Skeleton */}
+          <div className="w-full border rounded-3xl overflow-hidden">
+            <div className="w-full h-[calc(100vh-341px)] overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b">
+                  <TableRow>
+                    <TableHead className="w-12 bg-card">
+                      <Skeleton className="h-4 w-4" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-20" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-16" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-20" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-24" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-20" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-24" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-20" />
+                    </TableHead>
+                    <TableHead className="bg-card">
+                      <Skeleton className="h-4 w-24" />
+                    </TableHead>
+                    <TableHead className="text-right bg-card">
+                      <Skeleton className="h-4 w-16 ml-auto" />
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton rows are static and won't be reordered
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Skeleton className="h-6 w-6 rounded" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-12" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-12" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="h-9 w-9 rounded-md ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {/* Pagination Skeleton */}
+            <div className="flex items-center justify-between flex-wrap gap-5 p-5 border-t mt-auto w-full">
+              <Skeleton className="h-4 w-48" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-20" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Alerts List */}
-      {loading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Skeleton className="h-6 w-6 rounded" />
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-5 w-48" />
-                      <Skeleton className="h-5 w-16" />
-                      <Skeleton className="h-5 w-16" />
-                    </div>
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
-                  <Skeleton className="h-9 w-24" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          </div>
         </div>
       ) : alerts.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <AlertCircle className="size-6" />
-            </EmptyMedia>
-            <EmptyTitle>No alerts found</EmptyTitle>
-            <EmptyDescription>
-              {hasActiveFilters
-                ? "Try adjusting your filters to see more results."
-                : "Alerts will appear here when changes are detected in your monitored targets."}
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <div className="w-full h-full rounded-3xl flex flex-col items-center justify-center">
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <AlertCircle className="size-6" />
+              </EmptyMedia>
+              <EmptyTitle>No alerts found</EmptyTitle>
+              <EmptyDescription>
+                Alerts will appear here when changes are detected in your
+                monitored targets.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {/* Select All Checkbox */}
-          <div className="flex items-center gap-2 pb-2 border-b">
+        <div className="w-full h-full rounded-3xl flex flex-col items-start justify-start gap-5">
+          <div className="w-full flex items-center justify-end gap-2.5">
+            <div className="relative flex-1">
+              <Search
+                className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                placeholder="Search alerts by summary, target, or jurisdiction..."
+                value={table.getState().globalFilter ?? ""}
+                onChange={(e) => table.setGlobalFilter(e.target.value)}
+                className="pl-10"
+                aria-label="Search alerts"
+              />
+            </div>
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSelectAll}
-              className="h-8 w-8 p-0"
+              variant="outline"
+              onClick={() => handleExport("csv")}
+              disabled={exporting || total === 0}
             >
-              {selectedAlerts.size === alerts.length ? (
-                <CheckSquare className="h-4 w-4" />
-              ) : (
-                <Square className="h-4 w-4" />
-              )}
+              <Download className="mr-2 size-4" />
+              Export CSV
             </Button>
-            <span className="text-sm text-muted-foreground">
-              Select all ({alerts.length})
-            </span>
-          </div>
-
-          {alerts.map(({ alert, target }) => (
-            <Card
-              key={alert.id}
-              className={`hover:bg-muted/50 transition-colors ${
-                selectedAlerts.has(alert.id) ? "ring-2 ring-primary" : ""
-              }`}
+            <Button
+              variant="outline"
+              onClick={() => handleExport("pdf")}
+              disabled={exporting || total === 0}
             >
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSelectAlert(alert.id)}
-                    className="h-6 w-6 p-0 mt-1"
+              <Download className="mr-2 size-4" />
+              Export PDF
+            </Button>
+            {selectedAlerts.size > 0 && (
+              <div className="flex items-center gap-2.5">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className={cn(buttonVariants({ variant: "outline" }))}
+                    disabled={bulkUpdating}
                   >
-                    {selectedAlerts.has(alert.id) ? (
-                      <CheckSquare className="h-4 w-4" />
-                    ) : (
-                      <Square className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link
-                        href={`/alerts/${alert.id}?organizationId=${organizationId}`}
-                        className="font-semibold hover:underline"
-                        aria-label={`View alert for ${target.label}`}
+                    Bulk Actions ({selectedAlerts.size})
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() => handleBulkStatusUpdate("triaged")}
+                    >
+                      Mark as Triaged
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleBulkStatusUpdate("actioned")}
+                    >
+                      Mark as Actioned
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleBulkStatusUpdate("closed")}
+                    >
+                      Mark as Closed
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  variant="destructive"
+                  onClick={() => setSelectedAlerts(new Set())}
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
+          {/* Data Table for Alerts */}
+          <div className="w-full border rounded-3xl overflow-hidden">
+            <div className="w-full h-[calc(100vh-331px)] overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          className={
+                            header.id === "actions"
+                              ? "text-right bg-card"
+                              : "bg-card"
+                          }
+                          scope="col"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={
+                          selectedAlerts.has(row.original.alert.id) &&
+                          "selected"
+                        }
                       >
-                        {target.label}
-                      </Link>
-                      {getStatusBadge(alert.status)}
-                      {getSeverityBadge(alert.impactScore)}
-                      {target.jurisdiction && (
-                        <Badge variant="outline">{target.jurisdiction}</Badge>
-                      )}
-                      {target.category && (
-                        <Badge variant="outline">{target.category}</Badge>
-                      )}
-                    </div>
-                    {alert.summary && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {alert.summary}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{new Date(alert.createdAt).toLocaleString()}</span>
-                      {alert.impactScore !== null && (
-                        <span>
-                          Impact: {(alert.impactScore * 100).toFixed(0)}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <Link
-                    href={`/alerts/${alert.id}?organizationId=${organizationId}`}
-                    aria-label={`View details for alert ${alert.id}`}
-                  >
-                    <Button variant="outline" size="sm">
-                      View Details
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell
+                            key={cell.id}
+                            className={
+                              cell.column.id === "actions"
+                                ? "text-right"
+                                : undefined
+                            }
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        No results.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex items-center justify-between flex-wrap gap-5 p-5 border-t mt-auto w-full">
+              <div className="text-sm text-muted-foreground">
+                Showing&nbsp;
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  1}
+                &nbsp; to&nbsp;
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) *
+                    table.getState().pagination.pageSize,
+                  table.getFilteredRowModel().rows.length,
+                )}
+                &nbsp; of {table.getFilteredRowModel().rows.length} alerts
+                {table.getFilteredRowModel().rows.length !== total && (
+                  <span className="ml-2">(filtered from {total} total)</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeftIcon className="size-4" aria-hidden="true" />
+                  <span className="sr-only sm:not-sr-only">Previous</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  aria-label="Next page"
+                >
+                  <span className="sr-only sm:not-sr-only">Next</span>
+                  <ChevronRightIcon className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

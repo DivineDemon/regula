@@ -25,7 +25,6 @@ function generateCSV(
   }>,
 ): string {
   const headers = [
-    "Alert ID",
     "Status",
     "Summary",
     "Impact Score",
@@ -38,7 +37,6 @@ function generateCSV(
   ];
 
   const rows = alertsData.map(({ alert, target }) => [
-    alert.id,
     alert.status,
     alert.summary?.replace(/"/g, '""') || "",
     alert.impactScore?.toString() || "",
@@ -149,7 +147,14 @@ function generatePDFDocument(
 ) {
   const rowsPerPage = 30; // Approximate rows per page
   const totalPages = Math.ceil(alertsData.length / rowsPerPage);
-  const generatedDate = new Date().toISOString();
+  const generatedDate = new Date().toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
   // Split alerts into pages
   const pages: Array<
@@ -180,9 +185,6 @@ function generatePDFDocument(
 
           {/* Table Header */}
           <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-            <Text style={[pdfStyles.tableCell, pdfStyles.tableCellId]}>
-              Alert ID
-            </Text>
             <Text style={[pdfStyles.tableCell, pdfStyles.tableCellStatus]}>
               Status
             </Text>
@@ -211,9 +213,6 @@ function generatePDFDocument(
           {/* Table Rows */}
           {pageAlerts.map(({ alert, target }) => (
             <View key={alert.id} style={pdfStyles.tableRow}>
-              <Text style={[pdfStyles.tableCell, pdfStyles.tableCellId]}>
-                {alert.id}
-              </Text>
               <Text style={[pdfStyles.tableCell, pdfStyles.tableCellStatus]}>
                 {alert.status}
               </Text>

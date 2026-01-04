@@ -45,7 +45,7 @@ export function AuditLogsViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
-    action: "",
+    action: "all",
     limit: "100",
     offset: "0",
   });
@@ -58,7 +58,8 @@ export function AuditLogsViewer({
     try {
       const params = new URLSearchParams({
         organizationId,
-        ...(filters.action && { action: filters.action }),
+        ...(filters.action &&
+          filters.action !== "all" && { action: filters.action }),
         limit: filters.limit,
         offset: filters.offset,
       });
@@ -99,9 +100,9 @@ export function AuditLogsViewer({
     <div className="space-y-4">
       <div className="flex gap-4">
         <Select
-          value={filters.action}
+          value={filters.action || "all"}
           onValueChange={(value) =>
-            setFilters({ ...filters, action: value ?? "", offset: "0" })
+            setFilters({ ...filters, action: value ?? "all", offset: "0" })
           }
         >
           <SelectTrigger className="w-[200px]">
@@ -109,7 +110,10 @@ export function AuditLogsViewer({
           </SelectTrigger>
           <SelectContent>
             {actionOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value ?? ""}>
+              <SelectItem
+                key={option.value || "all"}
+                value={option.value || "all"}
+              >
                 {option.label}
               </SelectItem>
             ))}

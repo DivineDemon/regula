@@ -46,8 +46,8 @@ export function TargetDiscoveryResults({
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("confidence");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
-  const [filterJurisdiction, setFilterJurisdiction] = useState<string>("");
-  const [filterCategory, setFilterCategory] = useState<string>("");
+  const [filterJurisdiction, setFilterJurisdiction] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
 
   // Get unique jurisdictions and categories for filters
   const jurisdictions = useMemo(() => {
@@ -88,12 +88,20 @@ export function TargetDiscoveryResults({
     }
 
     // Filter by jurisdiction
-    if (filterBy === "by_jurisdiction" && filterJurisdiction) {
+    if (
+      filterBy === "by_jurisdiction" &&
+      filterJurisdiction &&
+      filterJurisdiction !== "all"
+    ) {
       filtered = filtered.filter((t) => t.jurisdiction === filterJurisdiction);
     }
 
     // Filter by category
-    if (filterBy === "by_category" && filterCategory) {
+    if (
+      filterBy === "by_category" &&
+      filterCategory &&
+      filterCategory !== "all"
+    ) {
       filtered = filtered.filter((t) => t.category === filterCategory);
     }
 
@@ -207,38 +215,42 @@ export function TargetDiscoveryResults({
 
           {filterBy === "by_jurisdiction" && jurisdictions.length > 0 && (
             <Select
-              value={filterJurisdiction}
-              onValueChange={(value) => setFilterJurisdiction(value ?? "")}
+              value={filterJurisdiction || "all"}
+              onValueChange={(value) => setFilterJurisdiction(value ?? "all")}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Jurisdictions</SelectItem>
-                {jurisdictions.map((j) => (
-                  <SelectItem key={j} value={j}>
-                    {j}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">All Jurisdictions</SelectItem>
+                {jurisdictions
+                  .filter((j) => j && j.trim() !== "")
+                  .map((j) => (
+                    <SelectItem key={j} value={j}>
+                      {j}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           )}
 
           {filterBy === "by_category" && categories.length > 0 && (
             <Select
-              value={filterCategory}
-              onValueChange={(value) => setFilterCategory(value ?? "")}
+              value={filterCategory || "all"}
+              onValueChange={(value) => setFilterCategory(value ?? "all")}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c.toUpperCase()}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories
+                  .filter((c) => c && c.trim() !== "")
+                  .map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c.toUpperCase()}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           )}
