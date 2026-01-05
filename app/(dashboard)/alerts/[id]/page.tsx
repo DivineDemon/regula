@@ -1,679 +1,74 @@
-"use client";
+import { and, eq } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth/config";
+import { db } from "@/lib/db";
+import { organizationMembers } from "@/lib/db/schema";
+import { getAlertWithDetails } from "@/lib/services/alerts";
+import { getCurrentOrganization } from "@/lib/utils/organization";
+import { AlertDetailClient } from "../../../../components/alerts/alert-detail-client";
 
-import {
-  AlertCircle,
-  ArrowLeft,
-  FileText,
-  Loader2,
-  MessageSquare,
-  Send,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { AssignMemberDialog } from "@/components/alerts/assign-member-dialog";
-import { DocumentViewer } from "@/components/alerts/document-viewer";
-import { VersionComparisonViewer } from "@/components/alerts/version-comparison-viewer";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import type { AlertStatus } from "@/lib/db/schema/alerts";
-import { cn } from "@/lib/utils";
-
-interface AlertDetail {
-  alert: {
-    id: string;
-    status: AlertStatus;
-    summary: string | null;
-    impactScore: number | null;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-  target: {
-    id: string;
-    label: string;
-    url: string;
-    jurisdiction: string | null;
-    category: string | null;
-  };
-  version: {
-    id: string;
-    crawledAt: Date;
-    hasChanges: boolean | null;
-    previousVersionId: string | null;
-    metadata: string | null;
-  };
-  assignments: Array<{
-    userId: string;
-    assignedAt: Date;
-    user: {
-      id: string;
-      name: string | null;
-      email: string;
-      image: string | null;
-    };
-  }>;
-  comments: Array<{
-    id: string;
-    content: string;
-    createdAt: Date;
-    user: {
-      id: string;
-      name: string | null;
-      email: string;
-      image: string | null;
-    };
-  }>;
-}
-
-export default function AlertDetailPage({
+export default async function AlertDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ organizationId?: string }>;
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [alertDetail, setAlertDetail] = useState<AlertDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [newStatus, setNewStatus] = useState<AlertStatus | "">("");
-  const [newComment, setNewComment] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
-  const [alertId, setAlertId] = useState<string | null>(null);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const session = await auth();
 
-  useEffect(() => {
-    params.then((p) => setAlertId(p.id));
-    const orgId = searchParams.get("organizationId");
-    if (orgId) {
-      setOrganizationId(orgId);
-    } else {
-      const stored = localStorage.getItem("currentOrganizationId");
-      if (stored) {
-        setOrganizationId(stored);
-      }
-    }
-  }, [params, searchParams]);
-
-  const fetchAlert = useCallback(async () => {
-    if (!alertId || !organizationId) return;
-
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `/api/alerts/${alertId}?organizationId=${organizationId}`,
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch alert");
-      }
-      const data: AlertDetail = await response.json();
-      setAlertDetail(data);
-      setNewStatus(data.alert.status);
-    } catch (error) {
-      console.error("Error fetching alert:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [alertId, organizationId]);
-
-  useEffect(() => {
-    fetchAlert();
-  }, [fetchAlert]);
-
-  const handleStatusUpdate = async () => {
-    if (
-      !alertId ||
-      !organizationId ||
-      !newStatus ||
-      newStatus === alertDetail?.alert.status
-    ) {
-      return;
-    }
-
-    setUpdating(true);
-    try {
-      const response = await fetch(`/api/alerts/${alertId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationId,
-          status: newStatus,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update status");
-      }
-
-      await fetchAlert();
-    } catch (error) {
-      console.error("Error updating status:", error);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleAddComment = async () => {
-    if (!alertId || !organizationId || !newComment.trim()) return;
-
-    setSubmittingComment(true);
-    try {
-      const response = await fetch(`/api/alerts/${alertId}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationId,
-          content: newComment,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add comment");
-      }
-
-      setNewComment("");
-      await fetchAlert();
-    } catch (error) {
-      console.error("Error adding comment:", error);
-    } finally {
-      setSubmittingComment(false);
-    }
-  };
-
-  const getSeverityBadge = (score: number | null) => {
-    if (score === null) return null;
-    if (score >= 0.7) {
-      return (
-        <Badge
-          variant="destructive"
-          className="bg-red-500/10 text-red-700 dark:text-red-400"
-        >
-          High Impact
-        </Badge>
-      );
-    }
-    if (score >= 0.4) {
-      return (
-        <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
-          Medium Impact
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400">
-        Low Impact
-      </Badge>
-    );
-  };
-
-  const getStatusBadge = (status: AlertStatus) => {
-    const variants = {
-      new: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-      triaged: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-      actioned: "bg-green-500/10 text-green-700 dark:text-green-400",
-      closed: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
-    };
-    return (
-      <Badge className={variants[status]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
-  const getUserInitials = (name: string | null, email: string) => {
-    if (name) {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return email[0]?.toUpperCase() || "U";
-  };
-
-  if (loading) {
-    return (
-      <div className="w-full h-full flex flex-col items-start justify-start gap-5">
-        <div className="w-full flex flex-col items-start justify-start gap-2">
-          <div className="w-full flex items-center justify-start gap-5">
-            <Skeleton className="h-10 w-10 rounded-md" />
-            <Skeleton className="h-9 w-64" />
-          </div>
-          <div className="w-full flex items-center justify-start gap-5">
-            <Skeleton className="h-5 flex-1 max-w-md" />
-            <Skeleton className="ml-auto h-6 w-20 rounded-full" />
-            <Skeleton className="h-6 w-24 rounded-full" />
-          </div>
-        </div>
-        <div className="w-full grid grid-cols-3 items-start justify-start gap-5">
-          <div className="w-full col-span-2 flex flex-col items-start justify-start gap-5">
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>
-                  <Skeleton className="h-6 w-48" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Skeleton className="h-32 w-full" />
-                  <Skeleton className="h-32 w-full" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Skeleton className="h-5 w-5" />
-                  <Skeleton className="h-6 w-32" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-96 w-full" />
-              </CardContent>
-            </Card>
-            <div className="w-full rounded-3xl bg-card flex flex-col items-center justify-center border">
-              <div className="w-full flex items-center justify-start gap-2.5 p-5 border-b">
-                <Skeleton className="h-4 w-4" />
-                <Skeleton className="h-6 w-32" />
-              </div>
-              <div className="w-full flex items-start justify-start gap-2.5 p-5 border-b">
-                <Skeleton className="h-20 flex-1" />
-                <Skeleton className="h-10 w-10 rounded-md" />
-              </div>
-              <div className="w-full flex flex-col items-start justify-start gap-2.5 p-5">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items are static and won't be reordered
-                    key={index}
-                    className="w-full flex flex-col items-center justify-center gap-2"
-                  >
-                    <div className="w-full flex items-center justify-start gap-3.5">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="flex flex-col items-start justify-start gap-1">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                    </div>
-                    <Skeleton className="h-12 w-full" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="w-full col-span-1 flex flex-col items-start justify-start border rounded-3xl">
-            <div className="w-full flex items-center justify-center p-5 border-b">
-              <div className="flex-1 flex flex-col items-start justify-start gap-1">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-48" />
-              </div>
-              <Skeleton className="h-8 w-12" />
-            </div>
-            <div className="w-full p-5 border-b">
-              <Skeleton className="h-20 w-full" />
-            </div>
-            <div className="w-full flex items-center justify-center p-5 border-b">
-              <Skeleton className="h-5 flex-1 max-w-16" />
-              <div className="ml-auto flex items-center justify-center gap-2.5">
-                <Skeleton className="h-10 w-32" />
-                <Skeleton className="h-10 w-20" />
-              </div>
-            </div>
-            <div className="w-full flex flex-col items-center justify-center gap-2.5 p-5 border-b">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items are static and won't be reordered
-                  key={index}
-                  className="w-full flex items-center justify-center gap-5"
-                >
-                  <Skeleton className="h-4 flex-1 max-w-24" />
-                  <Skeleton className="ml-auto h-4 w-32" />
-                </div>
-              ))}
-            </div>
-            <div className="w-full flex flex-col items-center justify-center">
-              <div className="w-full flex items-center justify-center p-5 border-b">
-                <Skeleton className="h-6 flex-1 max-w-28" />
-                <Skeleton className="ml-auto h-9 w-32" />
-              </div>
-              <div className="w-full flex flex-col items-start justify-start gap-5 p-5">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton items are static and won't be reordered
-                  <div key={index} className="w-full">
-                    <Skeleton className="h-4 w-40 mb-1" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  if (!session?.user?.id) {
+    redirect("/login");
   }
+
+  const { id: alertId } = await params;
+  const searchParamsResolved = await searchParams;
+  const organizationIdFromQuery = searchParamsResolved.organizationId;
+
+  // Get current organization from cookie or fallback to first
+  const cookieStore = await cookies();
+  const cookieOrgId = cookieStore.get("currentOrganizationId")?.value ?? null;
+  const currentOrg = await getCurrentOrganization(
+    session.user.id,
+    organizationIdFromQuery || cookieOrgId,
+  );
+
+  if (!currentOrg) {
+    redirect("/dashboard");
+  }
+
+  // Verify user is member of organization
+  const [member] = await db
+    .select()
+    .from(organizationMembers)
+    .where(
+      and(
+        eq(organizationMembers.userId, session.user.id),
+        eq(organizationMembers.organizationId, currentOrg.id),
+      ),
+    )
+    .limit(1);
+
+  if (!member) {
+    redirect("/dashboard");
+  }
+
+  // Fetch alert details
+  const alertDetail = await getAlertWithDetails(alertId, currentOrg.id);
 
   if (!alertDetail) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
         <p className="text-lg font-medium">Alert not found</p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => router.push("/alerts")}
-        >
-          Back to Alerts
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
-      <div className="w-full flex flex-col items-start justify-start gap-2">
-        <div className="w-full flex items-center justify-center gap-5">
-          <Link
-            href="/alerts"
-            className={cn(
-              buttonVariants({
-                variant: "outline",
-                size: "icon",
-              }),
-            )}
-          >
-            <ArrowLeft />
-          </Link>
-          <h1 className="w-full text-left text-3xl font-bold">
-            {alertDetail.target.label}
-          </h1>
-        </div>
-        <div className="w-full flex items-center justify-center gap-2.5">
-          <p className="flex-1 text-left text-muted-foreground">
-            Alert created&nbsp;
-            {new Date(alertDetail.alert.createdAt).toLocaleString()}
-          </p>
-          {getStatusBadge(alertDetail.alert.status)}
-          {getSeverityBadge(alertDetail.alert.impactScore)}
-        </div>
-      </div>
-      <div className="w-full grid grid-cols-3 items-start justify-start gap-5">
-        <div className="w-full col-span-2 flex flex-col items-start justify-start gap-5">
-          {alertDetail.version.previousVersionId && (
-            <VersionComparisonViewer
-              currentVersionId={alertDetail.version.id}
-              previousVersionId={alertDetail.version.previousVersionId}
-              organizationId={organizationId || ""}
-            />
-          )}
-          {(() => {
-            const metadata = alertDetail.version.metadata
-              ? JSON.parse(alertDetail.version.metadata)
-              : null;
-            const hasAttachments =
-              metadata?.attachments && metadata.attachments.length > 0;
-            const isPDF = metadata?.contentType === "pdf";
-
-            if (hasAttachments || isPDF) {
-              return (
-                <Card className="w-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Document Viewer
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <DocumentViewer
-                      versionId={alertDetail.version.id}
-                      organizationId={organizationId || ""}
-                      filename={
-                        metadata?.attachments?.[0]?.filename ||
-                        `document-${alertDetail.version.id}.pdf`
-                      }
-                    />
-                  </CardContent>
-                </Card>
-              );
-            }
-
-            return null;
-          })()}
-          <div className="w-full rounded-3xl bg-card flex flex-col items-center justify-center border">
-            <div className="w-full flex items-center justify-center gap-2.5 p-5 border-b">
-              <MessageSquare className="size-4" />
-              <span className="flex-1 text-left text-lg font-bold">
-                Comments ({alertDetail.comments.length})
-              </span>
-            </div>
-            <div className="w-full flex items-start justify-start gap-2.5 p-5 border-b">
-              <Textarea
-                className="flex-1"
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                rows={3}
-              />
-              <Button
-                size="icon"
-                variant="default"
-                onClick={handleAddComment}
-                disabled={!newComment.trim() || submittingComment}
-              >
-                {submittingComment ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Send />
-                )}
-              </Button>
-            </div>
-            <div className="w-full flex flex-col items-start justify-start gap-2.5 p-5">
-              {alertDetail.comments.length === 0 ? (
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <AlertCircle className="size-6" />
-                    </EmptyMedia>
-                    <EmptyTitle>No comments found</EmptyTitle>
-                    <EmptyDescription>
-                      Comments will appear here when you add a comment to the
-                      alert.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              ) : (
-                alertDetail.comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="w-full flex flex-col items-center justify-center gap-2"
-                  >
-                    <div className="w-full flex items-center justify-start gap-3.5">
-                      <Avatar>
-                        <AvatarImage src={comment.user.image || undefined} />
-                        <AvatarFallback>
-                          {getUserInitials(
-                            comment.user.name,
-                            comment.user.email,
-                          )}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="w-full text-left text-sm font-medium">
-                          {comment.user.name || comment.user.email}
-                        </span>
-                        <span className="w-full text-left text-xs text-muted-foreground">
-                          {new Date(comment.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="w-full text-left text-sm text-muted-foreground whitespace-pre-wrap">
-                      {comment.content}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="w-full h-full col-span-1 flex flex-col items-start justify-start border rounded-3xl">
-          <div className="w-full flex items-center justify-center p-5 border-b">
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <span className="w-full text-left text-lg font-bold">
-                Alert Details
-              </span>
-              <span className="w-full text-left text-sm text-muted-foreground">
-                {alertDetail.alert.id}
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-destructive">
-              {alertDetail.alert.impactScore
-                ? (alertDetail.alert.impactScore * 100).toFixed(0)
-                : "N/A"}
-              %
-            </p>
-          </div>
-          <span className="w-full text-left text-muted-foreground p-5 border-b">
-            {alertDetail.alert.summary || "No summary available."}
-          </span>
-          <div className="w-full flex items-center justify-center p-5 border-b">
-            <span className="flex-1 text-left font-bold">Status</span>
-            <div className="flex items-center justify-center gap-2.5">
-              <Select
-                value={newStatus}
-                onValueChange={(value: string) =>
-                  setNewStatus(value as AlertStatus)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="triaged">Triaged</SelectItem>
-                  <SelectItem value="actioned">Actioned</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-              {newStatus !== alertDetail.alert.status && (
-                <Button onClick={handleStatusUpdate} disabled={updating}>
-                  {updating ? "Updating..." : "Update"}
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className="w-full flex flex-col items-center justify-center gap-2.5 p-5 border-b">
-            <div className="w-full flex items-center justify-center gap-5">
-              <span className="flex-1 text-left font-bold">URL</span>
-              <Link
-                href={alertDetail.target.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                {alertDetail.target.url.slice(0, 25)}...
-              </Link>
-            </div>
-            <div className="w-full flex items-center justify-center gap-5">
-              <span className="flex-1 text-left font-bold">Jurisdiction</span>
-              <span className="uppercase">
-                {alertDetail.target.jurisdiction || "N/A"}
-              </span>
-            </div>
-            <div className="w-full flex items-center justify-center gap-5">
-              <span className="flex-1 text-left font-bold">Category</span>
-              <span className="uppercase">
-                {alertDetail.target.category || "N/A"}
-              </span>
-            </div>
-            <div className="w-full flex items-center justify-center gap-5">
-              <span className="flex-1 text-left font-bold">Last Updated</span>
-              <span>
-                {new Date(alertDetail.alert.updatedAt).toLocaleString()}
-              </span>
-            </div>
-          </div>
-          <div className="w-full h-full flex flex-col items-start justify-start">
-            <div className="w-full flex items-center justify-center p-5 border-b">
-              <span className="flex-1 text-left text-lg font-bold">
-                Assigned To
-              </span>
-              <Button size="sm" onClick={() => setAssignDialogOpen(true)}>
-                Add Assignment
-              </Button>
-            </div>
-            {alertDetail.assignments.length === 0 ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <AlertCircle className="size-6" />
-                  </EmptyMedia>
-                  <EmptyTitle>No assignments found</EmptyTitle>
-                  <EmptyDescription>
-                    Assignments will appear here when you assign an alert to a
-                    user.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <div className="w-full flex flex-col items-start justify-start gap-2 p-5">
-                {alertDetail.assignments.map((assignment) => (
-                  <div
-                    key={assignment.userId}
-                    className="flex items-center justify-between w-full p-2.5 border rounded-lg hover:bg-card transition-colors"
-                  >
-                    <div className="w-full flex items-center justify-center gap-3.5">
-                      <Avatar>
-                        <AvatarImage src={assignment.user.image || undefined} />
-                        <AvatarFallback>
-                          {getUserInitials(
-                            assignment.user.name,
-                            assignment.user.email,
-                          )}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col items-start justify-start w-full">
-                        <p className="text-sm font-medium">
-                          {assignment.user.name || assignment.user.email}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Assigned&nbsp;
-                          {new Date(assignment.assignedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      {alertId && organizationId && (
-        <AssignMemberDialog
-          open={assignDialogOpen}
-          onOpenChange={setAssignDialogOpen}
-          organizationId={organizationId}
-          alertId={alertId}
-          currentAssignments={alertDetail.assignments.map((a) => a.userId)}
-          onSuccess={fetchAlert}
-        />
-      )}
-    </div>
+    <AlertDetailClient
+      alertDetail={alertDetail}
+      organizationId={currentOrg.id}
+      alertId={alertId}
+    />
   );
 }

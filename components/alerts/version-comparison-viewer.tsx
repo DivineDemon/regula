@@ -207,11 +207,11 @@ export function VersionComparisonViewer({
                 : "N/A"}
             </span>
           </div>
-          <div className="w-full col-span-1 flex items-start justify-start rounded-lg border p-2.5">
+          <div className="w-full col-span-1 flex flex-col items-start justify-start rounded-lg border gap-2.5 p-2.5">
             <span className="w-full text-left font-bold">
               Affected Sections
             </span>
-            <div className="w-full flex items-end justify-end flex-wrap">
+            <div className="w-full flex items-start justify-start flex-wrap">
               {diffResult.affectedSections.map((t) => (
                 <div className="p-0.5 inline-block w-fit" key={t}>
                   <Badge key={t}>{t}</Badge>
@@ -219,9 +219,9 @@ export function VersionComparisonViewer({
               ))}
             </div>
           </div>
-          <div className="w-full col-span-1 flex items-start justify-start rounded-lg border p-2.5">
+          <div className="w-full col-span-1 flex flex-col items-start justify-start rounded-lg border gap-2.5 p-2.5">
             <span className="w-full text-left font-bold">Change Types</span>
-            <div className="w-full flex items-end justify-end flex-wrap">
+            <div className="w-full flex items-start justify-start flex-wrap">
               {diffResult.changeTypes.map((t) => (
                 <div className="p-0.5 inline-block w-fit" key={t}>
                   <Badge key={t}>{t}</Badge>

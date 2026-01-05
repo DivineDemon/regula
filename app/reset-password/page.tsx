@@ -1,144 +1,67 @@
-"use client";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { and, eq, gt } from "drizzle-orm";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { db } from "@/lib/db";
+import { verificationTokens } from "@/lib/db/schema";
+import { ResetPasswordClient } from "../../components/auth/reset-password-client";
 
-const resetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters long")
-      .max(100, "Password is too long"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+async function validateResetToken(token: string, email: string) {
+  const identifier = `password-reset:${email}`;
 
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+  const [resetToken] = await db
+    .select()
+    .from(verificationTokens)
+    .where(
+      and(
+        eq(verificationTokens.identifier, identifier),
+        eq(verificationTokens.token, token),
+        gt(verificationTokens.expires, new Date()),
+      ),
+    )
+    .limit(1);
 
-function ResetPasswordContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isValidatingToken, setIsValidatingToken] = useState(true);
-  const [tokenValid, setTokenValid] = useState(false);
+  return !!resetToken;
+}
 
-  const form = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
-    defaultValues: {
-      password: "",
-      confirmPassword: "",
-    },
-  });
+export default async function ResetPasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string; email?: string }>;
+}) {
+  const params = await searchParams;
+  const token = params.token;
+  const email = params.email;
 
-  useEffect(() => {
-    const validateToken = async () => {
-      const token = searchParams.get("token");
-      const email = searchParams.get("email");
-
-      if (!token || !email) {
-        setTokenValid(false);
-        setIsValidatingToken(false);
-        setError("Invalid reset link");
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `/api/auth/validate-reset-token?token=${token}&email=${encodeURIComponent(email)}`,
-        );
-        const data = await response.json();
-
-        if (!response.ok) {
-          setTokenValid(false);
-          setError(data.error || "Invalid or expired reset link");
-        } else {
-          setTokenValid(true);
-        }
-      } catch (_err) {
-        setTokenValid(false);
-        setError("An error occurred while validating the reset link");
-      } finally {
-        setIsValidatingToken(false);
-      }
-    };
-
-    validateToken();
-  }, [searchParams]);
-
-  const onSubmit = async (data: ResetPasswordFormData) => {
-    setError(null);
-
-    const token = searchParams.get("token");
-    const email = searchParams.get("email");
-
-    if (!token || !email) {
-      setError("Invalid reset link");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          email,
-          password: data.password,
-        }),
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        setError(responseData.error || "Failed to reset password");
-        setIsLoading(false);
-        return;
-      }
-
-      setSuccess(true);
-      setIsLoading(false);
-    } catch (_err) {
-      setError("An error occurred. Please try again.");
-      setIsLoading(false);
-    }
-  };
-
-  if (isValidatingToken) {
+  if (!token || !email) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold">Reset Password</h1>
-            <p className="mt-2 text-muted-foreground">
-              Validating reset link...
-            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center">
+              <p className="text-destructive font-medium">Invalid reset link</p>
+            </div>
+            <div className="space-y-2">
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/forgot-password">Request New Reset Link</Link>
+              </Button>
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/login">Back to Login</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
     );
+  }
+
+  let tokenValid = false;
+  try {
+    tokenValid = await validateResetToken(token, email);
+  } catch (error) {
+    console.error("Token validation error:", error);
   }
 
   if (!tokenValid) {
@@ -151,23 +74,15 @@ function ResetPasswordContent() {
           <div className="space-y-4">
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center">
               <p className="text-destructive font-medium">
-                {error || "Invalid or expired reset link"}
+                Invalid or expired reset link
               </p>
             </div>
             <div className="space-y-2">
-              <Button
-                onClick={() => router.push("/forgot-password")}
-                className="w-full"
-                variant="outline"
-              >
-                Request New Reset Link
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/forgot-password">Request New Reset Link</Link>
               </Button>
-              <Button
-                onClick={() => router.push("/login")}
-                className="w-full"
-                variant="outline"
-              >
-                Back to Login
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/login">Back to Login</Link>
               </Button>
             </div>
           </div>
@@ -176,122 +91,5 @@ function ResetPasswordContent() {
     );
   }
 
-  if (success) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold">Password Reset</h1>
-          </div>
-          <div className="space-y-4">
-            <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-center">
-              <p className="text-green-700 dark:text-green-400 font-medium">
-                Password reset successfully! You can now sign in with your new
-                password.
-              </p>
-            </div>
-            <Button onClick={() => router.push("/login")} className="w-full">
-              Continue to Login
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Reset Password</h1>
-          <p className="mt-2 text-muted-foreground">
-            Enter your new password below
-          </p>
-        </div>
-
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="mt-8 space-y-6"
-          >
-            {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        disabled={isLoading}
-                        autoComplete="new-password"
-                        minLength={8}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Must be at least 8 characters long
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        disabled={isLoading}
-                        autoComplete="new-password"
-                        minLength={8}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Resetting..." : "Reset Password"}
-            </Button>
-          </form>
-        </Form>
-      </div>
-    </div>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
-          <div className="w-full max-w-md space-y-8">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold">Reset Password</h1>
-              <p className="mt-2 text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        </div>
-      }
-    >
-      <ResetPasswordContent />
-    </Suspense>
-  );
+  return <ResetPasswordClient token={token} email={email} />;
 }
