@@ -76,7 +76,7 @@ export function Step2Services({
             control={form.control}
             name="services"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Services *</FormLabel>
                 <FormControl>
                   <ServiceSelector

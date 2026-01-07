@@ -150,7 +150,7 @@ export function Step3GeographicOperations({
                 control={form.control}
                 name={`countryOperations.${index}.countryCode`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Country *</FormLabel>
                     <FormControl>
                       <Select
@@ -179,7 +179,7 @@ export function Step3GeographicOperations({
                 control={form.control}
                 name={`countryOperations.${index}.operationType`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Operation Type *</FormLabel>
                     <FormControl>
                       <Select
@@ -212,7 +212,7 @@ export function Step3GeographicOperations({
                 control={form.control}
                 name={`countryOperations.${index}.services`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Services Offered *</FormLabel>
                     <FormControl>
                       <ServiceSelector
@@ -235,7 +235,7 @@ export function Step3GeographicOperations({
                 control={form.control}
                 name={`countryOperations.${index}.licenseStatus`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>License Status *</FormLabel>
                     <FormControl>
                       <Select

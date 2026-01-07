@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,8 +44,6 @@ export function ProfileForm({
   initialEmail,
 }: ProfileFormProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<ProfileFormData>({
@@ -56,8 +55,6 @@ export function ProfileForm({
   });
 
   const onSubmit = async (data: ProfileFormData) => {
-    setError(null);
-    setSuccess(false);
     setIsLoading(true);
 
     try {
@@ -75,16 +72,16 @@ export function ProfileForm({
       const responseData = await response.json();
 
       if (!response.ok) {
-        setError(responseData.error || "Failed to update profile");
+        toast.error(responseData.error || "Failed to update profile");
         setIsLoading(false);
         return;
       }
 
-      setSuccess(true);
+      toast.success("Profile updated successfully!");
       setIsLoading(false);
       router.refresh();
     } catch (_err) {
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -98,24 +95,12 @@ export function ProfileForm({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
-                Profile updated successfully!
-              </div>
-            )}
-
             <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
                       <Input
@@ -135,7 +120,7 @@ export function ProfileForm({
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input

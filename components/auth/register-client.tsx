@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,6 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function RegisterClient() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<RegisterFormData>({
@@ -57,7 +57,6 @@ export function RegisterClient() {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -77,17 +76,20 @@ export function RegisterClient() {
       const responseData = await response.json();
 
       if (!response.ok) {
-        setError(responseData.error || "Registration failed");
+        toast.error(responseData.error || "Registration failed");
         setIsLoading(false);
         return;
       }
 
+      toast.success(
+        "Registration successful! Please check your email for verification.",
+      );
       // Registration successful - redirect to check email page
       router.push(
         `/check-email?email=${encodeURIComponent(data.email)}&registered=true`,
       );
     } catch (_err) {
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -110,18 +112,12 @@ export function RegisterClient() {
             onSubmit={form.handleSubmit(onSubmit)}
             className="mt-8 space-y-6"
           >
-            {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
             <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
                       <Input
@@ -141,7 +137,7 @@ export function RegisterClient() {
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
@@ -161,7 +157,7 @@ export function RegisterClient() {
                 control={form.control}
                 name="organizationName"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Organization Name</FormLabel>
                     <FormControl>
                       <Input
@@ -181,7 +177,7 @@ export function RegisterClient() {
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
@@ -205,7 +201,7 @@ export function RegisterClient() {
                 control={form.control}
                 name="confirmPassword"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <Input

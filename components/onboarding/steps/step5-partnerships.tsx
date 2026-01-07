@@ -271,7 +271,7 @@ export function Step5Partnerships({
                   : "partnerships"
               }
               render={({ field: _field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Number of Remittance Partners</FormLabel>
                   <FormControl>
                     <Input
@@ -331,7 +331,7 @@ export function Step5Partnerships({
                   : "partnerships"
               }
               render={() => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Major Remittance Corridors</FormLabel>
                   <FormControl>
                     <CountrySelector

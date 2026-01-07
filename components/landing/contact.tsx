@@ -133,7 +133,7 @@ export function Contact() {
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                  <FormItem className="w-full">
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Name</FormLabel>
                     <FormControl>
                       <Input placeholder="John Doe" {...field} />
@@ -146,7 +146,7 @@ export function Contact() {
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem className="w-full">
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
@@ -163,7 +163,7 @@ export function Contact() {
                 control={form.control}
                 name="message"
                 render={({ field }) => (
-                  <FormItem className="w-full">
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Message</FormLabel>
                     <FormControl>
                       <Textarea

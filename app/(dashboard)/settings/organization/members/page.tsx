@@ -73,22 +73,24 @@ export default async function OrganizationMembersPage() {
     .orderBy(desc(invitations.createdAt));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Organization Members</h1>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <h1 className="w-full text-left text-3xl font-bold">
+          Organization Members
+        </h1>
+        <p className="w-full text-left text-muted-foreground">
           Manage members and invitations for {userOrg.organization.name}
         </p>
       </div>
-
-      <InviteMemberForm organizationId={userOrg.organization.id} />
-
-      <MembersList
-        organizationId={userOrg.organization.id}
-        members={members}
-        pendingInvitations={pendingInvitations}
-        currentUserId={session.user.id}
-      />
+      <div className="w-full h-full grid grid-cols-3 gap-5 items-start justify-start">
+        <InviteMemberForm organizationId={userOrg.organization.id} />
+        <MembersList
+          organizationId={userOrg.organization.id}
+          members={members}
+          pendingInvitations={pendingInvitations}
+          currentUserId={session.user.id}
+        />
+      </div>
     </div>
   );
 }

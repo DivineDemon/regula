@@ -264,7 +264,7 @@ export function Step8TargetSelection({
                     control={manualTargetForm.control}
                     name="url"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full flex flex-col items-start justify-start">
                         <FormLabel>URL *</FormLabel>
                         <FormControl>
                           <Input placeholder="https://example.com" {...field} />
@@ -277,7 +277,7 @@ export function Step8TargetSelection({
                     control={manualTargetForm.control}
                     name="label"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full flex flex-col items-start justify-start">
                         <FormLabel>Label *</FormLabel>
                         <FormControl>
                           <Input placeholder="Target label" {...field} />
@@ -290,7 +290,7 @@ export function Step8TargetSelection({
                     control={manualTargetForm.control}
                     name="jurisdiction"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full flex flex-col items-start justify-start">
                         <FormLabel>Jurisdiction (optional)</FormLabel>
                         <FormControl>
                           <Input
@@ -306,7 +306,7 @@ export function Step8TargetSelection({
                     control={manualTargetForm.control}
                     name="category"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full flex flex-col items-start justify-start">
                         <FormLabel>Category (optional)</FormLabel>
                         <Select
                           onValueChange={field.onChange}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +42,6 @@ export function ResetPasswordClient({
   email: string;
 }) {
   const _router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -54,7 +54,6 @@ export function ResetPasswordClient({
   });
 
   const onSubmit = async (data: ResetPasswordFormData) => {
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -73,15 +72,18 @@ export function ResetPasswordClient({
       const responseData = await response.json();
 
       if (!response.ok) {
-        setError(responseData.error || "Failed to reset password");
+        toast.error(responseData.error || "Failed to reset password");
         setIsLoading(false);
         return;
       }
 
       setSuccess(true);
+      toast.success(
+        "Password reset successfully! You can now sign in with your new password.",
+      );
       setIsLoading(false);
     } catch (_err) {
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -94,12 +96,6 @@ export function ResetPasswordClient({
             <h1 className="text-3xl font-bold">Password Reset</h1>
           </div>
           <div className="space-y-4">
-            <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-center">
-              <p className="text-green-700 dark:text-green-400 font-medium">
-                Password reset successfully! You can now sign in with your new
-                password.
-              </p>
-            </div>
             <Button asChild className="w-full">
               <Link href="/login">Continue to Login</Link>
             </Button>
@@ -124,18 +120,12 @@ export function ResetPasswordClient({
             onSubmit={form.handleSubmit(onSubmit)}
             className="mt-8 space-y-6"
           >
-            {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
             <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>New Password</FormLabel>
                     <FormControl>
                       <Input
@@ -159,7 +149,7 @@ export function ResetPasswordClient({
                 control={form.control}
                 name="confirmPassword"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <Input

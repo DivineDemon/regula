@@ -191,7 +191,7 @@ export function Step4ComplianceMapping({
                     control={form.control}
                     name={`complianceMapping.${index}.service`}
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full flex flex-col items-start justify-start">
                         <FormLabel>Service *</FormLabel>
                         <FormControl>
                           <Input
@@ -210,7 +210,7 @@ export function Step4ComplianceMapping({
                     control={form.control}
                     name={`complianceMapping.${index}.countryCode`}
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-full flex flex-col items-start justify-start">
                         <FormLabel>Country Code *</FormLabel>
                         <FormControl>
                           <Input
@@ -230,7 +230,7 @@ export function Step4ComplianceMapping({
                   control={form.control}
                   name={`complianceMapping.${index}.complianceRequirements`}
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full flex flex-col items-start justify-start">
                       <FormLabel>Compliance Requirements *</FormLabel>
                       <FormControl>
                         <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto rounded-md border p-4">
@@ -267,7 +267,7 @@ export function Step4ComplianceMapping({
                   control={form.control}
                   name={`complianceMapping.${index}.context`}
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full flex flex-col items-start justify-start">
                       <FormLabel>Context / Notes</FormLabel>
                       <FormControl>
                         <Textarea
@@ -291,7 +291,7 @@ export function Step4ComplianceMapping({
               control={form.control}
               name="complianceFramework.amlFramework"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>AML Framework</FormLabel>
                   <FormControl>
                     <Input
@@ -310,7 +310,7 @@ export function Step4ComplianceMapping({
               control={form.control}
               name="complianceFramework.kycProcedures"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>KYC Procedures</FormLabel>
                   <FormControl>
                     <Textarea
@@ -328,7 +328,7 @@ export function Step4ComplianceMapping({
               control={form.control}
               name="complianceFramework.dataProtectionFramework"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Data Protection Framework</FormLabel>
                   <FormControl>
                     <Input
@@ -348,7 +348,7 @@ export function Step4ComplianceMapping({
                 control={form.control}
                 name="complianceFramework.privacyPolicyUrl"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Privacy Policy URL</FormLabel>
                     <FormControl>
                       <Input
@@ -368,7 +368,7 @@ export function Step4ComplianceMapping({
                 control={form.control}
                 name="complianceFramework.termsOfServiceUrl"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Terms of Service URL</FormLabel>
                     <FormControl>
                       <Input
@@ -389,7 +389,7 @@ export function Step4ComplianceMapping({
               control={form.control}
               name="complianceFramework.certifications"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Regulatory Certifications</FormLabel>
                   <FormControl>
                     <div className="space-y-2">

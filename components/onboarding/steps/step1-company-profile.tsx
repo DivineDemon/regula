@@ -92,7 +92,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="legalEntityName"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Legal Entity Name *</FormLabel>
                 <FormControl>
                   <Input
@@ -110,7 +110,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="tradingName"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Trading Name</FormLabel>
                 <FormControl>
                   <Input
@@ -129,7 +129,7 @@ export function Step1CompanyProfile({
               control={form.control}
               name="companyRegistrationNumber"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Company Registration Number</FormLabel>
                   <FormControl>
                     <Input
@@ -147,7 +147,7 @@ export function Step1CompanyProfile({
               control={form.control}
               name="dateOfIncorporation"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Date of Incorporation</FormLabel>
                   <FormControl>
                     <Input type="date" disabled={isSubmitting} {...field} />
@@ -162,7 +162,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="countryOfIncorporation"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Country of Incorporation *</FormLabel>
                 <FormControl>
                   <Select
@@ -191,7 +191,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="websiteUrl"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Company Website URL</FormLabel>
                 <FormControl>
                   <Input
@@ -210,7 +210,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="companySize"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Company Size</FormLabel>
                 <FormControl>
                   <Select
@@ -249,7 +249,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="fintechCategory"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Primary Fintech Category *</FormLabel>
                 <FormControl>
                   <Select
@@ -294,7 +294,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="businessModel"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Business Model *</FormLabel>
                 <FormControl>
                   <RadioGroup
@@ -334,7 +334,7 @@ export function Step1CompanyProfile({
             control={form.control}
             name="primaryJurisdiction"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="w-full flex flex-col items-start justify-start">
                 <FormLabel>Primary Jurisdiction *</FormLabel>
                 <FormControl>
                   <Select

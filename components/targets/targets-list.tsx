@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,8 +36,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { targets } from "@/lib/db/schema";
+import { WarningModal } from "../shared/warning-modal";
 import { AddTargetDialog } from "./add-target-dialog";
-import { DeleteTargetDialog } from "./delete-target-dialog";
 import { EditTargetDialog } from "./edit-target-dialog";
 
 type Target = typeof targets.$inferSelect;
@@ -59,6 +60,7 @@ export function TargetsList({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingTarget, setEditingTarget] = useState<Target | null>(null);
   const [deletingTarget, setDeletingTarget] = useState<Target | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getStatusBadgeVariant = (status: Target["status"]) => {
     switch (status) {
@@ -100,9 +102,33 @@ export function TargetsList({
     router.refresh();
   };
 
-  const handleTargetDeleted = () => {
-    setDeletingTarget(null);
-    router.refresh();
+  const confirmDeleteTarget = async () => {
+    if (!deletingTarget) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(
+        `/api/targets/${deletingTarget.id}?organizationId=${organizationId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to delete target");
+        return;
+      }
+
+      toast.success("Target deleted successfully");
+      setDeletingTarget(null);
+      router.refresh();
+    } catch (_err) {
+      toast.error("Failed to delete target. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const columns: ColumnDef<Target>[] = [
@@ -145,8 +171,8 @@ export function TargetsList({
       cell: ({ row }) => {
         const category = row.getValue("category") as string | null;
         return category ? (
-          <Badge variant="outline">
-            {category.charAt(0).toUpperCase() + category.slice(1)}
+          <Badge variant="outline" className="uppercase">
+            {category}
           </Badge>
         ) : (
           <span className="text-muted-foreground">—</span>
@@ -368,12 +394,14 @@ export function TargetsList({
         />
       )}
       {deletingTarget && (
-        <DeleteTargetDialog
+        <WarningModal
           open={!!deletingTarget}
           onOpenChange={(open) => !open && setDeletingTarget(null)}
-          target={deletingTarget}
-          organizationId={organizationId}
-          onSuccess={handleTargetDeleted}
+          title="Delete Target"
+          subtitle={`Are you sure you want to delete the target "${deletingTarget.label}"? This action cannot be undone and will stop monitoring this target.`}
+          loading={isDeleting}
+          onConfirm={confirmDeleteTarget}
+          confirmText="Delete Target"
         />
       )}
     </>

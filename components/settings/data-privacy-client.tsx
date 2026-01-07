@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { WarningModal } from "../shared/warning-modal";
 
 export function DataPrivacyClient({
   organizationId,
@@ -18,6 +19,7 @@ export function DataPrivacyClient({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [exportData, setExportData] = useState<Record<string, unknown> | null>(
     null,
   );
@@ -53,20 +55,15 @@ export function DataPrivacyClient({
     }
   };
 
-  const handleDataDeletion = async () => {
+  const handleDataDeletionClick = () => {
     if (!organizationId) {
       toast.error("Please select an organization");
       return;
     }
+    setShowDeleteConfirm(true);
+  };
 
-    if (
-      !confirm(
-        "Are you sure you want to delete all your data? This action cannot be undone.",
-      )
-    ) {
-      return;
-    }
-
+  const confirmDataDeletion = async () => {
     setIsDeleting(true);
     try {
       const response = await fetch("/api/gdpr/deletion", {
@@ -92,6 +89,7 @@ export function DataPrivacyClient({
       );
     } finally {
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -171,12 +169,21 @@ export function DataPrivacyClient({
             </p>
           </div>
           <Button
-            onClick={handleDataDeletion}
+            onClick={handleDataDeletionClick}
             disabled={isDeleting || !organizationId}
             variant="destructive"
           >
             {isDeleting ? "Deleting..." : "Delete All Data"}
           </Button>
+          <WarningModal
+            open={showDeleteConfirm}
+            onOpenChange={setShowDeleteConfirm}
+            title="Delete All Data"
+            subtitle="Are you sure you want to delete all your data? This action cannot be undone."
+            loading={isDeleting}
+            onConfirm={confirmDataDeletion}
+            confirmText="Delete Everything"
+          />
         </CardContent>
       </Card>
     </>

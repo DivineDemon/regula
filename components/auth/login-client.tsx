@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginClient({ callbackUrl }: { callbackUrl: string }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
@@ -39,7 +39,6 @@ export function LoginClient({ callbackUrl }: { callbackUrl: string }) {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -51,9 +50,11 @@ export function LoginClient({ callbackUrl }: { callbackUrl: string }) {
 
       if (result?.error) {
         if (result.error === "EMAIL_NOT_VERIFIED") {
-          setError("EMAIL_NOT_VERIFIED");
+          toast.error(
+            "Please verify your email before signing in. Check your inbox for the verification link.",
+          );
         } else {
-          setError("Invalid email or password");
+          toast.error("Invalid email or password");
         }
         setIsLoading(false);
       } else if (result?.ok) {
@@ -99,7 +100,7 @@ export function LoginClient({ callbackUrl }: { callbackUrl: string }) {
         router.refresh();
       }
     } catch (_err) {
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -122,32 +123,12 @@ export function LoginClient({ callbackUrl }: { callbackUrl: string }) {
             onSubmit={form.handleSubmit(onSubmit)}
             className="mt-8 space-y-6"
           >
-            {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive space-y-2">
-                <p>
-                  {error === "EMAIL_NOT_VERIFIED"
-                    ? "Please verify your email before signing in. Check your inbox for the verification link."
-                    : error}
-                </p>
-                {error === "EMAIL_NOT_VERIFIED" && (
-                  <a
-                    href={`/check-email?email=${encodeURIComponent(
-                      form.getValues("email"),
-                    )}`}
-                    className="text-primary hover:underline block"
-                  >
-                    Resend verification email
-                  </a>
-                )}
-              </div>
-            )}
-
             <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
@@ -167,7 +148,7 @@ export function LoginClient({ callbackUrl }: { callbackUrl: string }) {
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full flex flex-col items-start justify-start">
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input

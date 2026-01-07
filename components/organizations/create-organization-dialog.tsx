@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +49,6 @@ export function CreateOrganizationDialog({
 }: CreateOrganizationDialogProps) {
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const open = controlledOpen ?? internalOpen;
@@ -62,7 +62,6 @@ export function CreateOrganizationDialog({
   });
 
   const onSubmit = async (data: CreateOrganizationFormData) => {
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -79,17 +78,18 @@ export function CreateOrganizationDialog({
       const responseData = await response.json();
 
       if (!response.ok) {
-        setError(responseData.error || "Failed to create organization");
+        toast.error(responseData.error || "Failed to create organization");
         setIsLoading(false);
         return;
       }
 
       // Success - close dialog and refresh
+      toast.success("Organization created successfully!");
       form.reset();
       setOpen(false);
       router.refresh();
     } catch (_err) {
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -115,17 +115,11 @@ export function CreateOrganizationDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Organization Name</FormLabel>
                   <FormControl>
                     <Input

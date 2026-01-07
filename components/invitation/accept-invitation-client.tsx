@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +66,6 @@ export function AcceptInvitationClient({
   const router = useRouter();
   const [status, setStatus] = useState<InitialStatus>(initialStatus);
   const [message, setMessage] = useState(initialMessage || "");
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<InvitationRegisterFormData>({
@@ -96,19 +96,23 @@ export function AcceptInvitationClient({
         if (data.error === "ALREADY_MEMBER") {
           setStatus("already-member");
           setMessage("You are already a member of this organization");
+          toast.info("You are already a member of this organization");
         } else {
           setStatus("error");
           setMessage(data.error || "Failed to accept invitation");
+          toast.error(data.error || "Failed to accept invitation");
         }
         return;
       }
 
       setStatus("success");
       setMessage("Invitation accepted successfully!");
+      toast.success("Invitation accepted successfully!");
     } catch (error) {
       console.error("Error accepting invitation:", error);
       setStatus("error");
       setMessage("An error occurred while accepting the invitation");
+      toast.error("An error occurred while accepting the invitation");
     }
   }, [token, email]);
 
@@ -121,11 +125,10 @@ export function AcceptInvitationClient({
 
   const handleRegister = async (data: InvitationRegisterFormData) => {
     if (!token || !email) {
-      setError("Invalid invitation link");
+      toast.error("Invalid invitation link");
       return;
     }
 
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -146,7 +149,7 @@ export function AcceptInvitationClient({
       const responseData = await response.json();
 
       if (!response.ok) {
-        setError(responseData.error || "Registration failed");
+        toast.error(responseData.error || "Registration failed");
         setIsLoading(false);
         return;
       }
@@ -159,18 +162,19 @@ export function AcceptInvitationClient({
       });
 
       if (signInResult?.ok) {
+        toast.success("Account created successfully!");
         // Redirect to onboarding for new users
         router.push("/onboarding");
         router.refresh();
       } else {
-        setError(
+        toast.error(
           "Account created but failed to log in. Please try logging in manually.",
         );
         setIsLoading(false);
       }
     } catch (err) {
       console.error("Registration error:", err);
-      setError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -203,17 +207,11 @@ export function AcceptInvitationClient({
                     onSubmit={form.handleSubmit(handleRegister)}
                     className="space-y-4"
                   >
-                    {error && (
-                      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                        {error}
-                      </div>
-                    )}
-
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="w-full flex flex-col items-start justify-start">
                           <FormLabel>Full Name</FormLabel>
                           <FormControl>
                             <Input
@@ -233,7 +231,7 @@ export function AcceptInvitationClient({
                       control={form.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="w-full flex flex-col items-start justify-start">
                           <FormLabel>Email</FormLabel>
                           <FormControl>
                             <Input
@@ -253,7 +251,7 @@ export function AcceptInvitationClient({
                       control={form.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="w-full flex flex-col items-start justify-start">
                           <FormLabel>Password</FormLabel>
                           <FormControl>
                             <Input
@@ -277,7 +275,7 @@ export function AcceptInvitationClient({
                       control={form.control}
                       name="confirmPassword"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="w-full flex flex-col items-start justify-start">
                           <FormLabel>Confirm Password</FormLabel>
                           <FormControl>
                             <Input

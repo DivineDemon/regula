@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,7 +69,6 @@ export function EditTargetDialog({
   onSuccess,
 }: EditTargetDialogProps) {
   const [isValidating, setIsValidating] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
@@ -111,7 +111,6 @@ export function EditTargetDialog({
     }
 
     setIsValidating(true);
-    setValidationError(null);
 
     try {
       const response = await fetch("/api/targets/validate", {
@@ -123,7 +122,7 @@ export function EditTargetDialog({
       const data = await response.json();
 
       if (!data.accessible) {
-        setValidationError(
+        toast.error(
           data.error || "URL is not accessible. Please check the URL.",
         );
         return false;
@@ -131,7 +130,7 @@ export function EditTargetDialog({
 
       return true;
     } catch (_error) {
-      setValidationError(
+      toast.error(
         "Failed to validate URL. Please check your connection and try again.",
       );
       return false;
@@ -164,16 +163,16 @@ export function EditTargetDialog({
 
       if (!response.ok) {
         const errorData = await response.json();
-        setValidationError(
+        toast.error(
           errorData.error || "Failed to update target. Please try again.",
         );
         return;
       }
 
-      setValidationError(null);
+      toast.success("Target updated successfully!");
       onSuccess();
     } catch (_error) {
-      setValidationError("Failed to update target. Please try again.");
+      toast.error("Failed to update target. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -191,14 +190,11 @@ export function EditTargetDialog({
             onSubmit={form.handleSubmit(onSubmit)}
             className="w-full flex flex-col items-start justify-start gap-5 p-5"
           >
-            {validationError && (
-              <p className="text-sm text-destructive">{validationError}</p>
-            )}
             <FormField
               control={form.control}
               name="url"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>
                     URL <span className="text-destructive">*</span>
                   </FormLabel>
@@ -217,7 +213,7 @@ export function EditTargetDialog({
               control={form.control}
               name="label"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>
                     Label <span className="text-destructive">*</span>
                   </FormLabel>
@@ -236,7 +232,7 @@ export function EditTargetDialog({
               control={form.control}
               name="jurisdiction"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Jurisdiction</FormLabel>
                   <FormControl>
                     <Input
@@ -253,7 +249,7 @@ export function EditTargetDialog({
               control={form.control}
               name="category"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Category</FormLabel>
                   <Select
                     onValueChange={field.onChange}
@@ -282,7 +278,7 @@ export function EditTargetDialog({
               control={form.control}
               name="crawlFrequency"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>
                     Crawl Frequency <span className="text-destructive">*</span>
                   </FormLabel>
@@ -311,7 +307,7 @@ export function EditTargetDialog({
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full flex flex-col items-start justify-start">
                   <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={field.onChange}

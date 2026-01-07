@@ -6,6 +6,7 @@ import {
   Bell,
   FileText,
   LayoutDashboard,
+  Shield,
   Target,
   Users,
 } from "lucide-react";
@@ -68,6 +69,11 @@ const settingsItems: MenuItem[] = [
     url: "/settings/audit-logs",
     icon: FileText,
     adminOnly: true,
+  },
+  {
+    title: "Data Privacy",
+    url: "/settings/data-privacy",
+    icon: Shield,
   },
 ];
 
