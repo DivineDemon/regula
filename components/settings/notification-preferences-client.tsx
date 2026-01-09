@@ -1,16 +1,9 @@
 "use client";
 
-import { Bell, InfoIcon, Mail, Webhook } from "lucide-react";
+import { Bell, Mail, Webhook } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,12 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { Switch } from "../ui/switch";
 
 interface NotificationPreferences {
   id?: string;
@@ -107,180 +97,202 @@ export function NotificationPreferencesClient({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Loading preferences...</p>
+      <div className="w-full grid grid-cols-2 items-start justify-start gap-5">
+        {/* Email Notifications Skeleton */}
+        <div className="w-full col-span-1 rounded-3xl border flex flex-col items-start justify-start">
+          <div className="w-full flex items-center justify-start p-5 border-b gap-3.5">
+            <Skeleton className="size-12 rounded-full" />
+            <div className="flex-1 flex flex-col items-start justify-start gap-2">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+          </div>
+          <div className="w-full flex items-center justify-center p-5 border-b gap-4">
+            <div className="flex-1 flex flex-col items-start justify-start gap-2">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-6 w-11 rounded-full" />
+          </div>
+          <div className="w-full flex items-center justify-center p-5 border-b gap-4">
+            <div className="flex-1 flex flex-col items-start justify-start gap-2">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-6 w-11 rounded-full" />
+          </div>
+          <div className="w-full flex items-center justify-center p-5 border-b gap-4">
+            <div className="flex-1 flex flex-col items-start justify-start gap-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-6 w-11 rounded-full" />
+          </div>
+          <div className="w-full flex items-center justify-center p-5 gap-4">
+            <div className="flex-1 flex flex-col items-start justify-start gap-2">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        {/* Right Column Skeleton */}
+        <div className="w-full col-span-1 flex flex-col items-start justify-start gap-5">
+          {/* Alert Threshold Skeleton */}
+          <div className="w-full flex flex-col items-start justify-start border rounded-3xl">
+            <div className="w-full flex items-center justify-start p-5 border-b gap-3.5">
+              <Skeleton className="size-12 rounded-full" />
+              <div className="flex-1 flex flex-col items-start justify-start gap-2">
+                <Skeleton className="h-5 w-36" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+            </div>
+            <div className="w-full flex items-center justify-center p-5 gap-4">
+              <div className="flex-1 flex flex-col items-start justify-start gap-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-80" />
+              </div>
+              <Skeleton className="h-10 w-40" />
+            </div>
+          </div>
+          {/* Webhook Integration Skeleton */}
+          <div className="w-full flex flex-col items-start justify-start border rounded-3xl">
+            <div className="w-full flex items-center justify-start p-5 border-b gap-3.5">
+              <Skeleton className="size-12 rounded-full" />
+              <div className="flex-1 flex flex-col items-start justify-start gap-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+            </div>
+            <div className="w-full flex items-center justify-center p-5 border-b gap-4">
+              <div className="flex-1 flex flex-col items-start justify-start gap-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-6">
-        {/* Email Notifications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="size-5" />
-              Email Notifications
-            </CardTitle>
-            <CardDescription>
+    <div className="w-full h-full grid grid-cols-2 items-start justify-start gap-5">
+      <div className="w-full col-span-1 rounded-3xl border flex flex-col items-start justify-start">
+        <div className="w-full flex items-center justify-start p-5 border-b gap-3.5">
+          <div className="size-12 p-3 rounded-full bg-primary/20 text-primary">
+            <Mail className="size-full" />
+          </div>
+          <div className="flex-1 flex flex-col items-start justify-start">
+            <span className="text-lg font-bold">Email Notifications</span>
+            <span className="text-sm text-muted-foreground">
               Configure email notification settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Enable Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive notifications via email
-                </p>
+            </span>
+          </div>
+        </div>
+        <div className="w-full flex items-center justify-center p-5 border-b">
+          <div className="flex-1 flex flex-col items-start justify-start">
+            <span className="w-full text-left">Enable Email Notifications</span>
+            <span className="w-full text-left text-sm text-muted-foreground">
+              Receive notifications via email
+            </span>
+          </div>
+          <Switch
+            checked={preferences.emailEnabled}
+            onCheckedChange={(checked) =>
+              setPreferences((prev) => ({
+                ...prev,
+                emailEnabled: checked,
+              }))
+            }
+          />
+        </div>
+        {preferences.emailEnabled && (
+          <>
+            <div className="w-full flex items-center justify-center p-5 border-b">
+              <div className="flex-1 flex flex-col items-start justify-start">
+                <span className="w-full text-left">Real-time Alerts</span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Receive immediate email notifications when alerts are created
+                </span>
               </div>
-              <Button
-                variant={preferences.emailEnabled ? "default" : "outline"}
-                onClick={() =>
+              <Switch
+                checked={preferences.emailRealtime}
+                onCheckedChange={(checked) =>
                   setPreferences((prev) => ({
                     ...prev,
-                    emailEnabled: !prev.emailEnabled,
+                    emailRealtime: checked,
                   }))
                 }
-              >
-                {preferences.emailEnabled ? "Enabled" : "Disabled"}
-              </Button>
+              />
             </div>
-
-            {preferences.emailEnabled && (
-              <>
-                <Separator />
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Real-time Alerts</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receive immediate email notifications when alerts are
-                        created
-                      </p>
-                    </div>
-                    <Button
-                      variant={
-                        preferences.emailRealtime ? "default" : "outline"
-                      }
-                      onClick={() =>
-                        setPreferences((prev) => ({
-                          ...prev,
-                          emailRealtime: !prev.emailRealtime,
-                        }))
-                      }
-                    >
-                      {preferences.emailRealtime ? "Enabled" : "Disabled"}
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Digest Emails</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receive periodic digest emails with aggregated alerts
-                      </p>
-                    </div>
-                    <Button
-                      variant={preferences.emailDigest ? "default" : "outline"}
-                      onClick={() =>
-                        setPreferences((prev) => ({
-                          ...prev,
-                          emailDigest: !prev.emailDigest,
-                        }))
-                      }
-                    >
-                      {preferences.emailDigest ? "Enabled" : "Disabled"}
-                    </Button>
-                  </div>
-
-                  {preferences.emailDigest && (
-                    <div className="space-y-2">
-                      <Label>Digest Frequency</Label>
-                      <Select
-                        value={preferences.emailDigestFrequency}
-                        onValueChange={(value) => {
-                          if (value === "daily" || value === "weekly") {
-                            setPreferences((prev) => ({
-                              ...prev,
-                              emailDigestFrequency: value,
-                            }));
-                          }
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Alert Threshold */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="size-5" />
-              Alert Threshold
-            </CardTitle>
-            <CardDescription>
-              Only receive notifications for alerts above this impact level
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label>Minimum Impact Level</Label>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <InfoIcon className="size-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">
-                      Only receive notifications for alerts with an impact score
-                      at or above this threshold. This helps reduce notification
-                      noise.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+            <div className="w-full flex items-center justify-center p-5 border-b">
+              <div className="flex-1 flex flex-col items-start justify-start">
+                <span className="w-full text-left">Digest Emails</span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Receive periodic digest emails with aggregated alerts
+                </span>
               </div>
-              <Select
-                value={preferences.alertThreshold}
-                onValueChange={(value) => {
-                  if (
-                    value === "all" ||
-                    value === "low" ||
-                    value === "medium" ||
-                    value === "high"
-                  ) {
-                    setPreferences((prev) => ({
-                      ...prev,
-                      alertThreshold: value,
-                    }));
-                  }
-                }}
-                aria-label="Alert threshold"
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Alerts</SelectItem>
-                  <SelectItem value="low">Low and Above</SelectItem>
-                  <SelectItem value="medium">Medium and Above</SelectItem>
-                  <SelectItem value="high">High Only</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground">
+              <Switch
+                checked={preferences.emailDigest}
+                onCheckedChange={(checked) =>
+                  setPreferences((prev) => ({
+                    ...prev,
+                    emailDigest: checked,
+                  }))
+                }
+              />
+            </div>
+            {preferences.emailDigest && (
+              <div className="w-full flex items-center justify-center p-5">
+                <div className="flex-1 flex flex-col items-start justify-start">
+                  <span className="w-full text-left">Digest Frequency</span>
+                  <span className="w-full text-left text-sm text-muted-foreground">
+                    Choose how often you want to receive digest emails
+                  </span>
+                </div>
+                <Select
+                  value={preferences.emailDigestFrequency}
+                  onValueChange={(value) => {
+                    if (value === "daily" || value === "weekly") {
+                      setPreferences((prev) => ({
+                        ...prev,
+                        emailDigestFrequency: value,
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      <div className="w-full col-span-1 flex flex-col items-start justify-start gap-5">
+        <div className="w-full flex flex-col items-start justify-start border rounded-3xl">
+          <div className="w-full flex items-center justify-start p-5 border-b gap-3.5">
+            <div className="size-12 p-3 rounded-full bg-primary/20 text-primary">
+              <Bell className="size-full" />
+            </div>
+            <div className="flex-1 flex flex-col items-start justify-start">
+              <span className="text-lg font-bold">Alert Threshold</span>
+              <span className="text-sm text-muted-foreground">
+                Only receive notifications for alerts above this impact level
+              </span>
+            </div>
+          </div>
+          <div className="w-full flex items-center justify-center p-5">
+            <div className="flex-1 flex flex-col items-start justify-start">
+              <span className="w-full text-left">Minimum Impact Level</span>
+              <span className="w-full text-left text-sm text-muted-foreground">
                 {preferences.alertThreshold === "all" &&
                   "You will receive notifications for all alerts regardless of impact score."}
                 {preferences.alertThreshold === "low" &&
@@ -289,100 +301,125 @@ export function NotificationPreferencesClient({
                   "You will receive notifications for alerts with impact score ≥ 40%."}
                 {preferences.alertThreshold === "high" &&
                   "You will receive notifications only for alerts with impact score ≥ 70%."}
-              </p>
+              </span>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Webhook Integration */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Webhook className="size-5" />
-              Webhook Integration
-            </CardTitle>
-            <CardDescription>
-              Send alert notifications to an external webhook URL
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Enable Webhooks</Label>
-                <p className="text-sm text-muted-foreground">
-                  Send alert notifications to your webhook endpoint
-                </p>
-              </div>
-              <Button
-                variant={preferences.webhookEnabled ? "default" : "outline"}
-                onClick={() =>
+            <Select
+              value={preferences.alertThreshold}
+              onValueChange={(value) => {
+                if (
+                  value === "all" ||
+                  value === "low" ||
+                  value === "medium" ||
+                  value === "high"
+                ) {
                   setPreferences((prev) => ({
                     ...prev,
-                    webhookEnabled: !prev.webhookEnabled,
-                  }))
+                    alertThreshold: value,
+                  }));
                 }
-              >
-                {preferences.webhookEnabled ? "Enabled" : "Disabled"}
-              </Button>
-            </div>
-
-            {preferences.webhookEnabled && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="webhookUrl">Webhook URL</Label>
-                  <Input
-                    id="webhookUrl"
-                    type="url"
-                    placeholder="https://example.com/webhook"
-                    value={preferences.webhookUrl || ""}
-                    onChange={(e) =>
-                      setPreferences((prev) => ({
-                        ...prev,
-                        webhookUrl: e.target.value,
-                      }))
-                    }
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Your webhook will receive POST requests with alert data when
-                    alerts are created.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="webhookSecret">
-                    Webhook Secret (Optional)
-                  </Label>
-                  <Input
-                    id="webhookSecret"
-                    type="password"
-                    placeholder="Enter secret for HMAC signature"
-                    value={preferences.webhookSecret || ""}
-                    onChange={(e) =>
-                      setPreferences((prev) => ({
-                        ...prev,
-                        webhookSecret: e.target.value || null,
-                      }))
-                    }
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    If provided, webhook requests will include an&nbsp;
-                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                      X-Regula-Signature
-                    </code>
-                    &nbsp; header with HMAC-SHA256 signature for verification.
-                  </p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Preferences"}
-          </Button>
+              }}
+              aria-label="Alert threshold"
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Alerts</SelectItem>
+                <SelectItem value="low">Low and Above</SelectItem>
+                <SelectItem value="medium">Medium and Above</SelectItem>
+                <SelectItem value="high">High Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+        <div className="w-full flex flex-col items-start justify-start border rounded-3xl">
+          <div className="w-full flex items-center justify-start p-5 border-b gap-3.5">
+            <div className="size-12 p-3 rounded-full bg-primary/20 text-primary">
+              <Webhook className="size-full" />
+            </div>
+            <div className="flex-1 flex flex-col items-start justify-start">
+              <span className="text-lg font-bold">Webhook Integration</span>
+              <span className="text-sm text-muted-foreground">
+                Send alert notifications to an external webhook URL
+              </span>
+            </div>
+          </div>
+          <div
+            className={cn(
+              "w-full flex items-center justify-center p-5",
+              preferences.webhookEnabled ? "border-b" : "",
+            )}
+          >
+            <div className="flex-1 flex flex-col items-start justify-start">
+              <span className="w-full text-left">
+                Enable Webhook Integration
+              </span>
+              <span className="w-full text-left text-sm text-muted-foreground">
+                Send alert notifications to an external webhook URL
+              </span>
+            </div>
+            <Switch
+              checked={preferences.webhookEnabled}
+              onCheckedChange={(checked) =>
+                setPreferences((prev) => ({
+                  ...prev,
+                  webhookEnabled: checked,
+                }))
+              }
+            />
+          </div>
+          {preferences.webhookEnabled && (
+            <>
+              <div className="w-full flex flex-col items-start justify-start gap-2.5 px-5 pt-5 pb-2.5">
+                <Label htmlFor="webhookUrl">Webhook URL</Label>
+                <Input
+                  id="webhookUrl"
+                  type="url"
+                  placeholder="https://example.com/webhook"
+                  value={preferences.webhookUrl || ""}
+                  onChange={(e) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      webhookUrl: e.target.value,
+                    }))
+                  }
+                />
+                <p className="text-sm text-muted-foreground">
+                  Your webhook will receive POST requests with alert data when
+                  alerts are created.
+                </p>
+              </div>
+              <div className="w-full flex flex-col items-start justify-start gap-2.5 px-5 pt-2.5 pb-5">
+                <Label htmlFor="webhookSecret">Webhook Secret (Optional)</Label>
+                <Input
+                  id="webhookSecret"
+                  type="password"
+                  placeholder="Enter secret for HMAC signature"
+                  value={preferences.webhookSecret || ""}
+                  onChange={(e) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      webhookSecret: e.target.value || null,
+                    }))
+                  }
+                />
+                <p className="text-sm text-muted-foreground">
+                  If provided, webhook requests will include an&nbsp;
+                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                    X-Regula-Signature
+                  </code>
+                  &nbsp; header with HMAC-SHA256 signature for verification.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      {/* Save Button */}
+      <div className="w-full col-span-2 flex justify-end mt-auto">
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Preferences"}
+        </Button>
       </div>
     </div>
   );

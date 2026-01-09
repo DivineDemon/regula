@@ -30,14 +30,15 @@ export default async function NotificationPreferencesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Notification Preferences</h1>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <h1 className="w-full text-left text-3xl font-bold">
+          Notification Preferences
+        </h1>
+        <p className="w-full text-left text-muted-foreground">
           Configure how you receive alerts and notifications
         </p>
       </div>
-
       <NotificationPreferencesClient organizationId={userOrg.organization.id} />
     </div>
   );
