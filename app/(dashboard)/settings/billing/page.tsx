@@ -1,6 +1,15 @@
 import { eq } from "drizzle-orm";
+import { TriangleAlert } from "lucide-react";
 import { redirect } from "next/navigation";
 import { BillingClient } from "@/components/settings/billing-client";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { UsageDashboardClient } from "@/components/usage/usage-dashboard-client";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
@@ -31,30 +40,42 @@ export default async function BillingSettingsPage() {
     redirect("/dashboard");
   }
 
-  // Check if user is admin
-  if (userOrg.role !== UserRole.ADMIN) {
-    return (
-      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-        <p className="text-destructive">
-          You must be an administrator to access billing settings.
-        </p>
-      </div>
-    );
-  }
+  const isAdmin = userOrg.role === UserRole.ADMIN;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Billing & Subscription</h1>
-        <p className="mt-2 text-muted-foreground">
-          Manage your subscription, payment methods, and invoices
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <h1 className="w-full text-left text-3xl font-bold">Billing & Usage</h1>
+        <p className="w-full text-left text-muted-foreground">
+          Monitor your plan usage and manage your subscription, payment methods,
+          and invoices
         </p>
       </div>
-
-      <BillingClient
+      <UsageDashboardClient
         organizationId={userOrg.organization.id}
         organizationName={userOrg.organization.name}
       />
+      {isAdmin ? (
+        <BillingClient
+          organizationId={userOrg.organization.id}
+          organizationName={userOrg.organization.name}
+        />
+      ) : (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <TriangleAlert className="size-6" />
+            </EmptyMedia>
+            <EmptyTitle>
+              You must be an administrator to access billing settings
+            </EmptyTitle>
+            <EmptyDescription>
+              Only administrators can access billing settings. Please contact
+              the administrator to get access.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
     </div>
   );
 }

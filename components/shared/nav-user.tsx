@@ -3,7 +3,6 @@ import {
   Building2,
   ChevronsUpDown,
   ClipboardCheck,
-  CreditCard,
   LogOut,
   Settings,
   User,
@@ -204,12 +203,6 @@ export function NavUser({
                 <Link href="/settings/organization">
                   <Settings className="mr-2 h-4 w-4" />
                   Organization
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings/billing">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Billing
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

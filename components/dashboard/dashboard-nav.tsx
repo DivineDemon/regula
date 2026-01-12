@@ -60,8 +60,8 @@ const settingsItems: MenuItem[] = [
     icon: Bell,
   },
   {
-    title: "Usage",
-    url: "/settings/usage",
+    title: "Billing & Usage",
+    url: "/settings/billing",
     icon: BarChart3,
   },
   {

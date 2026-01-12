@@ -1,24 +1,24 @@
 "use client";
 
-import { CreditCard, Download, ExternalLink, Loader2 } from "lucide-react";
+import {
+  CircleCheck,
+  CreditCard,
+  Download,
+  ExternalLink,
+  Loader2,
+  TriangleAlert,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Empty,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PLAN_CONFIGS, type PlanType } from "@/lib/services/stripe";
 
@@ -223,324 +223,333 @@ export function BillingClient({
     });
   };
 
+  const currentPlan = subscription?.plan || "free";
+
+  // Plan hierarchy for upgrade/downgrade logic
+  const planHierarchy: PlanType[] = ["free", "starter", "growth", "enterprise"];
+  const getPlanIndex = (plan: PlanType) => planHierarchy.indexOf(plan);
+
+  const handleDowngrade = async (plan: PlanType) => {
+    setProcessing(`downgrade-${plan}`);
+    try {
+      const response = await fetch("/api/billing/subscription", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId,
+          plan,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || "Failed to update subscription";
+        console.error("Downgrade API error:", errorMessage, errorData);
+        throw new Error(errorMessage);
+      }
+
+      toast.success(`Plan updated successfully to ${PLAN_CONFIGS[plan].name}`);
+      // Refresh billing data
+      await fetchBillingData();
+    } catch (error) {
+      console.error("Downgrade error:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to update plan. Please try again.";
+      toast.error(message);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="w-full flex flex-col items-start justify-start gap-5">
+        <div className="w-full flex items-center justify-center">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex-1" />
+          <Skeleton className="h-9 w-36" />
+        </div>
+        <div className="w-full grid grid-cols-4 items-start justify-start gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="relative col-span-1 flex h-full w-full flex-col items-start justify-start gap-5 rounded-2xl border p-5 shadow"
+            >
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-9 w-32" />
+              <Skeleton className="h-4 w-full" />
+              <div className="flex w-full flex-col items-center justify-center gap-2.5">
+                {[1, 2, 3, 4].map((j) => (
+                  <div
+                    key={j}
+                    className="flex w-full items-center justify-center gap-2.5"
+                  >
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <Skeleton className="h-4 flex-1" />
+                  </div>
+                ))}
+              </div>
+              <Skeleton className="h-10 w-full mt-auto" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-24 w-full" />
       </div>
     );
   }
 
-  const currentPlan = subscription?.plan || "free";
-  const planConfig = PLAN_CONFIGS[currentPlan];
-
   return (
-    <div className="space-y-6">
-      {/* Current Subscription */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Current Subscription</CardTitle>
-          <CardDescription>
-            Your current plan and billing information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-2xl font-bold">{planConfig.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {currentPlan === "free"
-                  ? "Free forever"
-                  : formatCurrency(planConfig.price)}
-                /month
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  subscription?.status === "active" ? "default" : "secondary"
-                }
-              >
-                {subscription?.status || "active"}
-              </Badge>
-              {invoices.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSync}
-                  disabled={syncing}
-                >
-                  {syncing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Syncing...
-                    </>
-                  ) : (
-                    "Sync Subscription"
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {subscription?.currentPeriodEnd && (
-            <div className="text-sm text-muted-foreground">
-              {subscription.status === "canceled" ? "Expires" : "Renews"}{" "}
-              on&nbsp;
-              {formatDate(subscription.currentPeriodEnd)}
-            </div>
-          )}
-
-          <div className="grid gap-2">
-            {planConfig.features.map((feature) => (
-              <div key={feature} className="flex items-center gap-2 text-sm">
-                <span className="text-green-500">✓</span>
-                <span>{feature}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Plan Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Change Plan</CardTitle>
-          <CardDescription>
-            Upgrade or downgrade your subscription plan
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            {(["free", "starter", "growth", "enterprise"] as PlanType[]).map(
-              (plan) => {
-                const config = PLAN_CONFIGS[plan];
-                const isCurrent = currentPlan === plan;
-                const isUpgrade =
-                  plan !== "free" &&
-                  (currentPlan === "free" ||
-                    (plan === "growth" && currentPlan === "starter") ||
-                    plan === "enterprise");
-
-                return (
-                  <Card
-                    key={plan}
-                    className={
-                      isCurrent
-                        ? "border-primary ring-2 ring-primary"
-                        : "border-border"
-                    }
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-lg">{config.name}</CardTitle>
-                      <CardDescription>
-                        {plan === "free" ? (
-                          "Free"
-                        ) : (
-                          <>
-                            {formatCurrency(config.price)}
-                            <span className="text-xs">/month</span>
-                          </>
-                        )}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <ul className="space-y-2 text-sm">
-                        {config.features.slice(0, 4).map((feature) => (
-                          <li key={feature} className="flex items-center gap-2">
-                            <span className="text-green-500">✓</span>
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      {isCurrent ? (
-                        <Button disabled variant="outline" className="w-full">
-                          Current Plan
-                        </Button>
-                      ) : isUpgrade ? (
-                        <Button
-                          onClick={() =>
-                            handleCheckout(
-                              plan as "starter" | "growth" | "enterprise",
-                            )
-                          }
-                          disabled={!!processing}
-                          className="w-full"
-                        >
-                          {processing === `checkout-${plan}` ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : (
-                            "Upgrade"
-                          )}
-                        </Button>
-                      ) : (
-                        <Button variant="outline" disabled className="w-full">
-                          Downgrade
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              },
+    <div className="w-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex items-center justify-center">
+        <span className="flex-1 text-left text-2xl font-semibold">Plans</span>
+        {invoices.length > 0 && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSync}
+            disabled={syncing}
+          >
+            {syncing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              "Sync Subscription"
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </Button>
+        )}
+      </div>
+      <div className="w-full grid grid-cols-4 items-start justify-start gap-5">
+        {(["free", "starter", "growth", "enterprise"] as PlanType[]).map(
+          (plan) => {
+            const config = PLAN_CONFIGS[plan];
+            const isCurrent = currentPlan === plan;
+            const currentPlanIndex = getPlanIndex(currentPlan);
+            const planIndex = getPlanIndex(plan);
+            const isUpgrade = planIndex > currentPlanIndex;
+            const isDowngrade = planIndex < currentPlanIndex;
 
-      <Separator />
-
-      {/* Payment Methods */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Methods</CardTitle>
-          <CardDescription>
-            Manage your payment methods for subscriptions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {paymentMethods.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No payment methods on file</p>
-              <p className="text-sm mt-2">
-                Add a payment method when upgrading your plan
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {paymentMethods.map((pm) => (
-                <div
-                  key={pm.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <CreditCard className="h-6 w-6 text-muted-foreground" />
-                    <div>
-                      {pm.card?.last4 ? (
-                        <>
-                          <p className="font-medium">
-                            {pm.cardholderName
-                              ? `${pm.cardholderName} •••• ${pm.card.last4}`
-                              : `Card •••• ${pm.card.last4}`}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatBrandName(pm.card.brand)}
-                            {pm.card.expMonth && pm.card.expYear
-                              ? ` • Expires ${String(pm.card.expMonth).padStart(
-                                  2,
-                                  "0",
-                                )}/${pm.card.expYear}`
-                              : ""}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-medium">
-                            {pm.cardholderName ||
-                              formatPaymentMethodType(pm.type)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatPaymentMethodType(pm.type)} payment method
-                          </p>
-                        </>
-                      )}
+            return (
+              <div
+                key={plan}
+                className="relative col-span-1 flex h-full w-full flex-col items-start justify-start gap-5 rounded-2xl border p-5 shadow border-primary bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(43,127,255,0.1),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(43,127,255,0.3),rgba(255,255,255,0))]"
+              >
+                {isCurrent && (
+                  <div className="w-full absolute -top-[13px] right-0">
+                    <div className="mx-auto w-fit rounded-full bg-primary px-3 pb-0.5">
+                      <span className="w-fit text-center text-[12px] text-white leading-[14px]">
+                        Active
+                      </span>
                     </div>
-                    {pm.isDefault && <Badge variant="secondary">Default</Badge>}
                   </div>
+                )}
+                <div className="flex w-full flex-col items-center justify-center gap-2">
+                  <span className="w-full text-left font-semibold text-[18px] leading-[18px]">
+                    {config.name}
+                  </span>
+                  <span className="w-full text-left text-[14px] text-muted-foreground leading-[14px]">
+                    Expand with confidence.
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Invoice History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Invoice History</CardTitle>
-          <CardDescription>
-            View and download your past invoices
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {invoices.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>No invoices found</EmptyTitle>
-                <EmptyDescription>
-                  Invoices will appear here once you have a paid subscription
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <div className="space-y-2">
-              {invoices.map((invoice) => (
-                <div
-                  key={invoice.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">
-                        {invoice.number || invoice.id}
-                      </p>
-                      <Badge
-                        variant={
-                          invoice.status === "paid"
-                            ? "default"
-                            : invoice.status === "open"
-                              ? "secondary"
-                              : "destructive"
-                        }
-                      >
-                        {invoice.status}
-                      </Badge>
+                <span className="w-full text-left font-bold text-[36px] leading-[36px]">
+                  {formatCurrency(config.price)}
+                  <span className="text-[14px] text-muted-foreground leading-[14px]">
+                    &nbsp;/&nbsp;m
+                  </span>
+                </span>
+                <span className="w-full text-left text-[14px] text-muted-foreground leading-[14px]">
+                  Offers extended features and higher limits.
+                </span>
+                <div className="flex w-full flex-col items-center justify-center gap-2.5">
+                  {config.features.map((feature) => (
+                    <div
+                      key={feature}
+                      className="flex w-full items-center justify-center gap-2.5"
+                    >
+                      <CircleCheck className="size-4 text-primary" />
+                      <span className="flex-1 text-left text-[14px] capitalize leading-[14px]">
+                        {feature}
+                      </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(invoice.created)} •&nbsp;
-                      {formatCurrency(invoice.amount, invoice.currency)}
+                  ))}
+                </div>
+                {isCurrent ? (
+                  <Button disabled variant="default" className="w-full mt-auto">
+                    Current Plan
+                  </Button>
+                ) : isUpgrade ? (
+                  <Button
+                    onClick={() =>
+                      handleCheckout(
+                        plan as "starter" | "growth" | "enterprise",
+                      )
+                    }
+                    disabled={!!processing}
+                    className="w-full mt-auto"
+                  >
+                    {processing === `checkout-${plan}` ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      "Upgrade"
+                    )}
+                  </Button>
+                ) : isDowngrade ? (
+                  <Button
+                    onClick={() => handleDowngrade(plan)}
+                    disabled={!!processing}
+                    variant="outline"
+                    className="w-full mt-auto"
+                  >
+                    {processing === `downgrade-${plan}` ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      "Downgrade"
+                    )}
+                  </Button>
+                ) : null}
+              </div>
+            );
+          },
+        )}
+      </div>
+      {paymentMethods.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <TriangleAlert className="size-6" />
+            </EmptyMedia>
+            <EmptyTitle>No payment methods on file</EmptyTitle>
+            <EmptyDescription>
+              Add a payment method when upgrading your plan
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <div className="w-full grid grid-cols-3 items-start justify-start gap-5">
+          <span className="w-full col-span-3 text-left text-2xl font-semibold">
+            Payment Methods
+          </span>
+          {paymentMethods.map((pm) => (
+            <div
+              key={pm.id}
+              className="w-full flex items-center justify-between rounded-lg border p-4 gap-2.5"
+            >
+              <div className="size-11 rounded-full bg-primary/20 text-primary p-3">
+                <CreditCard className="size-full" />
+              </div>
+              <div className="flex-1 flex flex-col items-start justify-start">
+                {pm.card?.last4 ? (
+                  <>
+                    <p className="w-full text-left font-medium">
+                      {`•••• •••• •••• ${pm.card.last4}`}
                     </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {invoice.invoicePdf && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (invoice.invoicePdf) {
-                            window.open(invoice.invoicePdf, "_blank");
-                          }
-                        }}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        PDF
-                      </Button>
-                    )}
-                    {invoice.hostedInvoiceUrl && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (invoice.hostedInvoiceUrl) {
-                            window.open(invoice.hostedInvoiceUrl, "_blank");
-                          }
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                    <p className="w-full text-left text-sm text-muted-foreground">
+                      {formatBrandName(pm.card.brand)}
+                      {pm.card.expMonth && pm.card.expYear
+                        ? ` • Expires ${String(pm.card.expMonth).padStart(
+                            2,
+                            "0",
+                          )}/${pm.card.expYear}`
+                        : ""}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="w-full text-left font-medium">
+                      {pm.cardholderName || formatPaymentMethodType(pm.type)}
+                    </p>
+                    <p className="w-full text-left text-sm text-muted-foreground">
+                      {formatPaymentMethodType(pm.type)} payment method
+                    </p>
+                  </>
+                )}
+              </div>
+              {pm.isDefault && <Badge variant="default">Default</Badge>}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      )}
+      <div className="w-full flex flex-col items-start justify-start gap-5">
+        <span className="w-full text-left text-2xl font-semibold">
+          Invoice History
+        </span>
+        {invoices.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <TriangleAlert className="size-6" />
+              </EmptyMedia>
+              <EmptyTitle>No invoices found</EmptyTitle>
+              <EmptyDescription>
+                Invoices will appear here once you have a paid subscription
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          invoices.map((invoice) => (
+            <div
+              key={invoice.id}
+              className="w-full flex items-center justify-between rounded-lg border p-4"
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{invoice.number || invoice.id}</p>
+                  <Badge
+                    variant={
+                      invoice.status === "paid"
+                        ? "default"
+                        : invoice.status === "open"
+                          ? "secondary"
+                          : "destructive"
+                    }
+                    className="capitalize"
+                  >
+                    {invoice.status}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(invoice.created)} •&nbsp;
+                  {formatCurrency(invoice.amount, invoice.currency)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {invoice.invoicePdf && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (invoice.invoicePdf) {
+                        window.open(invoice.invoicePdf, "_blank");
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    PDF
+                  </Button>
+                )}
+                {invoice.hostedInvoiceUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (invoice.hostedInvoiceUrl) {
+                        window.open(invoice.hostedInvoiceUrl, "_blank");
+                      }
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
