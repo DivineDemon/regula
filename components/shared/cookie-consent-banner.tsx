@@ -1,17 +1,11 @@
 "use client";
 
+import { Cookie } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Switch } from "../ui/switch";
 
 const COOKIE_CONSENT_KEY = "regula_cookie_consent";
 const COOKIE_CONSENT_VERSION = "v1.0";
@@ -28,7 +22,6 @@ interface CookieConsentState {
 export function CookieConsentBanner() {
   const { data: session } = useSession();
   const [showBanner, setShowBanner] = useState(false);
-  const [showCustomize, setShowCustomize] = useState(false);
   const [consent, setConsent] = useState<CookieConsentState>({
     essential: true,
     functional: false,
@@ -146,7 +139,6 @@ export function CookieConsentBanner() {
     }
 
     setShowBanner(false);
-    setShowCustomize(false);
   };
 
   const handleAcceptAll = () => {
@@ -181,129 +173,92 @@ export function CookieConsentBanner() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
-      <Card className="mx-auto max-w-4xl shadow-lg">
-        <CardHeader>
-          <CardTitle>Cookie Preferences</CardTitle>
-          <CardDescription>
+      <div className="w-124 p-5 rounded-xl border shadow bg-background flex flex-col items-center justify-center gap-5">
+        <div className="w-full flex flex-col items-center justify-center gap-2.5">
+          <div className="w-full flex items-center justify-center gap-3.5">
+            <Cookie className="size-4" />
+            <span className="font-medium flex-1 text-left">
+              Cookie Preferences
+            </span>
+          </div>
+          <p className="w-full text-sm text-muted-foreground">
             We use cookies to enhance your experience, analyze site usage, and
             assist in marketing efforts. You can customize your preferences
-            below.
-          </CardDescription>
-        </CardHeader>
-        {showCustomize ? (
-          <>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Essential Cookies</p>
-                    <p className="text-sm text-muted-foreground">
-                      Required for the site to function. Cannot be disabled.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={true}
-                    disabled
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Functional Cookies</p>
-                    <p className="text-sm text-muted-foreground">
-                      Remember your preferences and settings.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={consent.functional}
-                    onChange={(e) =>
-                      setConsent({ ...consent, functional: e.target.checked })
-                    }
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Analytics Cookies</p>
-                    <p className="text-sm text-muted-foreground">
-                      Help us understand how visitors interact with our site.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={consent.analytics}
-                    onChange={(e) =>
-                      setConsent({ ...consent, analytics: e.target.checked })
-                    }
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Marketing Cookies</p>
-                    <p className="text-sm text-muted-foreground">
-                      Used to deliver personalized ads and track campaign
-                      effectiveness.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={consent.marketing}
-                    onChange={(e) =>
-                      setConsent({ ...consent, marketing: e.target.checked })
-                    }
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-              <Button variant="outline" onClick={() => setShowCustomize(false)}>
-                Back
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleRejectAll}>
-                  Reject All
-                </Button>
-                <Button onClick={handleSaveCustom}>Save Preferences</Button>
-              </div>
-            </CardFooter>
-          </>
-        ) : (
-          <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" onClick={() => setShowCustomize(true)}>
-              Customize
-            </Button>
-            <Button variant="outline" onClick={handleRejectAll}>
-              Reject All
-            </Button>
-            <Button onClick={handleAcceptAll}>Accept All</Button>
-          </CardFooter>
-        )}
-        <div className="px-6 pb-4">
-          <p className="text-xs text-muted-foreground">
-            Learn more in our&nbsp;
+            below. Learn more in our&nbsp;
             <Link
               href="/legal/cookies"
-              className="text-primary hover:underline"
+              className="text-primary hover:underline inline-block"
             >
               Cookie Policy
             </Link>
             .
           </p>
         </div>
-      </Card>
+        <div className="w-full flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <span className="w-full text-sm text-left font-medium">
+              Essential Cookies
+            </span>
+            <p className="w-full text-left text-xs text-muted-foreground">
+              Required for the site to function. Cannot be disabled.
+            </p>
+          </div>
+          <Switch checked={true} disabled />
+        </div>
+        <div className="w-full flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <span className="w-full text-sm text-left font-medium">
+              Functional Cookies
+            </span>
+            <p className="w-full text-left text-xs text-muted-foreground">
+              Remember your preferences and settings.
+            </p>
+          </div>
+          <Switch
+            checked={consent.functional}
+            onCheckedChange={(e) => setConsent({ ...consent, functional: e })}
+          />
+        </div>
+        <div className="w-full flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <span className="w-full text-sm text-left font-medium">
+              Analytics Cookies
+            </span>
+            <p className="w-full text-left text-xs text-muted-foreground">
+              Help us understand how visitors interact with our site.
+            </p>
+          </div>
+          <Switch
+            checked={consent.analytics}
+            onCheckedChange={(e) => setConsent({ ...consent, analytics: e })}
+          />
+        </div>
+        <div className="w-full flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <span className="w-full text-sm text-left font-medium">
+              Marketing Cookies
+            </span>
+            <p className="w-full text-left text-xs text-muted-foreground">
+              Used to deliver personalized ads and track campaign effectiveness.
+            </p>
+          </div>
+          <Switch
+            checked={consent.marketing}
+            onCheckedChange={(e) => setConsent({ ...consent, marketing: e })}
+          />
+        </div>
+        <div className="w-full grid grid-cols-3 items-center justify-center gap-2.5">
+          <Button type="button" variant="default" onClick={handleAcceptAll}>
+            Accept All
+          </Button>
+          <Button type="button" variant="outline" onClick={handleRejectAll}>
+            Reject All
+          </Button>
+          <Button type="button" variant="outline" onClick={handleSaveCustom}>
+            Save Preferences
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

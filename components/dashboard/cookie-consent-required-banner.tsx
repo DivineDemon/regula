@@ -13,12 +13,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getCookieConsent } from "@/lib/utils/cookie-consent";
+import { Switch } from "@/components/ui/switch";
 
+const COOKIE_CONSENT_KEY = "regula_cookie_consent";
 const COOKIE_CONSENT_VERSION = "v1.0";
 
 interface CookieConsentState {
-  essential: boolean;
+  essential: boolean; // Always true, required for site to function
   functional: boolean;
   analytics: boolean;
   marketing: boolean;
@@ -37,24 +38,16 @@ export function CookieConsentRequiredBanner() {
   const [showCustomize, setShowCustomize] = useState(false);
   const [consent, setConsent] = useState<CookieConsentState>({
     essential: true,
-    functional: true,
+    functional: false,
     analytics: false,
     marketing: false,
     version: COOKIE_CONSENT_VERSION,
     timestamp: Date.now(),
   });
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const checkConsent = async () => {
-      // Check localStorage first
-      const storedConsent = getCookieConsent();
-      if (storedConsent) {
-        // Consent exists, don't show banner
-        return;
-      }
-
-      // If user is logged in, check database
+    const loadConsent = async () => {
+      // If user is logged in, try to load consent from database first
       if (session?.user?.id) {
         try {
           const response = await fetch("/api/consent");
@@ -65,62 +58,94 @@ export function CookieConsentRequiredBanner() {
             );
 
             if (cookieConsent?.granted && !cookieConsent.withdrawn) {
-              // Consent exists in database, don't show banner
-              return;
+              // Load metadata from database consent
+              const metadata = cookieConsent.metadata
+                ? JSON.parse(cookieConsent.metadata)
+                : {};
+
+              const dbConsent: CookieConsentState = {
+                essential: true,
+                functional: metadata.functional ?? false,
+                analytics: metadata.analytics ?? false,
+                marketing: metadata.marketing ?? false,
+                version: cookieConsent.consentVersion || COOKIE_CONSENT_VERSION,
+                timestamp: new Date(cookieConsent.granted).getTime(),
+              };
+
+              // Sync to localStorage
+              localStorage.setItem(
+                COOKIE_CONSENT_KEY,
+                JSON.stringify(dbConsent),
+              );
+              setConsent(dbConsent);
+              return; // Don't show banner if consent exists in DB
             }
           }
         } catch (error) {
-          console.error("Failed to check consent:", error);
+          console.error("Failed to load consent from database:", error);
+          // Continue to check localStorage
         }
       }
 
-      // No consent found - show banner
-      setShowBanner(true);
+      // Check localStorage for consent
+      const storedConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
+      if (!storedConsent) {
+        setShowBanner(true);
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(storedConsent) as CookieConsentState;
+        // If consent version changed, show banner again
+        if (parsed.version !== COOKIE_CONSENT_VERSION) {
+          setShowBanner(true);
+          return;
+        }
+        // Consent exists and is current
+        setConsent(parsed);
+      } catch {
+        // Invalid stored consent, show banner
+        setShowBanner(true);
+      }
     };
 
-    checkConsent();
+    loadConsent();
   }, [session]);
 
   const saveConsent = async (newConsent: CookieConsentState) => {
-    setIsSaving(true);
-    try {
-      // Save to localStorage
-      localStorage.setItem("regula_cookie_consent", JSON.stringify(newConsent));
-      setConsent(newConsent);
+    // Save to localStorage
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newConsent));
+    setConsent(newConsent);
 
-      // Dispatch event for other components
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("cookieConsentChanged"));
-      }
-
-      // If user is logged in, also save to database
-      if (session?.user?.id) {
-        try {
-          await fetch("/api/consent", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              consentType: "cookies",
-              consentVersion: COOKIE_CONSENT_VERSION,
-              metadata: {
-                functional: newConsent.functional,
-                analytics: newConsent.analytics,
-                marketing: newConsent.marketing,
-              },
-            }),
-          });
-        } catch (error) {
-          console.error("Failed to save consent to database:", error);
-        }
-      }
-
-      setShowBanner(false);
-      setShowCustomize(false);
-    } catch (error) {
-      console.error("Error saving consent:", error);
-    } finally {
-      setIsSaving(false);
+    // Dispatch event for other components to listen
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("cookieConsentChanged"));
     }
+
+    // If user is logged in, also save to database
+    if (session?.user?.id) {
+      try {
+        await fetch("/api/consent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            consentType: "cookies",
+            consentVersion: COOKIE_CONSENT_VERSION,
+            metadata: {
+              functional: newConsent.functional,
+              analytics: newConsent.analytics,
+              marketing: newConsent.marketing,
+            },
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to save consent to database:", error);
+        // Continue anyway - localStorage is saved
+      }
+    }
+
+    setShowBanner(false);
+    setShowCustomize(false);
   };
 
   const handleAcceptAll = () => {
@@ -182,12 +207,7 @@ export function CookieConsentRequiredBanner() {
                       Required for the site to function. Cannot be disabled.
                     </p>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={true}
-                    disabled
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
+                  <Switch checked={true} disabled />
                 </div>
               </div>
 
@@ -199,13 +219,11 @@ export function CookieConsentRequiredBanner() {
                       Remember your preferences and settings.
                     </p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={consent.functional}
-                    onChange={(e) =>
-                      setConsent({ ...consent, functional: e.target.checked })
+                    onCheckedChange={(e) =>
+                      setConsent({ ...consent, functional: e })
                     }
-                    className="h-4 w-4 rounded border-gray-300"
                   />
                 </div>
               </div>
@@ -218,13 +236,11 @@ export function CookieConsentRequiredBanner() {
                       Help us understand how visitors interact with our site.
                     </p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={consent.analytics}
-                    onChange={(e) =>
-                      setConsent({ ...consent, analytics: e.target.checked })
+                    onCheckedChange={(e) =>
+                      setConsent({ ...consent, analytics: e })
                     }
-                    className="h-4 w-4 rounded border-gray-300"
                   />
                 </div>
               </div>
@@ -234,61 +250,40 @@ export function CookieConsentRequiredBanner() {
                   <div className="flex-1">
                     <p className="font-medium">Marketing Cookies</p>
                     <p className="text-sm text-muted-foreground">
-                      Used to deliver personalized ads and track campaigns.
+                      Used to deliver personalized ads and track campaign
+                      effectiveness.
                     </p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={consent.marketing}
-                    onChange={(e) =>
-                      setConsent({ ...consent, marketing: e.target.checked })
+                    onCheckedChange={(e) =>
+                      setConsent({ ...consent, marketing: e })
                     }
-                    className="h-4 w-4 rounded border-gray-300"
                   />
                 </div>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setShowCustomize(false)}
-                disabled={isSaving}
-              >
+              <Button variant="outline" onClick={() => setShowCustomize(false)}>
                 Back
               </Button>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleRejectAll}
-                  disabled={isSaving}
-                >
+                <Button variant="outline" onClick={handleRejectAll}>
                   Reject All
                 </Button>
-                <Button onClick={handleSaveCustom} disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save Preferences"}
-                </Button>
+                <Button onClick={handleSaveCustom}>Save Preferences</Button>
               </div>
             </CardFooter>
           </>
         ) : (
           <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setShowCustomize(true)}
-              disabled={isSaving}
-            >
+            <Button variant="outline" onClick={() => setShowCustomize(true)}>
               Customize
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleRejectAll}
-              disabled={isSaving}
-            >
+            <Button variant="outline" onClick={handleRejectAll}>
               Reject All
             </Button>
-            <Button onClick={handleAcceptAll} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Accept All"}
-            </Button>
+            <Button onClick={handleAcceptAll}>Accept All</Button>
           </CardFooter>
         )}
         <div className="px-6 pb-4">
