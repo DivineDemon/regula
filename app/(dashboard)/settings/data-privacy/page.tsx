@@ -30,14 +30,14 @@ export default async function DataPrivacyPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Data Privacy</h1>
-        <p className="mt-2 text-muted-foreground">
-          Manage your data and privacy settings in accordance with GDPR
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <h1 className="w-full text-left text-3xl font-bold">Data Privacy</h1>
+        <p className="w-full text-left text-muted-foreground">
+          Under GDPR, you have the right to access, export, and delete your
+          personal data. Use the options below to exercise these rights.
         </p>
       </div>
-
       <DataPrivacyClient organizationId={userOrg.organization.id} />
     </div>
   );
