@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { AuditLogsViewer } from "@/components/settings/audit-logs-viewer";
+import { AuditLogsViewer } from "@/components/settings/audit-logs/audit-logs-viewer";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
@@ -54,15 +54,14 @@ export default async function AuditLogsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Audit Logs</h1>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-start justify-start gap-2">
+        <h1 className="w-full text-left text-3xl font-bold">Audit Logs</h1>
+        <p className="w-full text-left text-muted-foreground">
           View all audit logs for your organization. Only administrators can
           access this page.
         </p>
       </div>
-
       <AuditLogsViewer organizationId={currentOrg.id} />
     </div>
   );

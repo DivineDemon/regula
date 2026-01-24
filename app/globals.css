@@ -191,3 +191,84 @@
 * {
   scroll-behavior: smooth;
 }
+
+/* JSON Syntax Highlighting */
+.json-highlight {
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+.json-highlight .json-key {
+  color: oklch(0.45 0.2 280); /* Purple/blue for keys */
+}
+
+.dark .json-highlight .json-key {
+  color: oklch(0.7 0.2 280);
+}
+
+.json-highlight .json-string {
+  color: oklch(0.4 0.15 140); /* Green for strings */
+}
+
+.dark .json-highlight .json-string {
+  color: oklch(0.65 0.15 140);
+}
+
+.json-highlight .json-number {
+  color: oklch(0.5 0.2 250); /* Blue for numbers */
+}
+
+.dark .json-highlight .json-number {
+  color: oklch(0.7 0.2 250);
+}
+
+.json-highlight .json-boolean {
+  color: oklch(0.5 0.2 20); /* Orange/red for booleans */
+}
+
+.dark .json-highlight .json-boolean {
+  color: oklch(0.7 0.2 20);
+}
+
+.json-highlight .json-null {
+  color: oklch(0.5 0 0); /* Gray for null */
+}
+
+.dark .json-highlight .json-null {
+  color: oklch(0.6 0 0);
+}
+
+.json-highlight .json-brace {
+  color: oklch(0.5 0.2 20); /* Orange/red for braces */
+  font-weight: 600;
+}
+
+.dark .json-highlight .json-brace {
+  color: oklch(0.75 0.2 20);
+}
+
+.json-highlight .json-bracket {
+  color: oklch(0.5 0.2 250); /* Blue for brackets */
+  font-weight: 600;
+}
+
+.dark .json-highlight .json-bracket {
+  color: oklch(0.75 0.2 250);
+}
+
+.json-highlight .json-colon {
+  color: oklch(0.4 0 0);
+}
+
+.dark .json-highlight .json-colon {
+  color: oklch(0.6 0 0);
+}
+
+.json-highlight .json-comma {
+  color: oklch(0.4 0 0);
+}
+
+.dark .json-highlight .json-comma {
+  color: oklch(0.6 0 0);
+}
