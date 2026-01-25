@@ -2,15 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ConsentType } from "@/lib/db/schema";
+import { Switch } from "../ui/switch";
 
 interface Consent {
   id: string;
@@ -119,65 +113,73 @@ export function ConsentManagementClient({
       : false;
   };
 
+  const handleToggleConsent = async (
+    consentType: ConsentType,
+    checked: boolean,
+  ) => {
+    if (checked) {
+      await handleGrantConsent(consentType);
+    } else {
+      await handleWithdrawConsent(consentType);
+    }
+  };
+
   if (loading) {
+    const consentEntries = Object.entries(CONSENT_LABELS);
     return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Loading consent preferences...</p>
+      <div className="w-full flex flex-col items-start justify-start border rounded-3xl shadow">
+        {consentEntries.map(([type], index) => {
+          const isLast = index === consentEntries.length - 1;
+          return (
+            <div
+              key={type}
+              className={`w-full flex items-center justify-center p-5 ${
+                !isLast ? "border-b" : ""
+              }`}
+            >
+              <div className="flex-1 flex flex-col items-start justify-start gap-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+          );
+        })}
       </div>
     );
   }
 
+  const consentEntries = Object.entries(CONSENT_LABELS);
+
   return (
-    <div className="space-y-4">
-      {Object.entries(CONSENT_LABELS).map(([type, label]) => {
+    <div className="w-full flex flex-col items-start justify-start border rounded-3xl shadow">
+      {consentEntries.map(([type, label], index) => {
         const consentType = type as ConsentType;
         const isGranted = hasConsent(consentType);
         const isUpdating = updating === consentType;
+        const isLast = index === consentEntries.length - 1;
 
         return (
-          <Card key={type}>
-            <CardHeader>
-              <CardTitle>{label.title}</CardTitle>
-              <CardDescription>{label.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">
-                    Status: {isGranted ? "Granted" : "Not Granted"}
-                  </p>
-                  {isGranted &&
-                    (() => {
-                      const consent = consents.find(
-                        (c) => c.consentType === consentType,
-                      );
-                      return consent?.granted ? (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Granted on:&nbsp;
-                          {new Date(consent.granted).toLocaleDateString()}
-                        </p>
-                      ) : null;
-                    })()}
-                </div>
-                {isGranted ? (
-                  <Button
-                    onClick={() => handleWithdrawConsent(consentType)}
-                    disabled={isUpdating}
-                    variant="outline"
-                  >
-                    {isUpdating ? "Updating..." : "Withdraw Consent"}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleGrantConsent(consentType)}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? "Updating..." : "Grant Consent"}
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <div
+            key={type}
+            className={`w-full flex items-center justify-center p-5 ${
+              !isLast ? "border-b" : ""
+            }`}
+          >
+            <div className="flex-1 flex flex-col items-start justify-start">
+              <span className="w-full text-left font-bold">{label.title}</span>
+              <span className="w-full text-left text-sm text-muted-foreground">
+                {label.description}
+              </span>
+            </div>
+            <Switch
+              checked={isGranted}
+              onCheckedChange={(checked) =>
+                handleToggleConsent(consentType, checked)
+              }
+              disabled={isUpdating}
+            />
+          </div>
         );
       })}
     </div>
