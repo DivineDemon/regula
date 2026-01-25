@@ -8,13 +8,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Form,
   FormControl,
   FormField,
@@ -85,41 +78,33 @@ export function OrganizationSettingsForm({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Organization Information</CardTitle>
-        <CardDescription>Update your organization name</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="w-full flex flex-col items-start justify-start">
-                    <FormLabel>Organization Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="My Company"
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="w-full h-[calc(100vh-200px)] flex flex-col items-start justify-start gap-5 p-5 border shadow rounded-3xl bg-card"
+      >
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem className="w-full flex flex-col items-start justify-start">
+              <FormLabel>Organization Name</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  placeholder="My Company"
+                  disabled={isLoading}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" disabled={isLoading} className="mt-auto ml-auto">
+          {isLoading ? "Saving..." : "Save Changes"}
+        </Button>
+      </form>
+    </Form>
   );
 }

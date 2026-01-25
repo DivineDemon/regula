@@ -2,12 +2,16 @@ import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CreateOrganizationDialog } from "@/components/organizations/create-organization-dialog";
-import { OrganizationSettingsForm } from "@/components/settings/organization-settings-form";
+import { OrganizationList } from "@/components/organizations/organization-list";
+import { OrganizationSettingsForm } from "@/components/organizations/organization-settings-form";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { organizationMembers } from "@/lib/db/schema";
-import { getCurrentOrganization } from "@/lib/utils/organization";
+import {
+  getCurrentOrganization,
+  getUserOrganizations,
+} from "@/lib/utils/organization";
 
 export default async function OrganizationSettingsPage() {
   const session = await auth();
@@ -54,22 +58,29 @@ export default async function OrganizationSettingsPage() {
     );
   }
 
+  // Get all user's organizations
+  const userOrganizations = await getUserOrganizations(session.user.id);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Organization Settings</h1>
-          <p className="mt-2 text-muted-foreground">
+    <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex items-end justify-enditems-end">
+        <div className="flex-1 flex flex-col items-start justify-start gap-2">
+          <h1 className="w-full text-left text-3xl font-bold">
+            Organization Settings
+          </h1>
+          <p className="w-full text-left text-muted-foreground">
             Manage your organization information
           </p>
         </div>
         <CreateOrganizationDialog />
       </div>
-
-      <OrganizationSettingsForm
-        organizationId={currentOrg.id}
-        initialName={currentOrg.name}
-      />
+      <div className="w-full h-full grid grid-cols-2 items-start justify-start gap-5">
+        <OrganizationSettingsForm
+          organizationId={currentOrg.id}
+          initialName={currentOrg.name}
+        />
+        <OrganizationList organizations={userOrganizations} />
+      </div>
     </div>
   );
 }

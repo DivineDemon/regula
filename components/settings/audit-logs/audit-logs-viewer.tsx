@@ -224,7 +224,7 @@ export function AuditLogsViewer({
               <span className="flex-1 text-left text-sm text-muted-foreground">
                 {logs.length > 0 ? (
                   <>
-                    Showing {Number.parseInt(filters.offset, 10) + 1} to{" "}
+                    Showing {Number.parseInt(filters.offset, 10) + 1} to&nbsp;
                     {Number.parseInt(filters.offset, 10) + logs.length}
                     {hasMore && " (more available)"}
                   </>
