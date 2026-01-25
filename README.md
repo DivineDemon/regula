@@ -190,6 +190,7 @@ NEXTAUTH_URL=http://localhost:3000
 # External Services
 FIRECRAWL_API_KEY=your-firecrawl-api-key
 GEMINI_API_KEY=your-google-gemini-api-key
+GEMINI_MODEL_NAME=gemini-2.5-flash
 
 # Stripe (Billing)
 STRIPE_SECRET_KEY=sk_test_...
