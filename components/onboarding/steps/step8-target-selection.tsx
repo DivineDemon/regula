@@ -1,31 +1,20 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, ExternalLink, Plus } from "lucide-react";
+import { ExternalLink, TriangleAlert } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { cn } from "@/lib/utils";
+import { ManualTargetAddDialog } from "./manual-target-add-dialog";
 
 interface DiscoveredTarget {
   url: string;
@@ -37,24 +26,6 @@ interface DiscoveredTarget {
   relevantServices?: string[];
   relevantCountries?: string[];
 }
-
-const manualTargetSchema = z.object({
-  url: z.string().url("Invalid URL format"),
-  label: z.string().min(1, "Label is required").max(200, "Label is too long"),
-  jurisdiction: z
-    .string()
-    .regex(
-      /^[A-Z]{2}$/,
-      "Jurisdiction must be a 2-letter country code (e.g., US, UK)",
-    )
-    .optional()
-    .or(z.literal("")),
-  category: z
-    .enum(["aml", "kyc", "licensing", "fees", "regulations", "other"])
-    .optional(),
-});
-
-type ManualTargetFormData = z.infer<typeof manualTargetSchema>;
 
 interface Step8TargetSelectionProps {
   organizationId: string;
@@ -76,17 +47,7 @@ export function Step8TargetSelection({
     new Set(),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showManualForm, setShowManualForm] = useState(false);
-
-  const manualTargetForm = useForm<ManualTargetFormData>({
-    resolver: zodResolver(manualTargetSchema),
-    defaultValues: {
-      url: "",
-      label: "",
-      jurisdiction: "",
-      category: undefined,
-    },
-  });
+  const [showManualDialog, setShowManualDialog] = useState(false);
 
   const handleToggleTarget = (index: number) => {
     setSelectedTargets((prev) => {
@@ -108,19 +69,8 @@ export function Step8TargetSelection({
     }
   };
 
-  const handleAddManualTarget = async (data: ManualTargetFormData) => {
-    const newTarget: DiscoveredTarget = {
-      url: data.url,
-      label: data.label,
-      jurisdiction: data.jurisdiction || undefined,
-      category: data.category || undefined,
-      confidence: 1.0, // Manual targets have 100% confidence
-    };
-
-    setDiscoveredTargets((prev) => [...prev, newTarget]);
-    manualTargetForm.reset();
-    setShowManualForm(false);
-    toast.success("Target added");
+  const handleAddManualTarget = (target: DiscoveredTarget) => {
+    setDiscoveredTargets((prev) => [...prev, target]);
   };
 
   const handleSubmit = async () => {
@@ -216,218 +166,120 @@ export function Step8TargetSelection({
     });
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <CheckCircle2 className="size-8 text-primary" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold">Select Regulatory Targets</h2>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full h-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-center justify-center">
+        <h2 className="w-full text-left text-2xl font-bold">
+          Select Regulatory Targets
+        </h2>
+        <p className="w-full text-left text-muted-foreground">
           Review and select the regulatory targets you want to monitor
         </p>
       </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {selectedTargets.size} of {discoveredTargets.length} selected
+      <div className="w-full h-[calc(100vh-412px)] flex flex-col items-start justify-start gap-5">
+        <div className="w-full flex items-center justify-between">
+          <span className="flex-1 text-left text-sm text-muted-foreground">
+            {selectedTargets.size} of {discoveredTargets.length} selected
+          </span>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSelectAll}>
+              {selectedTargets.size === discoveredTargets.length
+                ? "Deselect All"
+                : "Select All"}
+            </Button>
+            <Button variant="outline" onClick={() => setShowManualDialog(true)}>
+              Add Manually
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleSelectAll}>
-            {selectedTargets.size === discoveredTargets.length
-              ? "Deselect All"
-              : "Select All"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowManualForm(!showManualForm)}
-          >
-            <Plus className="mr-2 size-4" />
-            Add Manually
-          </Button>
-        </div>
-      </div>
+        <ManualTargetAddDialog
+          open={showManualDialog}
+          onOpenChange={setShowManualDialog}
+          onAddTarget={handleAddManualTarget}
+        />
+        <div className="w-full h-full flex flex-col items-start justify-start max-h-full overflow-y-auto gap-2.5">
+          {sortedTargetsWithIndices.length === 0 ? (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <TriangleAlert />
+                </EmptyMedia>
+                <EmptyTitle>No targets discovered</EmptyTitle>
+                <EmptyDescription>
+                  No targets discovered. You can add targets manually.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            sortedTargetsWithIndices.map(({ target, originalIndex }) => {
+              const isSelected = selectedTargets.has(originalIndex);
 
-      {showManualForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <Form {...manualTargetForm}>
-              <form
-                onSubmit={manualTargetForm.handleSubmit(handleAddManualTarget)}
-                className="space-y-4"
-              >
-                <h3 className="font-medium">Add Manual Target</h3>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={manualTargetForm.control}
-                    name="url"
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel>URL *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={manualTargetForm.control}
-                    name="label"
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel>Label *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Target label" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={manualTargetForm.control}
-                    name="jurisdiction"
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel>Jurisdiction (optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="US, UK, etc. (2 letters)"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={manualTargetForm.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel>Category (optional)</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="aml">AML</SelectItem>
-                            <SelectItem value="kyc">KYC</SelectItem>
-                            <SelectItem value="licensing">Licensing</SelectItem>
-                            <SelectItem value="fees">Fees</SelectItem>
-                            <SelectItem value="regulations">
-                              Regulations
-                            </SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowManualForm(false);
-                      manualTargetForm.reset();
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">Add Target</Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-4">
-        {sortedTargetsWithIndices.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              No targets discovered. You can add targets manually.
-            </CardContent>
-          </Card>
-        ) : (
-          sortedTargetsWithIndices.map(({ target, originalIndex }) => {
-            const isSelected = selectedTargets.has(originalIndex);
-
-            return (
-              <Card
-                key={`target-${originalIndex}`}
-                className={isSelected ? "border-primary" : ""}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
+              return (
+                <div
+                  key={originalIndex}
+                  className="w-full border shadow rounded-xl flex flex-col items-start justify-start"
+                >
+                  <div className="w-full flex items-start justify-start gap-2.5 p-2.5 border-b">
                     <Checkbox
                       checked={isSelected}
                       onCheckedChange={() => handleToggleTarget(originalIndex)}
                     />
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-medium">{target.label}</h3>
-                          <a
-                            href={target.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
-                          >
-                            {target.url}
-                            <ExternalLink className="size-3" />
-                          </a>
-                        </div>
-                        {target.confidence !== undefined && (
-                          <Badge variant="secondary">
-                            {Math.round(target.confidence * 100)}% confidence
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {target.jurisdiction && (
-                          <Badge variant="outline">{target.jurisdiction}</Badge>
-                        )}
-                        {target.category && (
-                          <Badge variant="outline">{target.category}</Badge>
-                        )}
-                      </div>
-                      {target.reasoning && (
-                        <p className="text-sm text-muted-foreground">
-                          {target.reasoning}
-                        </p>
-                      )}
-                      {target.relevantServices &&
-                        target.relevantServices.length > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            Relevant services:&nbsp;
-                            {target.relevantServices.join(", ")}
-                          </div>
-                        )}
-                    </div>
+                    <span className="flex-1 text-left text-[14px] leading-[14px] font-medium">
+                      {target.label}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
+                  <div
+                    className={cn("w-full flex flex-wrap gap-2 p-2.5", {
+                      "border-b": target.reasoning,
+                    })}
+                  >
+                    {target.jurisdiction && (
+                      <Badge variant="outline">{target.jurisdiction}</Badge>
+                    )}
+                    {target.category && (
+                      <Badge variant="outline" className="capitalize">
+                        {target.category}
+                      </Badge>
+                    )}
+                    {target.confidence !== undefined && (
+                      <Badge variant="secondary">
+                        {Math.round(target.confidence * 100)}% confidence
+                      </Badge>
+                    )}
+                    <a
+                      href={target.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm flex items-center justify-center text-muted-foreground hover:text-primary gap-2 ml-auto"
+                    >
+                      <span>External Link</span>
+                      <ExternalLink className="size-4" />
+                    </a>
+                  </div>
+                  {target.reasoning && (
+                    <p className="w-full p-2.5 border-b text-sm text-muted-foreground">
+                      {target.reasoning}
+                    </p>
+                  )}
+                  {target.relevantServices &&
+                    target.relevantServices.length > 0 && (
+                      <div className="w-full flex items-start justify-start gap-2 flex-wrap p-2.5">
+                        <div className="text-xs text-muted-foreground">
+                          Relevant services:&nbsp;
+                          {target.relevantServices.join(", ")}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
-
-      <div className="flex items-center justify-between gap-4 pt-4">
+      <div className="w-full grid grid-cols-2 gap-5 mt-auto">
         <Button
           type="button"
-          variant="ghost"
           onClick={onBack}
+          variant="outline"
           disabled={isSubmitting}
         >
           Back

@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -73,64 +72,66 @@ export function Step1CompanyProfile({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <Building2 className="size-8 text-primary" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold">Company Profile</h2>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full h-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-center justify-center">
+        <h2 className="w-full text-left text-2xl font-bold">Company Profile</h2>
+        <p className="w-full text-left text-muted-foreground">
           Let's start by collecting your company's basic information
         </p>
       </div>
-
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="legalEntityName"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Legal Entity Name *</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Enter legal entity name"
-                    disabled={isSubmitting}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="tradingName"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Trading Name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Enter trading name (if different)"
-                    disabled={isSubmitting}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="w-full h-full flex flex-col items-start justify-start gap-5"
+        >
+          <div className="w-full max-h-[calc(100vh-412px)] grid grid-cols-2 gap-5 items-start justify-start">
+            <FormField
+              control={form.control}
+              name="legalEntityName"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Legal Entity Name <span className="text-red-500">*</span>
+                    &nbsp;
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter legal entity name"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tradingName"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Trading Name
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter trading name (if different)"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="companyRegistrationNumber"
               render={({ field }) => (
                 <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>Company Registration Number</FormLabel>
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Company Registration Number
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Enter registration number"
@@ -142,13 +143,14 @@ export function Step1CompanyProfile({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="dateOfIncorporation"
               render={({ field }) => (
                 <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>Date of Incorporation</FormLabel>
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Date of Incorporation
+                  </FormLabel>
                   <FormControl>
                     <Input type="date" disabled={isSubmitting} {...field} />
                   </FormControl>
@@ -156,213 +158,220 @@ export function Step1CompanyProfile({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="countryOfIncorporation"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Country of Incorporation&nbsp;
+                    <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ""}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="websiteUrl"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Company Website URL
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="url"
+                      placeholder="https://example.com"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="companySize"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Company Size
+                  </FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ""}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select company size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="startup">
+                          Startup (&lt; 10 employees)
+                        </SelectItem>
+                        <SelectItem value="small">
+                          Small (10-50 employees)
+                        </SelectItem>
+                        <SelectItem value="medium">
+                          Medium (50-250 employees)
+                        </SelectItem>
+                        <SelectItem value="large">
+                          Large (250-1000 employees)
+                        </SelectItem>
+                        <SelectItem value="enterprise">
+                          Enterprise (&gt; 1000 employees)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="fintechCategory"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Primary Fintech Category&nbsp;
+                    <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ""}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select fintech category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EMI">
+                          Electronic Money Institution (EMI)
+                        </SelectItem>
+                        <SelectItem value="Neobank">Neobank</SelectItem>
+                        <SelectItem value="PSP">
+                          Payment Service Provider (PSP)
+                        </SelectItem>
+                        <SelectItem value="Remittance">Remittance</SelectItem>
+                        <SelectItem value="Cryptocurrency">
+                          Cryptocurrency
+                        </SelectItem>
+                        <SelectItem value="Lending">Lending</SelectItem>
+                        <SelectItem value="Investment">Investment</SelectItem>
+                        <SelectItem value="Insurance">Insurance</SelectItem>
+                        <SelectItem value="Wealth Management">
+                          Wealth Management
+                        </SelectItem>
+                        <SelectItem value="Trading Platform">
+                          Trading Platform
+                        </SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="businessModel"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Business Model <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      value={field.value || ""}
+                      onValueChange={(value) => {
+                        if (
+                          value === "B2C" ||
+                          value === "B2B" ||
+                          value === "B2B2C"
+                        ) {
+                          field.onChange(value as "B2C" | "B2B" | "B2B2C");
+                        }
+                      }}
+                      disabled={isSubmitting}
+                      className="flex flex-row gap-6 border rounded-full p-[9px]"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="B2C" id="b2c" />
+                        <Label htmlFor="b2c">B2C</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="B2B" id="b2b" />
+                        <Label htmlFor="b2b">B2B</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="B2B2C" id="b2b2c" />
+                        <Label htmlFor="b2b2c">B2B2C</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="primaryJurisdiction"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Primary Jurisdiction <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ""}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select primary jurisdiction" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-
-          <FormField
-            control={form.control}
-            name="countryOfIncorporation"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Country of Incorporation *</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          {country.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="websiteUrl"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Company Website URL</FormLabel>
-                <FormControl>
-                  <Input
-                    type="url"
-                    placeholder="https://example.com"
-                    disabled={isSubmitting}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="companySize"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Company Size</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="startup">
-                        Startup (&lt; 10 employees)
-                      </SelectItem>
-                      <SelectItem value="small">
-                        Small (10-50 employees)
-                      </SelectItem>
-                      <SelectItem value="medium">
-                        Medium (50-250 employees)
-                      </SelectItem>
-                      <SelectItem value="large">
-                        Large (250-1000 employees)
-                      </SelectItem>
-                      <SelectItem value="enterprise">
-                        Enterprise (&gt; 1000 employees)
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="fintechCategory"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Primary Fintech Category *</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EMI">
-                        Electronic Money Institution (EMI)
-                      </SelectItem>
-                      <SelectItem value="Neobank">Neobank</SelectItem>
-                      <SelectItem value="PSP">
-                        Payment Service Provider (PSP)
-                      </SelectItem>
-                      <SelectItem value="Remittance">Remittance</SelectItem>
-                      <SelectItem value="Cryptocurrency">
-                        Cryptocurrency
-                      </SelectItem>
-                      <SelectItem value="Lending">Lending</SelectItem>
-                      <SelectItem value="Investment">Investment</SelectItem>
-                      <SelectItem value="Insurance">Insurance</SelectItem>
-                      <SelectItem value="Wealth Management">
-                        Wealth Management
-                      </SelectItem>
-                      <SelectItem value="Trading Platform">
-                        Trading Platform
-                      </SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="businessModel"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Business Model *</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    value={field.value || ""}
-                    onValueChange={(value) => {
-                      if (
-                        value === "B2C" ||
-                        value === "B2B" ||
-                        value === "B2B2C"
-                      ) {
-                        field.onChange(value as "B2C" | "B2B" | "B2B2C");
-                      }
-                    }}
-                    disabled={isSubmitting}
-                    className="flex flex-row gap-6"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="B2C" id="b2c" />
-                      <Label htmlFor="b2c">B2C</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="B2B" id="b2b" />
-                      <Label htmlFor="b2b">B2B</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="B2B2C" id="b2b2c" />
-                      <Label htmlFor="b2b2c">B2B2C</Label>
-                    </div>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="primaryJurisdiction"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Primary Jurisdiction *</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          {country.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex items-center justify-between gap-4 pt-4">
+          <div className="w-full col-span-2 grid grid-cols-2 gap-5 mt-auto">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={onBack}
               disabled={isSubmitting}
             >

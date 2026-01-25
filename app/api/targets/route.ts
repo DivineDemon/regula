@@ -18,7 +18,7 @@ import {
 
 const createTargetSchema = z.object({
   organizationId: z.string(),
-  url: z.string().url("Invalid URL format"),
+  url: z.url("Invalid URL format"),
   label: z.string().min(1, "Label is required"),
   jurisdiction: z.string().optional(),
   category: z
@@ -32,7 +32,7 @@ const createTargetSchema = z.object({
 const updateTargetSchema = z.object({
   targetId: z.string(),
   organizationId: z.string(),
-  url: z.string().url("Invalid URL format").optional(),
+  url: z.url("Invalid URL format").optional(),
   label: z.string().min(1, "Label is required").optional(),
   jurisdiction: z.string().optional(),
   category: z

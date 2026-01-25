@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -98,63 +98,50 @@ export function Step7TargetDiscovery({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            {isDiscovering ? (
-              <Loader2 className="size-8 animate-spin text-primary" />
-            ) : (
-              <Sparkles className="size-8 text-primary" />
-            )}
+    <div className="w-full max-w-1/2 mx-auto h-[calc(100vh-277px)] flex flex-col items-center justify-center gap-5">
+      {isDiscovering && (
+        <div className="mt-auto w-full flex flex-col items-center justify-center gap-2">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">
+            {isDiscovering
+              ? "Our AI is analyzing your profile to find relevant regulatory targets..."
+              : error
+                ? "Discovery failed. Please try again."
+                : "Discovery complete!"}
+          </p>
+        </div>
+      )}
+      <div className="w-full flex flex-col items-center justify-center gap-2">
+        <div className="w-full flex items-center justify-center text-sm">
+          <span className="font-medium w-full text-left">Progress</span>
+          <span className="text-muted-foreground w-full text-right">
+            {Math.round(progress)}%
+          </span>
+        </div>
+        <Progress value={progress} />
+      </div>
+      {isDiscovering && (
+        <div className="w-full rounded-lg border bg-muted/50 p-4">
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>• Analyzing your services and geographic operations</p>
+            <p>• Identifying relevant regulatory authorities</p>
+            <p>• Matching compliance requirements</p>
+            <p>• Generating target recommendations</p>
           </div>
         </div>
-        <h2 className="text-2xl font-bold">Discovering Regulatory Targets</h2>
-        <p className="mt-2 text-muted-foreground">
-          {isDiscovering
-            ? "Our AI is analyzing your profile to find relevant regulatory targets..."
-            : error
-              ? "Discovery failed. Please try again."
-              : "Discovery complete!"}
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Progress</span>
-            <span className="text-muted-foreground">
-              {Math.round(progress)}%
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
+      )}
+      {error && (
+        <div className="w-full rounded-lg border border-destructive bg-destructive/10 p-4">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" onClick={handleRetry} className="mt-4">
+            Retry Discovery
+          </Button>
         </div>
-
-        {isDiscovering && (
-          <div className="rounded-lg border bg-muted/50 p-4">
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>• Analyzing your services and geographic operations</p>
-              <p>• Identifying relevant regulatory authorities</p>
-              <p>• Matching compliance requirements</p>
-              <p>• Generating target recommendations</p>
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" onClick={handleRetry} className="mt-4">
-              Retry Discovery
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-4 pt-4">
+      )}
+      <div className="w-full grid grid-cols-2 gap-5 mt-auto">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           onClick={onBack}
           disabled={isDiscovering}
         >

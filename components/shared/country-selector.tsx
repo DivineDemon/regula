@@ -68,8 +68,15 @@ export function CountrySelector({
     setOpen(false);
   };
 
-  // For button display: use value (synced with form) - shows committed selections
-  const selectedCountriesForDisplay = value
+  // For button display: use localSelection when it differs from value (just committed)
+  // Once value prop updates and matches, use value. This ensures immediate visual feedback.
+  const arraysEqual = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((val, idx) => val === b[idx]);
+
+  const displayValue = arraysEqual(localSelection, value)
+    ? value
+    : localSelection;
+  const selectedCountriesForDisplay = displayValue
     .map((code) => getCountryByCode(code))
     .filter((c): c is NonNullable<typeof c> => c !== undefined);
 
@@ -85,13 +92,13 @@ export function CountrySelector({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "w-full justify-between min-h-10 h-auto",
-            !value.length && "text-muted-foreground",
+            "w-full justify-between min-h-9 h-auto",
+            !displayValue.length && "text-muted-foreground",
             className,
           )}
         >
           <div className="flex flex-wrap gap-1 flex-1 items-center">
-            {value.length === 0 ? (
+            {displayValue.length === 0 ? (
               <span>{placeholder}</span>
             ) : (
               <>
@@ -111,7 +118,11 @@ export function CountrySelector({
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
                           e.stopPropagation();
-                          onChange(value.filter((c) => c !== country.code));
+                          const newValue = displayValue.filter(
+                            (c) => c !== country.code,
+                          );
+                          setLocalSelection(newValue);
+                          onChange(newValue);
                         }
                       }}
                       onMouseDown={(e) => {
@@ -120,7 +131,11 @@ export function CountrySelector({
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onChange(value.filter((c) => c !== country.code));
+                        const newValue = displayValue.filter(
+                          (c) => c !== country.code,
+                        );
+                        setLocalSelection(newValue);
+                        onChange(newValue);
                       }}
                     >
                       <X className="h-3 w-3" />
@@ -136,7 +151,7 @@ export function CountrySelector({
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {value.length > 0 && (
+            {displayValue.length > 0 && (
               // biome-ignore lint/a11y/useSemanticElements: Using span for styling flexibility within Button component
               <span
                 role="button"
@@ -148,6 +163,7 @@ export function CountrySelector({
                 onClick={(e) => {
                   if (disabled) return;
                   e.stopPropagation();
+                  setLocalSelection([]);
                   onChange([]);
                 }}
                 onMouseDown={(e) => {
@@ -159,6 +175,7 @@ export function CountrySelector({
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     e.stopPropagation();
+                    setLocalSelection([]);
                     onChange([]);
                   }
                 }}
@@ -206,7 +223,7 @@ export function CountrySelector({
                     >
                       <Check className="h-4 w-4" />
                     </div>
-                    <span>{country.name}</span>
+                    <span className="flex-1 text-left">{country.name}</span>
                     <span className="ml-auto text-xs text-muted-foreground">
                       {country.code}
                     </span>

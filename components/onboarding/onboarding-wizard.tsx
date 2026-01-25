@@ -1,11 +1,9 @@
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/shared/logo";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useOnboardingState } from "@/hooks/use-onboarding-state";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
@@ -33,7 +31,7 @@ export function OnboardingWizard({
 }: OnboardingWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [_completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const { profile, saveProfile } = useOnboardingState(organizationId);
   const [discoveredTargets, setDiscoveredTargets] = useState<
     Array<{
@@ -62,12 +60,6 @@ export function OnboardingWizard({
     }
   };
 
-  const _handleSkip = () => {
-    if (currentStep < TOTAL_STEPS) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -77,158 +69,88 @@ export function OnboardingWizard({
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-muted/30 p-4 py-8">
-      <div className="w-full max-w-3xl space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mb-4 flex justify-center">
-            <Logo size={64} />
-          </div>
-          <h1 className="text-3xl font-bold">Welcome to Regula</h1>
-          <p className="mt-2 text-muted-foreground">
-            Let's get you set up in just a few steps
-          </p>
-        </div>
-
-        {/* Progress Bar */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">
-                  Step {currentStep} of {TOTAL_STEPS}
-                </span>
-                <span className="text-muted-foreground">
-                  {Math.round(progress)}% complete
-                </span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-
-            {/* Step Indicators */}
-            <div className="mt-6 flex items-center justify-between">
-              {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map(
-                (step) => {
-                  const isCompleted = completedSteps.has(step);
-                  const isCurrent = currentStep === step;
-                  const isPast = currentStep > step;
-
-                  return (
-                    <div key={step} className="flex flex-1 items-center">
-                      <div className="flex flex-col items-center">
-                        <span
-                          className={`flex size-10 items-center justify-center rounded-full border-2 transition-colors ${
-                            isCompleted
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : isCurrent
-                                ? "border-primary bg-primary/10 text-primary"
-                                : isPast
-                                  ? "border-muted-foreground/30 bg-muted"
-                                  : "border-muted-foreground/30 bg-background"
-                          }`}
-                        >
-                          {isCompleted ? (
-                            <CheckCircle2 className="size-5" />
-                          ) : (
-                            <span className="text-sm font-medium">{step}</span>
-                          )}
-                        </span>
-                        <span className="mt-2 text-xs text-muted-foreground">
-                          {step === 1 && "Company Profile"}
-                          {step === 2 && "Services"}
-                          {step === 3 && "Geographic"}
-                          {step === 4 && "Compliance"}
-                          {step === 5 && "Partnerships"}
-                          {step === 6 && "Review"}
-                          {step === 7 && "Discovery"}
-                          {step === 8 && "Targets"}
-                        </span>
-                      </div>
-                      {step < TOTAL_STEPS && (
-                        <div
-                          className={`mx-2 h-0.5 flex-1 transition-colors ${
-                            isPast ? "bg-primary" : "bg-muted"
-                          }`}
-                          aria-hidden="true"
-                        />
-                      )}
-                    </div>
-                  );
-                },
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Step Content */}
-        <Card>
-          <CardContent className="pt-6 max-h-[calc(100vh-24rem)] overflow-y-auto">
-            {currentStep === 1 && (
-              <Step1CompanyProfile
-                organizationId={organizationId}
-                initialData={profile}
-                onComplete={(data) => handleStepComplete(1, data)}
-                onBack={handleBack}
-              />
-            )}
-            {currentStep === 2 && (
-              <Step2Services
-                initialData={profile}
-                onComplete={(data) => handleStepComplete(2, data)}
-                onBack={handleBack}
-              />
-            )}
-            {currentStep === 3 && (
-              <Step3GeographicOperations
-                initialData={profile}
-                onComplete={(data) => handleStepComplete(3, data)}
-                onBack={handleBack}
-              />
-            )}
-            {currentStep === 4 && (
-              <Step4ComplianceMapping
-                initialData={profile}
-                onComplete={(data) => handleStepComplete(4, data)}
-                onBack={handleBack}
-              />
-            )}
-            {currentStep === 5 && (
-              <Step5Partnerships
-                initialData={profile}
-                onComplete={(data) => handleStepComplete(5, data)}
-                onBack={handleBack}
-              />
-            )}
-            {currentStep === 6 && (
-              <Step6Review
-                organizationId={organizationId}
-                profile={profile as OrganizationProfile}
-                onComplete={(data) => handleStepComplete(6, data)}
-                onBack={handleBack}
-              />
-            )}
-            {currentStep === 7 && (
-              <Step7TargetDiscovery
-                organizationId={organizationId}
-                profile={profile as OrganizationProfile}
-                onComplete={(targets) => {
-                  setDiscoveredTargets(targets);
-                  handleStepComplete(7);
-                }}
-                onBack={handleBack}
-              />
-            )}
-            {currentStep === 8 && (
-              <Step8TargetSelection
-                organizationId={organizationId}
-                discoveredTargets={discoveredTargets}
-                onComplete={() => handleStepComplete(8)}
-                onBack={handleBack}
-              />
-            )}
-          </CardContent>
-        </Card>
+    <div className="w-full h-screen flex flex-col items-center justify-center gap-5 p-5">
+      <div className="w-full flex flex-col items-center justify-center">
+        <Logo size={64} />
+        <h1 className="text-3xl font-bold mt-5">Welcome to Regula</h1>
+        <p className="mt-2 text-muted-foreground">
+          Let's get you set up in just a few steps
+        </p>
       </div>
+      <div className="w-full max-w-1/2 mx-auto flex flex-col items-center justify-center gap-2.5">
+        <div className="w-full flex items-center justify-center">
+          <span className="w-full text-left font-medium">
+            Step {currentStep} of {TOTAL_STEPS}
+          </span>
+          <span className="w-full text-right text-muted-foreground">
+            {Math.round(progress)}% complete
+          </span>
+        </div>
+        <Progress value={progress} />
+      </div>
+      {currentStep === 1 && (
+        <Step1CompanyProfile
+          organizationId={organizationId}
+          initialData={profile}
+          onComplete={(data) => handleStepComplete(1, data)}
+          onBack={handleBack}
+        />
+      )}
+      {currentStep === 2 && (
+        <Step2Services
+          initialData={profile}
+          onComplete={(data) => handleStepComplete(2, data)}
+          onBack={handleBack}
+        />
+      )}
+      {currentStep === 3 && (
+        <Step3GeographicOperations
+          initialData={profile}
+          onComplete={(data) => handleStepComplete(3, data)}
+          onBack={handleBack}
+        />
+      )}
+      {currentStep === 4 && (
+        <Step4ComplianceMapping
+          initialData={profile}
+          onComplete={(data) => handleStepComplete(4, data)}
+          onBack={handleBack}
+        />
+      )}
+      {currentStep === 5 && (
+        <Step5Partnerships
+          initialData={profile}
+          onComplete={(data) => handleStepComplete(5, data)}
+          onBack={handleBack}
+        />
+      )}
+      {currentStep === 6 && (
+        <Step6Review
+          organizationId={organizationId}
+          profile={profile as OrganizationProfile}
+          onComplete={(data) => handleStepComplete(6, data)}
+          onBack={handleBack}
+        />
+      )}
+      {currentStep === 7 && (
+        <Step7TargetDiscovery
+          organizationId={organizationId}
+          profile={profile as OrganizationProfile}
+          onComplete={(targets) => {
+            setDiscoveredTargets(targets);
+            handleStepComplete(7);
+          }}
+          onBack={handleBack}
+        />
+      )}
+      {currentStep === 8 && (
+        <Step8TargetSelection
+          organizationId={organizationId}
+          discoveredTargets={discoveredTargets}
+          onComplete={() => handleStepComplete(8)}
+          onBack={handleBack}
+        />
+      )}
     </div>
   );
 }

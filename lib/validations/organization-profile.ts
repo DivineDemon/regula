@@ -30,26 +30,31 @@ const companySizeSchema = z.enum([
   "enterprise",
 ]);
 
-const fintechServiceSchema = z.enum([
-  "money_transfer",
-  "payment_processing",
-  "card_issuance",
-  "wallet_services",
-  "remittance",
-  "fx_services",
-  "crypto_exchange",
-  "crypto_wallet",
-  "lending",
-  "investment_platform",
-  "savings_account",
-  "current_account",
-  "bnpl",
-  "crowdfunding",
-  "p2p_lending",
-  "robo_advisor",
-  "insurance_distribution",
-  "other",
-]);
+const fintechServiceSchema = z.enum(
+  [
+    "money_transfer",
+    "payment_processing",
+    "card_issuance",
+    "wallet_services",
+    "remittance",
+    "fx_services",
+    "crypto_exchange",
+    "crypto_wallet",
+    "lending",
+    "investment_platform",
+    "savings_account",
+    "current_account",
+    "bnpl",
+    "crowdfunding",
+    "p2p_lending",
+    "robo_advisor",
+    "insurance_distribution",
+    "other",
+  ],
+  {
+    message: "Required",
+  },
+);
 
 const operationTypeSchema = z.enum(["direct", "indirect", "data_processing"]);
 
@@ -105,7 +110,7 @@ const isoDateStringSchema = z
 
 // URL validation (allows optional URLs or empty strings)
 const urlSchema = z
-  .union([z.string().url("Must be a valid URL"), z.literal("")])
+  .union([z.url("Must be a valid URL"), z.literal("")])
   .optional();
 
 /**

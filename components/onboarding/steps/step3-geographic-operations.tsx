@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Globe, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -114,178 +114,188 @@ export function Step3GeographicOperations({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <Globe className="size-8 text-primary" />
-          </div>
+    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <h2 className="w-full text-left text-2xl font-bold">
+            Geographic Operations
+          </h2>
+          <p className="w-full text-left text-muted-foreground">
+            Tell us about your operations in different countries
+          </p>
         </div>
-        <h2 className="text-2xl font-bold">Geographic Operations</h2>
-        <p className="mt-2 text-muted-foreground">
-          Tell us about your operations in different countries
-        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            append({
+              services: [],
+              countryCode: "",
+              operationType: "direct",
+              licenseStatus: "not_required",
+            })
+          }
+          disabled={isSubmitting}
+        >
+          <Plus />
+          Add Country
+        </Button>
       </div>
-
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {fields.map((field, index) => (
-            <div key={field.id} className="space-y-4 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">Country {index + 1}</h3>
-                {fields.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => remove(index)}
-                    disabled={isSubmitting}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                )}
-              </div>
-
-              <FormField
-                control={form.control}
-                name={`countryOperations.${index}.countryCode`}
-                render={({ field }) => (
-                  <FormItem className="w-full flex flex-col items-start justify-start">
-                    <FormLabel>Country *</FormLabel>
-                    <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COUNTRIES.map((country) => (
-                            <SelectItem key={country.code} value={country.code}>
-                              {country.name}
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="w-full h-full gap-5 overflow-y-auto flex flex-col items-start justify-start"
+        >
+          <div className="w-full h-[calc(100vh-412px)] flex flex-col items-start justify-start overflow-y-auto">
+            {fields.map((field, index) => (
+              <div
+                key={field.id}
+                className="w-full grid grid-cols-3 gap-5 items-start justify-start"
+              >
+                <div className="w-full col-span-3 flex items-center justify-between">
+                  <h3 className="w-full text-left font-medium">
+                    Country {index + 1}
+                  </h3>
+                  {fields.length > 1 && (
+                    <Button
+                      size="icon"
+                      type="button"
+                      variant="destructive"
+                      disabled={isSubmitting}
+                      onClick={() => remove(index)}
+                    >
+                      <Trash2 />
+                    </Button>
+                  )}
+                </div>
+                <FormField
+                  control={form.control}
+                  name={`countryOperations.${index}.countryCode`}
+                  render={({ field }) => (
+                    <FormItem className="w-full flex flex-col items-start justify-start">
+                      <FormLabel className="text-xs uppercase text-muted-foreground">
+                        Country <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                          disabled={isSubmitting}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COUNTRIES.map((country) => (
+                              <SelectItem
+                                key={country.code}
+                                value={country.code}
+                              >
+                                {country.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`countryOperations.${index}.operationType`}
+                  render={({ field }) => (
+                    <FormItem className="w-full flex flex-col items-start justify-start">
+                      <FormLabel className="text-xs uppercase text-muted-foreground">
+                        Operation Type <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                          disabled={isSubmitting}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select operation type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="direct">
+                              Direct Operations
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`countryOperations.${index}.operationType`}
-                render={({ field }) => (
-                  <FormItem className="w-full flex flex-col items-start justify-start">
-                    <FormLabel>Operation Type *</FormLabel>
-                    <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="direct">
-                            Direct Operations
-                          </SelectItem>
-                          <SelectItem value="indirect">
-                            Indirect Operations (via partners)
-                          </SelectItem>
-                          <SelectItem value="data_processing">
-                            Data Processing Only
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`countryOperations.${index}.services`}
-                render={({ field }) => (
-                  <FormItem className="w-full flex flex-col items-start justify-start">
-                    <FormLabel>Services Offered *</FormLabel>
-                    <FormControl>
-                      <ServiceSelector
-                        value={field.value || []}
-                        onChange={field.onChange}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    {availableServices.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Tip: Select from the services you defined in Step 2
-                      </p>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`countryOperations.${index}.licenseStatus`}
-                render={({ field }) => (
-                  <FormItem className="w-full flex flex-col items-start justify-start">
-                    <FormLabel>License Status *</FormLabel>
-                    <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="licensed">Licensed</SelectItem>
-                          <SelectItem value="applying">Applying</SelectItem>
-                          <SelectItem value="exempt">Exempt</SelectItem>
-                          <SelectItem value="not_required">
-                            Not Required
-                          </SelectItem>
-                          <SelectItem value="unlicensed">Unlicensed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          ))}
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              append({
-                countryCode: "",
-                operationType: "direct",
-                services: [],
-                licenseStatus: "not_required",
-              })
-            }
-            disabled={isSubmitting}
-            className="w-full"
-          >
-            <Plus className="mr-2 size-4" />
-            Add Country
-          </Button>
-
-          <div className="flex items-center justify-between gap-4 pt-4">
+                            <SelectItem value="indirect">
+                              Indirect Operations (via partners)
+                            </SelectItem>
+                            <SelectItem value="data_processing">
+                              Data Processing Only
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`countryOperations.${index}.licenseStatus`}
+                  render={({ field }) => (
+                    <FormItem className="w-full flex flex-col items-start justify-start">
+                      <FormLabel className="text-xs uppercase text-muted-foreground">
+                        License Status <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                          disabled={isSubmitting}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select license status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="licensed">Licensed</SelectItem>
+                            <SelectItem value="applying">Applying</SelectItem>
+                            <SelectItem value="exempt">Exempt</SelectItem>
+                            <SelectItem value="not_required">
+                              Not Required
+                            </SelectItem>
+                            <SelectItem value="unlicensed">
+                              Unlicensed
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`countryOperations.${index}.services`}
+                  render={({ field }) => (
+                    <FormItem className="col-span-3 w-full flex flex-col items-start justify-start">
+                      <FormLabel className="text-xs uppercase text-muted-foreground">
+                        Services Offered <span className="text-red-500">*</span>
+                        &nbsp;(Select from the services you defined in Step 2)
+                      </FormLabel>
+                      <FormControl>
+                        <ServiceSelector
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="w-full grid grid-cols-2 items-center justify-between gap-5">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={onBack}
               disabled={isSubmitting}
             >

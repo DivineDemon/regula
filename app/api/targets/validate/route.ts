@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const validateUrlSchema = z.object({
-  url: z.string().url("Invalid URL format"),
+  url: z.url("Invalid URL format"),
 });
 
 /**

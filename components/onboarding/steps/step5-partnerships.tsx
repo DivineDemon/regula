@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Handshake, Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
 import type { CompanyProfileInput } from "@/lib/validations/organization-profile";
 import { companyProfileSchema } from "@/lib/validations/organization-profile";
@@ -61,18 +62,27 @@ export function Step5Partnerships({
   const onSubmit = async (data: Pick<CompanyProfileInput, "partnerships">) => {
     setIsSubmitting(true);
     try {
-      // Add banking partners
+      // Filter out existing banking_partner and technology_partner entries
+      // to avoid duplicates when resubmitting
+      const otherPartnerships = (data.partnerships || []).filter(
+        (p) => p.type !== "banking_partner" && p.type !== "technology_partner",
+      );
+
+      // Add banking partners (replace any existing ones)
       const bankingPartnerships = bankingPartners.map((name) => ({
         type: "banking_partner" as const,
         name,
       }));
-      // Add technology partners
+
+      // Add technology partners (replace any existing ones)
       const technologyPartnerships = technologyPartners.map((name) => ({
         type: "technology_partner" as const,
         name,
       }));
+
+      // Combine: other partnerships + new banking + new technology
       const allPartnerships = [
-        ...(data.partnerships || []),
+        ...otherPartnerships,
         ...bankingPartnerships,
         ...technologyPartnerships,
       ];
@@ -112,157 +122,165 @@ export function Step5Partnerships({
       : [];
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <Handshake className="size-8 text-primary" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold">Partnerships</h2>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-center justify-center">
+        <h2 className="w-full text-left text-2xl font-bold">Partnerships</h2>
+        <p className="w-full text-left text-muted-foreground">
           Tell us about your key partnerships and integrations
         </p>
       </div>
-
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-medium">Banking Partners</h3>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter banking partner name"
-                value={newBankingPartner}
-                onChange={(e) => setNewBankingPartner(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addBankingPartner();
-                  }
-                }}
-                disabled={isSubmitting}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addBankingPartner}
-                disabled={isSubmitting}
+        <form className="w-full h-full" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="w-full h-[calc(100vh-392px)] flex flex-col items-start justify-start gap-5 overflow-y-auto pb-5">
+            <div className="w-full col-span-2 flex flex-col items-center justify-center gap-2">
+              <Label
+                htmlFor="banking-partners"
+                className="w-full text-left text-xs uppercase text-muted-foreground"
               >
-                <Plus className="size-4" />
-              </Button>
-            </div>
-            {bankingPartners.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {bankingPartners.map((partner, index) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: Partners can have duplicates, need index for uniqueness
-                    key={`${partner}-${index}`}
-                    className="flex items-center gap-2 rounded-md bg-muted px-3 py-1 text-sm"
-                  >
-                    <span>{partner}</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setBankingPartners(
-                          bankingPartners.filter((_, i) => i !== index),
-                        )
-                      }
-                      className="text-muted-foreground hover:text-foreground"
-                      disabled={isSubmitting}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-medium">Payment Network Partners</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                "Visa",
-                "Mastercard",
-                "American Express",
-                "Discover",
-                "JCB",
-                "UnionPay",
-              ].map((network) => (
-                // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is inside label, which is semantically correct
-                <label
-                  key={network}
-                  className="flex items-center space-x-2 cursor-pointer"
+                Banking Partners
+              </Label>
+              <div className="w-full flex items-center justify-center gap-2">
+                <Input
+                  placeholder="Enter banking partner name"
+                  value={newBankingPartner}
+                  onChange={(e) => setNewBankingPartner(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addBankingPartner();
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+                <Button
+                  size="icon"
+                  type="button"
+                  variant="default"
+                  disabled={isSubmitting}
+                  onClick={addBankingPartner}
                 >
-                  <Checkbox
-                    checked={fields.some(
-                      (f) =>
-                        f.type === "payment_network" &&
-                        f.details?.network === network,
-                    )}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        append({
-                          type: "payment_network",
-                          details: { network },
-                        });
-                      } else {
-                        const index = fields.findIndex(
-                          (f) =>
-                            f.type === "payment_network" &&
-                            f.details?.network === network,
-                        );
-                        if (index !== -1) remove(index);
-                      }
-                    }}
-                  />
-                  <span className="text-sm">{network}</span>
-                </label>
-              ))}
+                  <Plus />
+                </Button>
+              </div>
+              {bankingPartners.length > 0 && (
+                <div className="w-full items-start justify-start flex flex-wrap gap-2">
+                  {bankingPartners.map((partner, index) => (
+                    <div
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Partners can have duplicates, need index for uniqueness
+                      key={`${partner}-${index}`}
+                      className="flex items-center gap-2 rounded-md bg-muted px-3 py-1 text-sm"
+                    >
+                      <span>{partner}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBankingPartners(
+                            bankingPartners.filter((_, i) => i !== index),
+                          )
+                        }
+                        className="text-muted-foreground hover:text-foreground"
+                        disabled={isSubmitting}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-medium">Payment System Integrations</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {["Raast", "UPI", "Mobile Money", "SWIFT", "SEPA"].map(
-                (system) => (
+            <div className="w-full flex flex-col items-center justify-center gap-2">
+              <Label
+                htmlFor="payment-network-partners"
+                className="w-full text-left text-xs uppercase text-muted-foreground"
+              >
+                Payment Network Partners
+              </Label>
+              <div className="w-full grid grid-cols-2 gap-4">
+                {[
+                  "Visa",
+                  "Mastercard",
+                  "American Express",
+                  "Discover",
+                  "JCB",
+                  "UnionPay",
+                ].map((network) => (
                   // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is inside label, which is semantically correct
                   <label
-                    key={system}
-                    className="flex items-center space-x-2 cursor-pointer"
+                    key={network}
+                    className="w-full border rounded-md p-2 flex items-center gap-2 cursor-pointer"
                   >
                     <Checkbox
                       checked={fields.some(
                         (f) =>
-                          f.type === "payment_system" &&
-                          f.details?.system === system,
+                          f.type === "payment_network" &&
+                          f.details?.network === network,
                       )}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           append({
-                            type: "payment_system",
-                            details: { system },
+                            type: "payment_network",
+                            details: { network },
                           });
                         } else {
                           const index = fields.findIndex(
                             (f) =>
-                              f.type === "payment_system" &&
-                              f.details?.system === system,
+                              f.type === "payment_network" &&
+                              f.details?.network === network,
                           );
                           if (index !== -1) remove(index);
                         }
                       }}
                     />
-                    <span className="text-sm">{system}</span>
+                    <span className="text-sm flex-1 text-left">{network}</span>
                   </label>
-                ),
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-medium">Remittance Partners</h3>
+            <div className="w-full flex flex-col items-center justify-center gap-2">
+              <Label
+                htmlFor="payment-system-integrations"
+                className="w-full text-left text-xs uppercase text-muted-foreground"
+              >
+                Payment System Integrations
+              </Label>
+              <div className="w-full grid grid-cols-2 gap-4">
+                {["Raast", "UPI", "Mobile Money", "SWIFT", "SEPA"].map(
+                  (network) => (
+                    // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is inside label, which is semantically correct
+                    <label
+                      key={network}
+                      className="w-full border rounded-md p-2 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={fields.some(
+                          (f) =>
+                            f.type === "payment_network" &&
+                            f.details?.network === network,
+                        )}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            append({
+                              type: "payment_network",
+                              details: { network },
+                            });
+                          } else {
+                            const index = fields.findIndex(
+                              (f) =>
+                                f.type === "payment_network" &&
+                                f.details?.network === network,
+                            );
+                            if (index !== -1) remove(index);
+                          }
+                        }}
+                      />
+                      <span className="text-sm flex-1 text-left">
+                        {network}
+                      </span>
+                    </label>
+                  ),
+                )}
+              </div>
+            </div>
             <FormField
               control={form.control}
               name={
@@ -272,7 +290,9 @@ export function Step5Partnerships({
               }
               render={({ field: _field }) => (
                 <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>Number of Remittance Partners</FormLabel>
+                  <FormLabel className="w-full text-left text-xs uppercase text-muted-foreground">
+                    Number of Remittance Partners
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -332,7 +352,9 @@ export function Step5Partnerships({
               }
               render={() => (
                 <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>Major Remittance Corridors</FormLabel>
+                  <FormLabel className="w-full text-left text-xs uppercase text-muted-foreground">
+                    Major Remittance Corridors
+                  </FormLabel>
                   <FormControl>
                     <CountrySelector
                       value={remittanceCorridors as string[]}
@@ -363,63 +385,67 @@ export function Step5Partnerships({
                 </FormItem>
               )}
             />
-          </div>
-
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-medium">Technology Partners</h3>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter technology partner name"
-                value={newTechnologyPartner}
-                onChange={(e) => setNewTechnologyPartner(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addTechnologyPartner();
-                  }
-                }}
-                disabled={isSubmitting}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addTechnologyPartner}
-                disabled={isSubmitting}
+            <div className="w-full col-span-2 flex flex-col items-center justify-center gap-2">
+              <Label
+                htmlFor="banking-partners"
+                className="w-full text-left text-xs uppercase text-muted-foreground"
               >
-                <Plus className="size-4" />
-              </Button>
-            </div>
-            {technologyPartners.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {technologyPartners.map((partner, index) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: Partners can have duplicates, need index for uniqueness
-                    key={`${partner}-${index}`}
-                    className="flex items-center gap-2 rounded-md bg-muted px-3 py-1 text-sm"
-                  >
-                    <span>{partner}</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setTechnologyPartners(
-                          technologyPartners.filter((_, i) => i !== index),
-                        )
-                      }
-                      className="text-muted-foreground hover:text-foreground"
-                      disabled={isSubmitting}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                Technology Partners
+              </Label>
+              <div className="w-full flex items-center justify-center gap-2">
+                <Input
+                  placeholder="Enter technology partner name"
+                  value={newTechnologyPartner}
+                  onChange={(e) => setNewTechnologyPartner(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTechnologyPartner();
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+                <Button
+                  size="icon"
+                  type="button"
+                  variant="default"
+                  disabled={isSubmitting}
+                  onClick={addTechnologyPartner}
+                >
+                  <Plus />
+                </Button>
               </div>
-            )}
+              {technologyPartners.length > 0 && (
+                <div className="w-full items-start justify-start flex flex-wrap gap-2">
+                  {technologyPartners.map((partner, index) => (
+                    <div
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Partners can have duplicates, need index for uniqueness
+                      key={`${partner}-${index}`}
+                      className="flex items-center gap-2 rounded-md bg-muted px-3 py-1 text-sm"
+                    >
+                      <span>{partner}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTechnologyPartners(
+                            technologyPartners.filter((_, i) => i !== index),
+                          )
+                        }
+                        className="text-muted-foreground hover:text-foreground"
+                        disabled={isSubmitting}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-
-          <div className="flex items-center justify-between gap-4 pt-4">
+          <div className="w-full grid grid-cols-2 items-center justify-center gap-5 mt-auto">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={onBack}
               disabled={isSubmitting}
             >

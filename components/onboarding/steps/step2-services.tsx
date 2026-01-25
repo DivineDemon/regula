@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Package } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -57,43 +56,45 @@ export function Step2Services({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <Package className="size-8 text-primary" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold">Services & Products</h2>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-center justify-center">
+        <h2 className="w-full text-left text-2xl font-bold">
+          Services & Products
+        </h2>
+        <p className="w-full text-left text-muted-foreground">
           Select all the services and products your company offers
         </p>
       </div>
-
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="services"
-            render={({ field }) => (
-              <FormItem className="w-full flex flex-col items-start justify-start">
-                <FormLabel>Services *</FormLabel>
-                <FormControl>
-                  <ServiceSelector
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex items-center justify-between gap-4 pt-4">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="w-full flex flex-col items-start justify-start"
+        >
+          <div className="w-full h-[calc(100vh-412px)] flex overflow-y-auto">
+            <FormField
+              control={form.control}
+              name="services"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Services <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <ServiceSelector
+                      value={field.value}
+                      disabled={isSubmitting}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="w-full grid grid-cols-2 gap-5 items-center justify-center pt-5">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={onBack}
               disabled={isSubmitting}
             >

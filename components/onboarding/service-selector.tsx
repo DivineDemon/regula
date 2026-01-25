@@ -46,14 +46,12 @@ interface ServiceSelectorProps {
   value?: FintechService[];
   onChange: (value: FintechService[]) => void;
   disabled?: boolean;
-  className?: string;
 }
 
 export function ServiceSelector({
   value = [],
   onChange,
   disabled = false,
-  className,
 }: ServiceSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -70,17 +68,15 @@ export function ServiceSelector({
   );
 
   return (
-    <div className={cn("space-y-4", className)}>
-      <div>
-        <input
-          type="text"
-          placeholder="Search services..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        />
-      </div>
-      <div className="space-y-4 max-h-[400px] overflow-y-auto">
+    <div className="w-full flex flex-col items-start justify-start gap-5">
+      <input
+        type="text"
+        value={searchTerm}
+        placeholder="Search services..."
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+      />
+      <div className="w-full h-full flex flex-col items-start justify-start gap-2.5 overflow-y-auto">
         {filteredGroups.map(([groupName, services]) => {
           const filteredServices = services.filter((service) =>
             SERVICE_LABELS[service]
@@ -91,55 +87,51 @@ export function ServiceSelector({
           if (filteredServices.length === 0) return null;
 
           return (
-            <div key={groupName} className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">
+            <div
+              key={groupName}
+              className="w-full h-full flex flex-col items-center justify-center gap-2.5"
+            >
+              <span className="w-full text-left text-sm font-medium text-muted-foreground">
                 {groupName}
-              </h4>
-              <div className="space-y-2">
-                {filteredServices.map((service) => {
-                  const isSelected = value.includes(service);
-                  return (
-                    <button
-                      key={service}
-                      type="button"
-                      disabled={disabled}
+              </span>
+              {filteredServices.map((service) => {
+                const isSelected = value.includes(service);
+                return (
+                  <button
+                    key={service}
+                    type="button"
+                    disabled={disabled}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors text-left",
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-input hover:bg-accent",
+                      disabled && "opacity-50 cursor-not-allowed",
+                    )}
+                    onClick={() => !disabled && handleToggle(service)}
+                  >
+                    <div
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors text-left",
+                        "flex h-5 w-5 items-center justify-center rounded border",
                         isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-input hover:bg-accent",
-                        disabled && "opacity-50 cursor-not-allowed",
+                          ? "bg-primary border-primary"
+                          : "border-input",
                       )}
-                      onClick={() => !disabled && handleToggle(service)}
                     >
-                      <div
-                        className={cn(
-                          "flex h-5 w-5 items-center justify-center rounded border",
-                          isSelected
-                            ? "bg-primary border-primary"
-                            : "border-input",
-                        )}
-                      >
-                        {isSelected && (
-                          <CheckIcon className="h-3 w-3 text-primary-foreground" />
-                        )}
-                      </div>
-                      <span className="text-sm font-medium">
-                        {SERVICE_LABELS[service]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                      {isSelected && (
+                        <CheckIcon className="h-3 w-3 text-primary-foreground" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium">
+                      {SERVICE_LABELS[service]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           );
         })}
       </div>
-      {value.length > 0 && (
-        <div className="pt-2 text-sm text-muted-foreground">
-          {value.length} service{value.length === 1 ? "" : "s"} selected
-        </div>
-      )}
     </div>
   );
 }

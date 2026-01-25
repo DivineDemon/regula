@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Shield, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -16,11 +16,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type {
   ComplianceRequirement,
   OrganizationProfile,
 } from "@/lib/types/organization-profile";
+import { cn } from "@/lib/utils";
 import type { CompanyProfileInput } from "@/lib/validations/organization-profile";
 import { companyProfileSchema } from "@/lib/validations/organization-profile";
 
@@ -47,6 +55,30 @@ const COMPLIANCE_REQUIREMENTS: {
   { value: "Reporting_Requirements", label: "Regulatory Reporting" },
   { value: "Audit_Requirements", label: "Audit Requirements" },
   { value: "Other", label: "Other" },
+];
+
+const SERVICE_OPTIONS: {
+  value: string;
+  label: string;
+}[] = [
+  { value: "money_transfer", label: "Money Transfer" },
+  { value: "payment_processing", label: "Payment Processing" },
+  { value: "card_issuance", label: "Card Issuance" },
+  { value: "wallet_services", label: "Wallet Services" },
+  { value: "remittance", label: "Remittance" },
+  { value: "fx_services", label: "FX Services" },
+  { value: "crypto_exchange", label: "Crypto Exchange" },
+  { value: "crypto_wallet", label: "Crypto Wallet" },
+  { value: "lending", label: "Lending" },
+  { value: "investment_platform", label: "Investment Platform" },
+  { value: "savings_account", label: "Savings Account" },
+  { value: "current_account", label: "Current Account" },
+  { value: "bnpl", label: "BNPL" },
+  { value: "crowdfunding", label: "Crowdfunding" },
+  { value: "p2p_lending", label: "P2P Lending" },
+  { value: "robo_advisor", label: "Robo Advisor" },
+  { value: "insurance_distribution", label: "Insurance Distribution" },
+  { value: "other", label: "Other" },
 ];
 
 interface Step4ComplianceMappingProps {
@@ -135,164 +167,190 @@ export function Step4ComplianceMapping({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <Shield className="size-8 text-primary" />
-          </div>
+    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <h2 className="w-full text-left text-2xl font-bold">
+            Compliance Mapping
+          </h2>
+          <p className="w-full text-left text-muted-foreground">
+            Map compliance requirements to your services and countries
+          </p>
         </div>
-        <h2 className="text-2xl font-bold">Compliance Mapping</h2>
-        <p className="mt-2 text-muted-foreground">
-          Map compliance requirements to your services and countries
-        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            append({
+              service: "money_transfer",
+              countryCode: "",
+              complianceRequirements: [],
+            })
+          }
+          disabled={isSubmitting}
+        >
+          <Plus />
+          Add Mapping
+        </Button>
       </div>
-
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Service-Country-Compliance Matrix</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  append({
-                    service: "money_transfer",
-                    countryCode: "",
-                    complianceRequirements: [],
-                  })
-                }
-                disabled={isSubmitting}
-              >
-                <Plus className="mr-2 size-4" />
-                Add Mapping
-              </Button>
-            </div>
-
-            {fields.map((field, index) => (
-              <div key={field.id} className="space-y-4 rounded-lg border p-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Mapping {index + 1}</h4>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="w-full h-full grid grid-cols-2 gap-5 items-start justify-start"
+        >
+          {fields.length > 0 && (
+            <div className="w-full h-[calc(100vh-412px)] flex flex-col items-start justify-start gap-5 overflow-y-auto col-span-1">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="w-full flex flex-col items-start justify-start gap-5 border rounded-lg p-5 col-span-1"
+                >
+                  <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name={`complianceMapping.${index}.service`}
+                      render={({ field }) => (
+                        <FormItem className="w-full flex flex-col items-start justify-start">
+                          <FormLabel className="text-xs uppercase text-muted-foreground">
+                            Service <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Select
+                              disabled={isSubmitting}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select service" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SERVICE_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`complianceMapping.${index}.countryCode`}
+                      render={({ field }) => (
+                        <FormItem className="w-full flex flex-col items-start justify-start">
+                          <FormLabel className="text-xs uppercase text-muted-foreground">
+                            Country Code <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., US"
+                              disabled={isSubmitting}
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name={`complianceMapping.${index}.complianceRequirements`}
+                    render={({ field }) => (
+                      <FormItem className="w-full flex flex-col items-start justify-start">
+                        <FormLabel className="text-xs uppercase text-muted-foreground">
+                          Compliance Requirements&nbsp;
+                          <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <div className="w-full flex flex-col items-start justify-start gap-2 max-h-[200px] overflow-y-auto rounded-md border">
+                            {COMPLIANCE_REQUIREMENTS.map((req) => (
+                              <div
+                                key={req.value}
+                                className="w-full flex items-center justify-center p-2 gap-2 border-b"
+                              >
+                                <Checkbox
+                                  checked={field.value?.includes(req.value)}
+                                  onCheckedChange={(checked) => {
+                                    const current = field.value || [];
+                                    if (checked) {
+                                      field.onChange([...current, req.value]);
+                                    } else {
+                                      field.onChange(
+                                        current.filter((r) => r !== req.value),
+                                      );
+                                    }
+                                  }}
+                                />
+                                {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is inside label wrapper, which is semantically correct */}
+                                <label className="text-sm flex-1 text-left">
+                                  {req.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`complianceMapping.${index}.context`}
+                    render={({ field }) => (
+                      <FormItem className="w-full flex flex-col items-start justify-start">
+                        <FormLabel className="text-xs uppercase text-muted-foreground">
+                          Context / Notes
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Additional context or notes..."
+                            disabled={isSubmitting}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => remove(index)}
+                    variant="destructive"
                     disabled={isSubmitting}
+                    className="w-full col-span-2"
+                    onClick={() => remove(index)}
                   >
-                    <Trash2 className="size-4" />
+                    Remove Mapping
                   </Button>
                 </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name={`complianceMapping.${index}.service`}
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel>Service *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., money_transfer"
-                            disabled={isSubmitting}
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`complianceMapping.${index}.countryCode`}
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel>Country Code *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., US"
-                            disabled={isSubmitting}
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name={`complianceMapping.${index}.complianceRequirements`}
-                  render={({ field }) => (
-                    <FormItem className="w-full flex flex-col items-start justify-start">
-                      <FormLabel>Compliance Requirements *</FormLabel>
-                      <FormControl>
-                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto rounded-md border p-4">
-                          {COMPLIANCE_REQUIREMENTS.map((req) => (
-                            <div
-                              key={req.value}
-                              className="flex items-center space-x-2"
-                            >
-                              <Checkbox
-                                checked={field.value?.includes(req.value)}
-                                onCheckedChange={(checked) => {
-                                  const current = field.value || [];
-                                  if (checked) {
-                                    field.onChange([...current, req.value]);
-                                  } else {
-                                    field.onChange(
-                                      current.filter((r) => r !== req.value),
-                                    );
-                                  }
-                                }}
-                              />
-                              {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is inside label wrapper, which is semantically correct */}
-                              <label className="text-sm">{req.label}</label>
-                            </div>
-                          ))}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name={`complianceMapping.${index}.context`}
-                  render={({ field }) => (
-                    <FormItem className="w-full flex flex-col items-start justify-start">
-                      <FormLabel>Context / Notes</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Additional context or notes..."
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-medium">Compliance Framework</h3>
-
+              ))}
+            </div>
+          )}
+          <div
+            className={cn(
+              "w-full h-[calc(100vh-412px)] flex flex-col items-start justify-start gap-3",
+              {
+                "col-span-1": fields.length > 0,
+                "col-span-2": fields.length === 0,
+              },
+            )}
+          >
             <FormField
               control={form.control}
               name="complianceFramework.amlFramework"
               render={({ field }) => (
                 <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>AML Framework</FormLabel>
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    AML Framework
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., FATF Recommendations"
@@ -305,31 +363,14 @@ export function Step4ComplianceMapping({
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="complianceFramework.kycProcedures"
-              render={({ field }) => (
-                <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>KYC Procedures</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe your KYC procedures..."
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="complianceFramework.dataProtectionFramework"
               render={({ field }) => (
                 <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>Data Protection Framework</FormLabel>
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Data Protection Framework
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., GDPR, CCPA"
@@ -342,57 +383,77 @@ export function Step4ComplianceMapping({
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="complianceFramework.privacyPolicyUrl"
-                render={({ field }) => (
-                  <FormItem className="w-full flex flex-col items-start justify-start">
-                    <FormLabel>Privacy Policy URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="url"
-                        placeholder="https://example.com/privacy"
-                        disabled={isSubmitting}
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="complianceFramework.termsOfServiceUrl"
-                render={({ field }) => (
-                  <FormItem className="w-full flex flex-col items-start justify-start">
-                    <FormLabel>Terms of Service URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="url"
-                        placeholder="https://example.com/terms"
-                        disabled={isSubmitting}
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
+            <FormField
+              control={form.control}
+              name="complianceFramework.kycProcedures"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    KYC Procedures
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Describe your KYC procedures..."
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="complianceFramework.privacyPolicyUrl"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Privacy Policy URL
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/privacy"
+                      disabled={isSubmitting}
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="complianceFramework.termsOfServiceUrl"
+              render={({ field }) => (
+                <FormItem className="w-full flex flex-col items-start justify-start">
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Terms of Service URL
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/terms"
+                      disabled={isSubmitting}
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="complianceFramework.certifications"
               render={({ field }) => (
                 <FormItem className="w-full flex flex-col items-start justify-start">
-                  <FormLabel>Regulatory Certifications</FormLabel>
+                  <FormLabel className="text-xs uppercase text-muted-foreground">
+                    Regulatory Certifications
+                  </FormLabel>
                   <FormControl>
-                    <div className="space-y-2">
+                    <div className="w-full grid grid-cols-2 gap-2.5 items-center justify-center p-2.5 border rounded-lg">
                       {[
                         "PCI DSS",
                         "ISO 27001",
@@ -400,7 +461,10 @@ export function Step4ComplianceMapping({
                         "SOC 2",
                         "Other",
                       ].map((cert) => (
-                        <div key={cert} className="flex items-center space-x-2">
+                        <div
+                          key={cert}
+                          className="w-full col-span-1 flex items-center justify-start gap-2.5"
+                        >
                           <Checkbox
                             checked={field.value?.includes(cert)}
                             onCheckedChange={(checked) => {
@@ -425,12 +489,11 @@ export function Step4ComplianceMapping({
               )}
             />
           </div>
-
-          <div className="flex items-center justify-between gap-4 pt-4">
+          <div className="w-full col-span-2 grid grid-cols-2 gap-5 mt-auto">
             <Button
               type="button"
-              variant="ghost"
               onClick={onBack}
+              variant="outline"
               disabled={isSubmitting}
             >
               Back

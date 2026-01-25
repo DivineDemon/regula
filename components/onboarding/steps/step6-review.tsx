@@ -1,13 +1,14 @@
 "use client";
 
-import { Edit, FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCountryName } from "@/lib/data/countries";
-import type { OrganizationProfile } from "@/lib/types/organization-profile";
+import type {
+  OrganizationProfile,
+  Partnership,
+} from "@/lib/types/organization-profile";
 
 interface Step6ReviewProps {
   organizationId: string;
@@ -79,141 +80,103 @@ export function Step6Review({
     }
   };
 
+  const splitPartnerships = () => {
+    let final = {};
+    const types = new Set(profile.partnerships?.map((ps) => ps.type));
+
+    types.forEach((type) => {
+      final = {
+        ...final,
+        [type]: profile?.partnerships?.filter((ps) => ps.type === type),
+      };
+    });
+
+    return final;
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <FileText className="size-8 text-primary" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold">Review & Submit</h2>
-        <p className="mt-2 text-muted-foreground">
+    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+      <div className="w-full flex flex-col items-center justify-center">
+        <h2 className="w-full text-left text-2xl font-bold">Review & Submit</h2>
+        <p className="w-full text-left text-muted-foreground">
           Please review your information before submitting
         </p>
       </div>
-
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Company Profile</span>
-              <Button variant="ghost" size="sm" onClick={onBack}>
-                <Edit className="mr-2 size-4" />
-                Edit
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Legal Entity Name:</span>
-                <p className="text-muted-foreground">
-                  {profile.legalEntityName}
-                </p>
-              </div>
-              {profile.tradingName && (
-                <div>
-                  <span className="font-medium">Trading Name:</span>
-                  <p className="text-muted-foreground">{profile.tradingName}</p>
-                </div>
-              )}
-              <div>
-                <span className="font-medium">Country of Incorporation:</span>
-                <p className="text-muted-foreground">
-                  {getCountryName(profile.countryOfIncorporation)}
-                </p>
-              </div>
-              <div>
-                <span className="font-medium">Primary Jurisdiction:</span>
-                <p className="text-muted-foreground">
-                  {getCountryName(profile.primaryJurisdiction)}
-                </p>
-              </div>
-              <div>
-                <span className="font-medium">Fintech Category:</span>
-                <p className="text-muted-foreground">
-                  {profile.fintechCategory}
-                </p>
-              </div>
-              <div>
-                <span className="font-medium">Business Model:</span>
-                <p className="text-muted-foreground">{profile.businessModel}</p>
-              </div>
+      <div className="w-full h-[calc(100vh-412px)] overflow-y-auto grid grid-cols-2 gap-5 items-start justify-start">
+        <div className="w-full col-span-1 flex flex-col items-start justify-start gap-5">
+          <div className="w-full flex flex-col items-start justify-start border rounded-lg shadow">
+            <span className="p-2.5 w-full text-left border-b font-semibold">
+              Company Profile
+            </span>
+            <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+              <span className="font-medium w-full text-left">
+                Legal Entity Name:
+              </span>
+              <p className="text-muted-foreground w-full text-right">
+                {profile.legalEntityName}
+              </p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Services & Products</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {profile.services.map((service) => (
-                <Badge key={service} variant="secondary">
-                  {service.replace(/_/g, " ")}
-                </Badge>
-              ))}
+            <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+              <span className="font-medium w-full text-left">
+                Trading Name:
+              </span>
+              <p className="text-muted-foreground w-full text-right">
+                {profile.tradingName}
+              </p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Geographic Operations</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {profile.countryOperations.map((op) => (
-              <div key={op.countryCode} className="rounded-lg border p-4">
-                <div className="mb-2 font-medium">
-                  {getCountryName(op.countryCode)}
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Operation Type:</span>
-                    <p className="text-muted-foreground">{op.operationType}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">License Status:</span>
-                    <p className="text-muted-foreground">{op.licenseStatus}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="font-medium">Services:</span>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {op.services.map((service) => (
-                        <Badge
-                          key={service}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {service.replace(/_/g, " ")}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {profile.complianceMapping && profile.complianceMapping.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Compliance Mapping</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
+            <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+              <span className="font-medium w-full text-left">
+                Country of Incorporation:
+              </span>
+              <p className="text-muted-foreground w-full text-right">
+                {profile.countryOfIncorporation}
+              </p>
+            </div>
+            <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+              <span className="font-medium w-full text-left">
+                Primary Jurisdiction:
+              </span>
+              <p className="text-muted-foreground w-full text-right">
+                {profile.primaryJurisdiction}
+              </p>
+            </div>
+            <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+              <span className="font-medium w-full text-left">
+                Fintech Category:
+              </span>
+              <p className="text-muted-foreground w-full text-right">
+                {profile.fintechCategory}
+              </p>
+            </div>
+            <div className="w-full flex items-center justify-center gap-2.5 p-2.5 text-sm">
+              <span className="font-medium w-full text-left">
+                Business Model:
+              </span>
+              <p className="text-muted-foreground w-full text-right">
+                {profile.businessModel}
+              </p>
+            </div>
+          </div>
+          {profile.complianceMapping &&
+            profile.complianceMapping.length > 0 && (
+              <div className="w-full flex flex-col items-start justify-start border rounded-lg shadow">
+                <span className="p-2.5 w-full text-left border-b font-semibold">
+                  Compliance Mapping
+                </span>
                 {profile.complianceMapping.map((mapping) => (
                   <div
                     key={`${mapping.service}-${mapping.countryCode}`}
-                    className="rounded-lg border p-3"
+                    className="w-full"
                   >
-                    <div className="font-medium">
-                      {mapping.service} - {getCountryName(mapping.countryCode)}
+                    <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+                      <span className="font-medium w-full text-left capitalize">
+                        {mapping.service.split("_").join(" ")}:
+                      </span>
+                      <span className="text-muted-foreground w-full text-right capitalize">
+                        {getCountryName(mapping.countryCode)}
+                      </span>
                     </div>
-                    <div className="mt-1 flex flex-wrap gap-2">
+                    <div className="w-full flex flex-wrap items-start justify-start gap-2 p-2.5">
                       {mapping.complianceRequirements.map((req) => (
                         <Badge key={req} variant="outline" className="text-xs">
                           {req}
@@ -223,50 +186,229 @@ export function Step6Review({
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {profile.partnerships && profile.partnerships.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Partnerships</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                {profile.partnerships.map((partnership, index) => {
-                  const key =
-                    partnership.name ||
-                    `${partnership.type}-${JSON.stringify(partnership.details)}-${index}`;
-                  return (
-                    <div key={key} className="rounded-lg border p-3">
-                      <div className="font-medium">
-                        {partnership.type.replace(/_/g, " ")}
-                      </div>
-                      {partnership.name && (
-                        <p className="text-muted-foreground">
-                          {partnership.name}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+            )}
+        </div>
+        <div className="w-full col-span-1 flex flex-col items-start justify-start gap-5">
+          <div className="w-full flex flex-col items-start justify-start border rounded-lg shadow">
+            <span className="p-2.5 w-full text-left border-b font-semibold">
+              Services & Products
+            </span>
+            <div className="w-full flex flex-wrap items-start justify-start gap-2 p-2.5">
+              {profile.services.map((service) => (
+                <Badge key={service} variant="secondary" className="capitalize">
+                  {service.replace(/_/g, " ")}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="w-full flex flex-col items-start justify-start border rounded-lg shadow">
+            <span className="p-2.5 w-full text-left border-b font-semibold">
+              Geographic Operations
+            </span>
+            {profile.countryOperations.map((op) => (
+              <div
+                key={op.countryCode}
+                className="w-full flex flex-col items-start justify-start"
+              >
+                <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+                  <span className="font-medium w-full text-left">Country:</span>
+                  <p className="text-muted-foreground w-full text-right">
+                    {getCountryName(op.countryCode)}
+                  </p>
+                </div>
+                <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+                  <span className="font-medium w-full text-left">
+                    Operation Type:
+                  </span>
+                  <p className="text-muted-foreground w-full text-right capitalize">
+                    {op.operationType}
+                  </p>
+                </div>
+                <div className="w-full flex items-center justify-center gap-2.5 p-2.5 border-b text-sm">
+                  <span className="font-medium w-full text-left">
+                    License Status:
+                  </span>
+                  <p className="text-muted-foreground w-full text-right capitalize">
+                    {op.licenseStatus}
+                  </p>
+                </div>
+                <div className="w-full flex items-center justify-center gap-2.5 p-2.5 text-sm">
+                  <span className="font-medium text-left">Services:</span>
+                  <div className="w-full flex flex-wrap items-end justify-end gap-2">
+                    {op.services.map((service) => (
+                      <Badge
+                        key={service}
+                        variant="outline"
+                        className="text-xs capitalize"
+                      >
+                        {service.replace(/_/g, " ")}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
+        </div>
+        {profile.partnerships && profile.partnerships.length > 0 && (
+          <div className="w-full col-span-2 flex flex-col items-start justify-start border rounded-lg shadow">
+            <span className="p-2.5 w-full text-left border-b font-semibold">
+              Partnerships
+            </span>
+            {Object.entries(splitPartnerships()).map(
+              ([type, ps], typeIndex, allTypes) => {
+                const partnerships = ps as Partnership[];
+                const isLastType = typeIndex === allTypes.length - 1;
+
+                return (
+                  <div
+                    key={type}
+                    className="w-full flex flex-col items-start justify-start"
+                  >
+                    {type === "banking_partner" && partnerships.length > 0 && (
+                      <div
+                        className={`w-full flex items-center justify-center gap-2.5 p-2.5 text-sm ${
+                          !isLastType ? "border-b" : ""
+                        }`}
+                      >
+                        <span className="font-medium w-full text-left capitalize">
+                          Banking Partners:
+                        </span>
+                        <div className="w-full flex flex-wrap items-end justify-end gap-2">
+                          {partnerships.map((p) => (
+                            <Badge
+                              key={p.name}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {p.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {type === "technology_partner" &&
+                      partnerships.length > 0 && (
+                        <div
+                          className={`w-full flex items-center justify-center gap-2.5 p-2.5 text-sm ${
+                            !isLastType ? "border-b" : ""
+                          }`}
+                        >
+                          <span className="font-medium w-full text-left capitalize">
+                            Technology Partners:
+                          </span>
+                          <div className="w-full flex flex-wrap items-end justify-end gap-2">
+                            {partnerships.map((p) => (
+                              <Badge
+                                key={p.name}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {p.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    {type === "payment_network" && partnerships.length > 0 && (
+                      <div
+                        className={`w-full flex items-center justify-center gap-2.5 p-2.5 text-sm ${
+                          !isLastType ? "border-b" : ""
+                        }`}
+                      >
+                        <span className="font-medium w-full text-left capitalize">
+                          Payment Networks:
+                        </span>
+                        <div className="w-full flex flex-wrap items-end justify-end gap-2">
+                          {partnerships.map((p, idx) => (
+                            <Badge
+                              key={p.details?.network || idx}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {p.details?.network}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {type === "remittance_partner" &&
+                      partnerships.length > 0 &&
+                      partnerships.map((p, partnerIndex) => {
+                        const isLastPartner =
+                          partnerIndex === partnerships.length - 1;
+                        const hasCorridors =
+                          p.details?.corridors &&
+                          p.details.corridors.length > 0;
+                        const shouldShowBorder =
+                          !isLastType || !isLastPartner || hasCorridors;
+                        // Create unique key from count and corridors
+                        // Using index as fallback since remittance partners can have identical data
+                        const corridorsKey = (p.details?.corridors || [])
+                          .sort()
+                          .join("-");
+                        const uniqueKey = `remittance-${p.details?.count || 0}-${corridorsKey || "none"}-${partnerIndex}`;
+                        return (
+                          <div
+                            key={uniqueKey}
+                            className="w-full flex flex-col items-start justify-start"
+                          >
+                            <div
+                              className={`w-full flex items-center justify-center gap-2.5 p-2.5 text-sm ${
+                                shouldShowBorder ? "border-b" : ""
+                              }`}
+                            >
+                              <span className="font-medium w-full text-left capitalize">
+                                Remittance Partners:
+                              </span>
+                              <p className="text-muted-foreground w-full text-right">
+                                {p.details?.count || 0} partner
+                                {p.details?.count !== 1 ? "s" : ""}
+                              </p>
+                            </div>
+                            {hasCorridors && (
+                              <div className="w-full flex items-center justify-center gap-2.5 p-2.5 text-sm border-b">
+                                <span className="font-medium w-full text-left">
+                                  Major Corridors:
+                                </span>
+                                <div className="w-full flex flex-wrap items-end justify-end gap-2">
+                                  {p.details?.corridors?.map((countryCode) => (
+                                    <Badge
+                                      key={countryCode}
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {getCountryName(countryCode)}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                );
+              },
+            )}
+          </div>
         )}
       </div>
-
-      <div className="flex items-center justify-between gap-4 pt-4">
+      <div className="w-full grid grid-cols-2 gap-5 mt-auto">
         <Button
           type="button"
-          variant="ghost"
           onClick={onBack}
+          variant="outline"
+          className="w-full"
           disabled={isSubmitting}
         >
           Back
         </Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="w-full"
+        >
           {isSubmitting ? "Submitting..." : "Submit & Continue"}
         </Button>
       </div>

@@ -37,7 +37,7 @@ import type { targets } from "@/lib/db/schema";
 type Target = typeof targets.$inferSelect;
 
 const targetFormSchema = z.object({
-  url: z.string().url("Invalid URL format"),
+  url: z.url("Invalid URL format"),
   label: z.string().min(1, "Label is required"),
   jurisdiction: z.string().optional(),
   category: z

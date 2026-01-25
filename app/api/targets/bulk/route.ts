@@ -22,7 +22,7 @@ import {
 } from "@/lib/utils/api-helpers";
 
 const targetInputSchema = z.object({
-  url: z.string().url("Invalid URL format"),
+  url: z.url("Invalid URL format"),
   label: z.string().min(1, "Label is required"),
   jurisdiction: z.string().optional(),
   category: z
