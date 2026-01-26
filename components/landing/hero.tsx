@@ -43,9 +43,9 @@ export function Hero() {
             <HeroVideoDialog
               className="w-full h-[819px]"
               animationStyle="from-center"
+              videoSrc="https://www.youtube.com/embed/rPmwrTU6gFM"
               thumbnailAlt="Regula Regulatory Compliance Monitoring Platform Demo Video"
-              videoSrc="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              thumbnailSrc="https://images.unsplash.com/photo-1551288049-bebda4e38f71"
+              thumbnailSrc="/thumbnail.png"
             />
           </div>
         </div>

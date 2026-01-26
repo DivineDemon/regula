@@ -24,6 +24,49 @@ interface HeroVideoProps {
   className?: string;
 }
 
+/**
+ * Converts YouTube URLs to embed format
+ * Handles various YouTube URL formats:
+ * - https://www.youtube.com/watch?v=VIDEO_ID
+ * - https://youtu.be/VIDEO_ID
+ * - https://www.youtube.com/embed/VIDEO_ID (already embed format)
+ */
+function convertToYouTubeEmbed(url: string): string {
+  try {
+    const urlObj = new URL(url);
+
+    // Already an embed URL
+    if (urlObj.pathname.startsWith("/embed/")) {
+      return url;
+    }
+
+    // YouTube watch URL: https://www.youtube.com/watch?v=VIDEO_ID
+    if (
+      urlObj.hostname.includes("youtube.com") &&
+      urlObj.pathname === "/watch"
+    ) {
+      const videoId = urlObj.searchParams.get("v");
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+
+    // YouTube short URL: https://youtu.be/VIDEO_ID
+    if (urlObj.hostname === "youtu.be") {
+      const videoId = urlObj.pathname.slice(1);
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+
+    // Return original URL if not a recognized YouTube format
+    return url;
+  } catch {
+    // If URL parsing fails, return original
+    return url;
+  }
+}
+
 const animationVariants = {
   "from-bottom": {
     initial: { y: "100%", opacity: 0 },
@@ -76,6 +119,7 @@ export function HeroVideoDialog({
 }: HeroVideoProps) {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const selectedAnimation = animationVariants[animationStyle];
+  const embedUrl = convertToYouTubeEmbed(videoSrc);
 
   return (
     <div className={cn("relative", className)}>
@@ -134,7 +178,7 @@ export function HeroVideoDialog({
               </motion.button>
               <div className="relative isolate z-1 size-full overflow-hidden rounded-2xl border-2 border-white">
                 <iframe
-                  src={videoSrc}
+                  src={embedUrl}
                   title="Hero Video player"
                   className="size-full rounded-2xl"
                   allowFullScreen
