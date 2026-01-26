@@ -1,15 +1,15 @@
 ---
 name: Technical Architecture Document
-overview: Create a comprehensive technical architecture document for Regula that covers the Next.js full-stack architecture on Vercel, Firecrawl integration, monorepo structure, and all technical implementation details discussed.
+overview: Create a comprehensive technical architecture document for Regula that covers the Next.js full-stack architecture on Vercel, Crawl4AI integration, monorepo structure, and all technical implementation details discussed.
 todos:
   - id: create-architecture-doc
-    content: Create technical-architecture.md file with comprehensive architecture documentation covering Next.js, Vercel, Firecrawl, monorepo structure, and all technical details
+    content: Create technical-architecture.md file with comprehensive architecture documentation covering Next.js, Vercel, Crawl4AI, monorepo structure, and all technical details
     status: pending
   - id: add-diagrams
     content: Add mermaid diagrams for system architecture, data flows, and monorepo structure
     status: pending
   - id: include-code-examples
-    content: Add code examples for Firecrawl integration, Next.js API routes, Server Actions, and worker services
+    content: Add code examples for Crawl4AI integration, Next.js API routes, Server Actions, and worker services
     status: pending
   - id: document-data-models
     content: Document complete database schema with Drizzle ORM examples and multi-tenancy patterns
@@ -27,7 +27,7 @@ Create `docs/technical-architecture.md` following the existing documentation for
 
 ### 1. Executive Summary
 
-- Architecture decisions (Next.js, Vercel, Firecrawl, monorepo)
+- Architecture decisions (Next.js, Vercel, Crawl4AI, monorepo)
 - Recommended architecture vs alternatives
 - Key principles
 
@@ -46,7 +46,7 @@ Create `docs/technical-architecture.md` following the existing documentation for
 - Backend: Next.js API Routes, Server Actions
 - Database: PostgreSQL (Neon/Vercel Postgres), Drizzle ORM
 - Storage: Vercel Blob or S3, Upstash Redis
-- External Services: Firecrawl, Google Gemini, Stripe
+- External Services: Crawl4AI, Google Gemini, Stripe
 - Background Workers: Inngest/Trigger.dev or separate Node.js service
 - Deployment: Vercel for Next.js app
 
@@ -59,7 +59,7 @@ Create `docs/technical-architecture.md` following the existing documentation for
 ### 5. Component Architecture
 
 - Next.js Application (API routes, server actions, pages)
-- Firecrawl Integration Service
+- Crawl4AI Integration Service
 - Change Detection Engine
 - NLP Pipeline (LLM integration)
 - Alerting System
@@ -129,7 +129,7 @@ Create `docs/technical-architecture.md` following the existing documentation for
 
 ## Key Sections to Include
 
-1. **Firecrawl Integration Details**
+1. **Crawl4AI Integration Details**
 
 - Code examples for scraping
 - Error handling

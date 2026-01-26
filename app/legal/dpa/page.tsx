@@ -187,7 +187,7 @@ export default function DataProcessingAddendumPage() {
             </ul>
             <p className="mt-4">
               Current sub-processors include: Vercel (hosting), Neon (database),
-              Stripe (payments), Resend (email), Firecrawl (web crawling), and
+              Stripe (payments), Resend (email), Crawl4AI (web crawling), and
               Google (AI services).
             </p>
           </section>

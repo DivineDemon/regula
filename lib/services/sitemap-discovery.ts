@@ -503,7 +503,7 @@ function extractUrlEntriesFromXml(xml: string): SitemapEntry[] {
 export async function parseHtmlSitemap(
   sitemapUrl: string,
 ): Promise<SitemapEntry[]> {
-  // Use Firecrawl to get clean content
+  // Use Crawl4AI to get clean content
   const crawlResult = await crawlUrl(sitemapUrl);
   const html = crawlResult.content;
 

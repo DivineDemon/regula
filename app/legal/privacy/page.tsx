@@ -114,7 +114,7 @@ export default function PrivacyPolicyPage() {
               <li>Cloud hosting providers (Vercel, Neon)</li>
               <li>Payment processors (Stripe)</li>
               <li>Email services (Resend)</li>
-              <li>Web crawling services (Firecrawl)</li>
+              <li>Web crawling services (Crawl4AI)</li>
               <li>AI services (Google Gemini)</li>
             </ul>
 

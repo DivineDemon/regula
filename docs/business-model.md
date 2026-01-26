@@ -9,7 +9,7 @@ operational cost, and high scalability.
 Your revenue streams consist of:
 ✅ SaaS Subscription Tiers
 Predictable recurring revenue with upgrade paths.
-✅ Usage-Based Firecrawl Credits
+✅ Usage-Based Crawl4AI (self-hosted)
 A scalable variable component that allows small customers to start cheap but 
 expand based on real usage.
 ✅ Professional Services Add-ons

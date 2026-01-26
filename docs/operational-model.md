@@ -7,7 +7,7 @@ with minimal human load and high reliability.
 1. 🎛️ Operational Architecture Overview
 Regula operates through four core operational pillars:
 (1) Monitoring Operations (Core Automation Layer)
-Automated crawlers (Firecrawl-based) running on scheduled intervals
+Automated crawlers (Crawl4AI-based) running on scheduled intervals
 Queue & worker system for parallel crawling
 Diff engine + version store
 Summarization + impact scoring pipeline

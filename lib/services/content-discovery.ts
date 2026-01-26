@@ -523,7 +523,7 @@ async function extractFromArchive(
   }
 
   // Return the archive URL as a source so it can be crawled
-  // The system will attempt to crawl it, and Firecrawl might handle it
+  // The system will attempt to crawl it, and Crawl4AI might handle it
   sources.push({
     url: archiveUrl,
     type: contentType,

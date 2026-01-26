@@ -102,7 +102,7 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 - **Inngest** for background job processing and workflows
 
 ### External Services
-- **Firecrawl** for web scraping and content extraction
+- **Crawl4AI** for web scraping and content extraction
 - **Google Gemini** (via Generative AI SDK) for LLM-powered analysis
 - **Stripe** for payment processing and subscription management
 - **Resend** for transactional emails
@@ -188,7 +188,7 @@ AUTH_SECRET=your-auth-secret-here
 NEXTAUTH_URL=http://localhost:3000
 
 # External Services
-FIRECRAWL_API_KEY=your-firecrawl-api-key
+CRAWL4AI_API_URL=https://your-crawl4ai-instance.com
 GEMINI_API_KEY=your-google-gemini-api-key
 GEMINI_MODEL_NAME=gemini-2.5-flash
 
@@ -228,7 +228,7 @@ INNGEST_EVENT_KEY=eventkey-...
 ### Data Flow
 
 1. **Target Monitoring**: Users configure regulatory targets (URLs) to monitor
-2. **Crawl Execution**: Inngest workers trigger scheduled crawls via Firecrawl
+2. **Crawl Execution**: Inngest workers trigger scheduled crawls via Crawl4AI
 3. **Version Storage**: Fetched content stored as versions in database and S3
 4. **Change Detection**: Diff engine compares new version with previous version
 5. **AI Analysis**: LLM generates summaries, classifications, and impact scores
@@ -452,7 +452,7 @@ The enhanced onboarding system captures comprehensive fintech company informatio
 2. Clicks "Add Target" and provides URL, label, jurisdiction, category
 3. System validates URL accessibility
 4. Target created and first crawl scheduled
-5. Inngest worker executes crawl via Firecrawl
+5. Inngest worker executes crawl via Crawl4AI
 6. Version stored and compared with baseline
 7. If changes detected, alert generated and user notified
 

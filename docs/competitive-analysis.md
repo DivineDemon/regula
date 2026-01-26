@@ -135,7 +135,7 @@ Competitors rely on:
 Manual curation
 Aggregated feeds
 Human analyst teams
-Us: Fully automated, Firecrawl-powered, near-real-time.
+Us: Fully automated, Crawl4AI-powered, near-real-time.
 3. Actionable Impact Scoring
 Competitors: notify
 Regula: interprets
@@ -169,7 +169,7 @@ How Regula Wins
 Cost
 Fully automated → no analyst team → low pricing possible
 Speed
-Firecrawl + AI → near real-time detection
+Crawl4AI + AI → near real-time detection
 Relevance
 Personalized alerts → reduce noise
 Coverage

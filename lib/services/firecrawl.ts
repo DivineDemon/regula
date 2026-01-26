@@ -1,14 +1,13 @@
-import FirecrawlApp from "@mendable/firecrawl-js";
 import { generateContentHash } from "./versions";
 
-if (!process.env.FIRECRAWL_API_KEY) {
-  throw new Error("FIRECRAWL_API_KEY environment variable is not set");
+if (!process.env.CRAWL4AI_API_URL) {
+  throw new Error("CRAWL4AI_API_URL environment variable is not set");
 }
 
 /**
- * Firecrawl API client instance
+ * Crawl4AI API base URL
  */
-const firecrawl = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
+const CRAWL4AI_API_URL = process.env.CRAWL4AI_API_URL;
 
 /**
  * Rate limiting configuration
@@ -28,6 +27,134 @@ const rateLimiter = new Map<string, number>();
  */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Call Crawl4AI API to crawl a URL
+ * Handles both sync and async responses with task polling
+ */
+async function callCrawl4AI(url: string): Promise<{
+  markdown?: string | { raw_markdown?: string; fit_markdown?: string };
+  html?: string;
+  content?: string;
+  url?: string;
+  status_code?: number;
+  metadata?: {
+    title?: string;
+    description?: string;
+    author?: string;
+    published_time?: string;
+    language?: string;
+  };
+}> {
+  const maxPolls = 60; // 60 polls * 5 seconds = 5 minutes max
+  const pollInterval = 5000; // 5 seconds
+
+  // Make initial crawl request
+  const response = await fetch(`${CRAWL4AI_API_URL}/crawl`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      urls: [url],
+      priority: 10,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Crawl4AI API error: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const initialData = (await response.json()) as
+    | { results: Array<unknown> }
+    | { task_id: string };
+
+  // Handle async response (task_id)
+  if ("task_id" in initialData) {
+    const taskId = initialData.task_id;
+    console.log(`Crawl4AI task created: ${taskId}, polling for results...`);
+
+    // Poll for task completion
+    for (let poll = 0; poll < maxPolls; poll++) {
+      await sleep(pollInterval);
+
+      const taskResponse = await fetch(`${CRAWL4AI_API_URL}/task/${taskId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!taskResponse.ok) {
+        throw new Error(
+          `Crawl4AI task status error: ${taskResponse.status} ${taskResponse.statusText}`,
+        );
+      }
+
+      const taskData = (await taskResponse.json()) as {
+        status: string;
+        results?: Array<unknown>;
+        error?: string;
+      };
+
+      if (taskData.status === "completed" && taskData.results) {
+        // Task completed, extract result
+        const result = taskData.results[0] as {
+          markdown?: string | { raw_markdown?: string; fit_markdown?: string };
+          html?: string;
+          content?: string;
+          url?: string;
+          status_code?: number;
+          metadata?: {
+            title?: string;
+            description?: string;
+            author?: string;
+            published_time?: string;
+            language?: string;
+          };
+        };
+        return result;
+      } else if (taskData.status === "failed" || taskData.error) {
+        throw new Error(
+          `Crawl4AI task failed: ${taskData.error || "Unknown error"}`,
+        );
+      }
+
+      // Task still in progress, continue polling
+      console.log(
+        `Crawl4AI task ${taskId} status: ${taskData.status}, polling again...`,
+      );
+    }
+
+    // Timeout after max polls
+    throw new Error(
+      `Crawl4AI task ${taskId} timed out after ${maxPolls} polls (${(maxPolls * pollInterval) / 1000} seconds)`,
+    );
+  }
+
+  // Handle sync response (results)
+  if ("results" in initialData && Array.isArray(initialData.results)) {
+    const result = initialData.results[0] as {
+      markdown?: string | { raw_markdown?: string; fit_markdown?: string };
+      html?: string;
+      content?: string;
+      url?: string;
+      status_code?: number;
+      metadata?: {
+        title?: string;
+        description?: string;
+        author?: string;
+        published_time?: string;
+        language?: string;
+      };
+    };
+    return result;
+  }
+
+  throw new Error("Crawl4AI API returned unexpected response format");
 }
 
 /**
@@ -283,7 +410,7 @@ export interface CrawlOptions {
    */
   extractPdfContent?: boolean;
   /**
-   * Additional Firecrawl options
+   * Additional Crawl4AI options
    */
   [key: string]: unknown;
 }
@@ -299,7 +426,7 @@ export async function crawlUrl(
     respectRobotsTxt: _respectRobotsTxt = true,
     includePdfs = true,
     extractPdfContent = true,
-    ..._firecrawlOptions
+    ..._crawl4AIOptions
   } = options;
 
   // Step 1: Resolve indirect URLs (follow redirects)
@@ -330,26 +457,44 @@ export async function crawlUrl(
         return await crawlPdf(url, extractPdfContent);
       }
 
-      // Use Firecrawl's scrape method for HTML content
+      // Use Crawl4AI API for HTML content
       // Use final URL after redirect resolution
-      // Simplified for v2 API compatibility - removed unsupported parameters
-      const data = (await firecrawl.scrape(finalUrl)) as {
-        markdown?: string;
-        html?: string;
-        content?: string;
-        url?: string;
-        statusCode?: number;
-        metadata?: {
-          title?: string;
-          description?: string;
-          author?: string;
-          publishedTime?: string;
-          language?: string;
-        };
+      const crawl4AIData = await callCrawl4AI(finalUrl);
+
+      // Map Crawl4AI response format to match existing interface
+      // Handle markdown which can be string or object
+      let markdown: string | undefined;
+      if (typeof crawl4AIData.markdown === "string") {
+        markdown = crawl4AIData.markdown;
+      } else if (
+        crawl4AIData.markdown &&
+        typeof crawl4AIData.markdown === "object"
+      ) {
+        markdown =
+          crawl4AIData.markdown.fit_markdown ||
+          crawl4AIData.markdown.raw_markdown ||
+          undefined;
+      }
+
+      const data = {
+        markdown,
+        html: crawl4AIData.html,
+        content: crawl4AIData.content,
+        url: crawl4AIData.url,
+        statusCode: crawl4AIData.status_code,
+        metadata: crawl4AIData.metadata
+          ? {
+              title: crawl4AIData.metadata.title,
+              description: crawl4AIData.metadata.description,
+              author: crawl4AIData.metadata.author,
+              publishedTime: crawl4AIData.metadata.published_time,
+              language: crawl4AIData.metadata.language,
+            }
+          : undefined,
       };
 
       console.log(
-        `Firecrawl response for ${finalUrl}: statusCode=${
+        `Crawl4AI response for ${finalUrl}: statusCode=${
           data.statusCode
         }, hasMarkdown=${!!data.markdown}, hasHtml=${!!data.html}, hasContent=${!!data.content}, finalUrl=${
           data.url || finalUrl
@@ -381,7 +526,7 @@ export async function crawlUrl(
       }
 
       // Detect content type first (before normalization)
-      // Note: We don't have headers from Firecrawl response, so we detect from content
+      // Note: We don't have headers from Crawl4AI response, so we detect from content
       const detectedType = detectContentType(finalUrl, rawContent);
 
       // Extract and normalize content based on detected type
@@ -457,32 +602,40 @@ async function crawlPdf(
   _extractContent: boolean,
 ): Promise<CrawlResult> {
   try {
-    // Firecrawl supports PDF scraping
-    // Simplified for v2 API compatibility
-    const data = (await firecrawl.scrape(url)) as {
-      markdown?: string;
-      content?: string;
-      url?: string;
-      statusCode?: number;
-      metadata?: {
-        title?: string;
-      };
-    };
+    // Crawl4AI supports PDF scraping
+    const crawl4AIData = await callCrawl4AI(url);
+
+    // Handle markdown which can be string or object
+    let markdown: string | undefined;
+    if (typeof crawl4AIData.markdown === "string") {
+      markdown = crawl4AIData.markdown;
+    } else if (
+      crawl4AIData.markdown &&
+      typeof crawl4AIData.markdown === "object"
+    ) {
+      markdown =
+        crawl4AIData.markdown.fit_markdown ||
+        crawl4AIData.markdown.raw_markdown ||
+        undefined;
+    }
 
     const content =
-      data.markdown ||
-      (typeof data.content === "string" ? data.content : "") ||
+      markdown ||
+      (typeof crawl4AIData.content === "string" ? crawl4AIData.content : "") ||
       "";
 
     return {
-      url: data.url || url,
+      url: crawl4AIData.url || url,
       content,
       contentType: "pdf",
       metadata: {
-        title: data.metadata?.title || extractFilenameFromUrl(url),
+        title: crawl4AIData.metadata?.title || extractFilenameFromUrl(url),
         attachments: [],
       },
-      statusCode: typeof data.statusCode === "number" ? data.statusCode : 200,
+      statusCode:
+        typeof crawl4AIData.status_code === "number"
+          ? crawl4AIData.status_code
+          : 200,
     };
   } catch (error) {
     // If PDF extraction fails, return minimal result
@@ -612,7 +765,7 @@ function normalizeContent(
 }
 
 /**
- * Intelligently extract the best content format from Firecrawl response
+ * Intelligently extract the best content format from Crawl4AI response
  * Prioritizes cleanest format available
  */
 function extractBestContent(data: {
@@ -776,7 +929,7 @@ function extractAndNormalizeContent(
 
   switch (contentType) {
     case "pdf":
-      // Already handled by Firecrawl, but can enhance
+      // Already handled by Crawl4AI, but can enhance
       extracted = rawContent;
       break;
 
@@ -828,12 +981,12 @@ function extractAndNormalizeContent(
 
     case "docx":
     case "xlsx": {
-      // Office documents - Firecrawl may handle these, but if not, extract using libraries
+      // Office documents - Crawl4AI may handle these, but if not, extract using libraries
       if (rawContent && rawContent.length > 0) {
         extracted = rawContent;
         metadata.officeDocument = true;
       } else {
-        // Firecrawl didn't extract content, try to extract using libraries
+        // Crawl4AI didn't extract content, try to extract using libraries
         // Note: This requires 'mammoth' for .docx and 'xlsx' for .xlsx packages
         // Install: npm install mammoth xlsx
         try {
