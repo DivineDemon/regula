@@ -8,6 +8,7 @@ import {
 } from "@/lib/services/adaptive-crawl";
 import { generateAlert } from "@/lib/services/alerts";
 import type { ChangeType, DiffMetadata } from "@/lib/services/diff";
+import { getLatestVersion, getPreviousVersion } from "@/lib/services/versions";
 
 /**
  * Background adaptive crawl function
@@ -132,13 +133,30 @@ export const adaptiveCrawlBackground = inngest.createFunction(
             };
 
             // Generate alert for graph-based changes
-            // For graph-based changes, we use placeholder version IDs
             try {
+              // Resolve real version IDs for the target before generating alert
+              const latestVersion = await getLatestVersion(
+                targetId,
+                organizationId,
+              );
+
+              if (!latestVersion) {
+                console.warn(
+                  `No versions found for target ${targetId} when generating adaptive crawl alert. Skipping alert generation.`,
+                );
+                return;
+              }
+
+              const previousVersion = await getPreviousVersion(
+                latestVersion.id,
+                organizationId,
+              );
+
               const alert = await generateAlert({
                 organizationId,
                 targetId,
-                currentVersionId: targetId, // Placeholder for graph-based changes
-                previousVersionId: targetId, // Placeholder for graph-based changes
+                currentVersionId: latestVersion.id,
+                previousVersionId: previousVersion?.id ?? latestVersion.id,
                 diffMetadata,
                 target,
                 organization,
