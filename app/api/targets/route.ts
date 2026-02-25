@@ -304,6 +304,26 @@ export async function PATCH(request: Request) {
       },
     });
 
+    // Re-run crawler when URL is updated so content reflects the new target
+    if (validatedData.url !== undefined) {
+      triggerCrawl(validatedData.targetId, validatedData.organizationId).catch(
+        (error) => {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          if (errorMessage.includes("Event key not found")) {
+            console.info(
+              `Inngest not configured. Target ${validatedData.targetId} will be crawled by the next scheduled crawl.`,
+            );
+          } else {
+            console.error(
+              `Failed to trigger re-crawl for target ${validatedData.targetId}:`,
+              error,
+            );
+          }
+        },
+      );
+    }
+
     return successResponse({ target: updatedTarget });
   } catch (error) {
     if (error instanceof z.ZodError) {
