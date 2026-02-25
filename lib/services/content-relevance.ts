@@ -1,4 +1,4 @@
-import { crawlUrl } from "./firecrawl";
+import { crawlUrl } from "./crawler";
 import type { SitemapEntry } from "./sitemap-discovery";
 
 /**

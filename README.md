@@ -239,7 +239,7 @@ INNGEST_EVENT_KEY=eventkey-...
 
 The application is organized into service modules in `lib/services/`:
 
-- **`firecrawl.ts`** - Web scraping and content extraction
+- **`crawler.ts`** - Web scraping and content extraction (Crawl4AI)
 - **`versions.ts`** - Version history management
 - **`diff.ts`** - Change detection and comparison engine
 - **`llm.ts`** - AI-powered summarization and analysis

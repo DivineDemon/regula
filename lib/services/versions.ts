@@ -3,7 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
 import { targets, versions } from "@/lib/db/schema";
-import type { CrawlResult } from "./firecrawl";
+import type { CrawlResult } from "./crawler";
 import { s3Keys, storage } from "./s3";
 
 /**

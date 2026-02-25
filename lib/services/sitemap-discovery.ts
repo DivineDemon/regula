@@ -1,4 +1,4 @@
-import { crawlUrl } from "./firecrawl";
+import { crawlUrl } from "./crawler";
 
 /**
  * Sitemap source information

@@ -5,8 +5,8 @@ import {
   type ContentGraph,
   discoverContentIntelligently,
 } from "./content-discovery";
-import type { CrawlResult } from "./firecrawl";
-import { crawlUrl } from "./firecrawl";
+import type { CrawlResult } from "./crawler";
+import { crawlUrl } from "./crawler";
 import {
   adaptStrategyForPattern,
   compareContentGraphs,

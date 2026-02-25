@@ -5,7 +5,7 @@ import {
   prioritizeContentSources,
   type TargetConfig,
 } from "./content-relevance";
-import { crawlUrl } from "./firecrawl";
+import { crawlUrl } from "./crawler";
 import {
   discoverSitemapComplete,
   type SitemapEntry,

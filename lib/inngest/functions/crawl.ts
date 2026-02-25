@@ -4,9 +4,9 @@ import { organizations, targets } from "@/lib/db/schema";
 import { inngest } from "@/lib/inngest/client";
 import { shouldRefreshContentGraph } from "@/lib/services/adaptive-crawl";
 import { generateAlert } from "@/lib/services/alerts";
+import type { CrawlResult } from "@/lib/services/crawler";
+import { crawlUrl } from "@/lib/services/crawler";
 import { detectChanges } from "@/lib/services/diff";
-import type { CrawlResult } from "@/lib/services/firecrawl";
-import { crawlUrl } from "@/lib/services/firecrawl";
 import { quotaService } from "@/lib/services/quotas";
 import { getVersion, storeVersion } from "@/lib/services/versions";
 
