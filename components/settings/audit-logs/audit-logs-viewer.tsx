@@ -95,7 +95,7 @@ export function AuditLogsViewer({
   };
 
   const formatAction = (action: string) => {
-    return action.replace(/_/g, " ").replace(/\./g, " > ");
+    return action.replace(/_/g, " ").replace(/\./g, " → ");
   };
 
   const _formatMetadata = (metadata: Record<string, unknown> | null) => {

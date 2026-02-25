@@ -296,9 +296,11 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
                     </Link>
                   </div>
                   {alert.summary && (
-                    <p className="w-full text-left text-sm text-muted-foreground p-2.5 border-b">
-                      {alert.summary}
-                    </p>
+                    <span className="w-full text-left text-sm text-muted-foreground p-2.5 border-b">
+                      {alert.summary.length > 100
+                        ? `${alert.summary.slice(0, 100)}...`
+                        : alert.summary}
+                    </span>
                   )}
                   <div className="w-full flex items-center justify-center p-2.5">
                     <span className="flex-1 text-left text-xs text-muted-foreground">
