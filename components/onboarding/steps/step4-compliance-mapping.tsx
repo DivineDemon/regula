@@ -1,12 +1,20 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -30,7 +38,10 @@ import type {
 } from "@/lib/types/organization-profile";
 import { cn } from "@/lib/utils";
 import type { CompanyProfileInput } from "@/lib/validations/organization-profile";
-import { companyProfileSchema } from "@/lib/validations/organization-profile";
+import {
+  companyProfileSchema,
+  complianceMappingSchema,
+} from "@/lib/validations/organization-profile";
 
 const COMPLIANCE_REQUIREMENTS: {
   value: ComplianceRequirement;
@@ -87,12 +98,17 @@ interface Step4ComplianceMappingProps {
   onBack: () => void;
 }
 
+function getServiceLabel(value: string) {
+  return SERVICE_OPTIONS.find((o) => o.value === value)?.label ?? value;
+}
+
 export function Step4ComplianceMapping({
   initialData,
   onComplete,
   onBack,
 }: Step4ComplianceMappingProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mappingModalOpen, setMappingModalOpen] = useState(false);
 
   const form = useForm<
     Pick<CompanyProfileInput, "complianceMapping" | "complianceFramework">
@@ -113,6 +129,39 @@ export function Step4ComplianceMapping({
     control: form.control,
     name: "complianceMapping",
   });
+
+  const mappingForm = useForm<z.infer<typeof complianceMappingSchema>>({
+    resolver: zodResolver(complianceMappingSchema),
+    defaultValues: {
+      service: "money_transfer",
+      countryCode: "",
+      complianceRequirements: [],
+      context: "",
+    },
+  });
+
+  const handleOpenMappingModal = () => {
+    mappingForm.reset({
+      service: "money_transfer",
+      countryCode: "",
+      complianceRequirements: [],
+      context: "",
+    });
+    setMappingModalOpen(true);
+  };
+
+  const handleSaveMapping = (data: z.infer<typeof complianceMappingSchema>) => {
+    const countryCode = data.countryCode?.toUpperCase().slice(0, 2) ?? "";
+    if (!/^[A-Z]{2}$/.test(countryCode)) {
+      toast.error("Country code must be 2 uppercase letters (e.g., US, UK).");
+      return;
+    }
+    append({
+      ...data,
+      countryCode,
+    });
+    setMappingModalOpen(false);
+  };
 
   const onSubmit = async (
     data: Pick<
@@ -181,13 +230,7 @@ export function Step4ComplianceMapping({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() =>
-            append({
-              service: "money_transfer",
-              countryCode: "",
-              complianceRequirements: [],
-            })
-          }
+          onClick={handleOpenMappingModal}
           disabled={isSubmitting}
         >
           <Plus />
@@ -200,138 +243,63 @@ export function Step4ComplianceMapping({
           className="w-full h-full grid grid-cols-2 gap-5 items-start justify-start"
         >
           {fields.length > 0 && (
-            <div className="w-full h-[calc(100vh-412px)] flex flex-col items-start justify-start gap-5 overflow-y-auto col-span-1">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="w-full flex flex-col items-start justify-start gap-5 border rounded-lg p-5 col-span-1"
-                >
-                  <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name={`complianceMapping.${index}.service`}
-                      render={({ field }) => (
-                        <FormItem className="w-full flex flex-col items-start justify-start">
-                          <FormLabel className="text-xs uppercase text-muted-foreground">
-                            Service <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Select
-                              disabled={isSubmitting}
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select service" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {SERVICE_OPTIONS.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`complianceMapping.${index}.countryCode`}
-                      render={({ field }) => (
-                        <FormItem className="w-full flex flex-col items-start justify-start">
-                          <FormLabel className="text-xs uppercase text-muted-foreground">
-                            Country Code <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., US"
-                              disabled={isSubmitting}
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name={`complianceMapping.${index}.complianceRequirements`}
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel className="text-xs uppercase text-muted-foreground">
-                          Compliance Requirements&nbsp;
-                          <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <div className="w-full flex flex-col items-start justify-start gap-2 max-h-[200px] overflow-y-auto rounded-md border">
-                            {COMPLIANCE_REQUIREMENTS.map((req) => (
-                              <div
-                                key={req.value}
-                                className="w-full flex items-center justify-center p-2 gap-2 border-b"
-                              >
-                                <Checkbox
-                                  checked={field.value?.includes(req.value)}
-                                  onCheckedChange={(checked) => {
-                                    const current = field.value || [];
-                                    if (checked) {
-                                      field.onChange([...current, req.value]);
-                                    } else {
-                                      field.onChange(
-                                        current.filter((r) => r !== req.value),
-                                      );
-                                    }
-                                  }}
-                                />
-                                {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is inside label wrapper, which is semantically correct */}
-                                <label className="text-sm flex-1 text-left">
-                                  {req.label}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`complianceMapping.${index}.context`}
-                    render={({ field }) => (
-                      <FormItem className="w-full flex flex-col items-start justify-start">
-                        <FormLabel className="text-xs uppercase text-muted-foreground">
-                          Context / Notes
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Additional context or notes..."
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={isSubmitting}
-                    className="w-full col-span-2"
-                    onClick={() => remove(index)}
+            <div className="w-full min-h-0 max-h-[calc(100vh-412px)] flex flex-col gap-3 overflow-y-auto col-span-1">
+              {fields.map((field, index) => {
+                const service = form.watch(
+                  `complianceMapping.${index}.service`,
+                );
+                const countryCode = form.watch(
+                  `complianceMapping.${index}.countryCode`,
+                );
+                const requirements = form.watch(
+                  `complianceMapping.${index}.complianceRequirements`,
+                );
+                const reqLabels =
+                  (requirements?.length ?? 0) > 0
+                    ? (requirements as ComplianceRequirement[])
+                        .map(
+                          (r) =>
+                            COMPLIANCE_REQUIREMENTS.find((c) => c.value === r)
+                              ?.label ?? r,
+                        )
+                        .slice(0, 3)
+                    : [];
+                const more = (requirements?.length ?? 0) - reqLabels.length;
+                return (
+                  <div
+                    key={field.id}
+                    className="w-full flex flex-col gap-2 border rounded-lg p-4"
                   >
-                    Remove Mapping
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">
+                          {getServiceLabel(service ?? "")}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {countryCode || "—"}
+                        </p>
+                        {reqLabels.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {reqLabels.join(", ")}
+                            {more > 0 ? ` +${more} more` : ""}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={isSubmitting}
+                        onClick={() => remove(index)}
+                        className="shrink-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                        <span className="sr-only">Remove mapping</span>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
           <div
@@ -504,6 +472,150 @@ export function Step4ComplianceMapping({
           </div>
         </form>
       </Form>
+
+      <Dialog open={mappingModalOpen} onOpenChange={setMappingModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add compliance mapping</DialogTitle>
+          </DialogHeader>
+          <Form {...mappingForm}>
+            <form
+              id="mapping-modal-form"
+              onSubmit={mappingForm.handleSubmit(handleSaveMapping)}
+              className="flex flex-col gap-4"
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={mappingForm.control}
+                  name="service"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase text-muted-foreground">
+                        Service <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select service" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SERVICE_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={mappingForm.control}
+                  name="countryCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase text-muted-foreground">
+                        Country Code <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., US"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value.toUpperCase().slice(0, 2),
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={mappingForm.control}
+                name="complianceRequirements"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs uppercase text-muted-foreground">
+                      Compliance Requirements{" "}
+                      <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <div className="max-h-[200px] overflow-y-auto rounded-md border flex flex-col">
+                        {COMPLIANCE_REQUIREMENTS.map((req) => (
+                          <div
+                            key={req.value}
+                            className="flex items-center gap-2 p-2 border-b last:border-b-0"
+                          >
+                            <Checkbox
+                              checked={field.value?.includes(req.value)}
+                              onCheckedChange={(checked) => {
+                                const current = field.value || [];
+                                if (checked) {
+                                  field.onChange([...current, req.value]);
+                                } else {
+                                  field.onChange(
+                                    current.filter((r) => r !== req.value),
+                                  );
+                                }
+                              }}
+                            />
+                            {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is inside label wrapper */}
+                            <label className="text-sm flex-1 text-left cursor-pointer">
+                              {req.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={mappingForm.control}
+                name="context"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs uppercase text-muted-foreground">
+                      Context / Notes
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Additional context or notes..."
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMappingModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save mapping</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
