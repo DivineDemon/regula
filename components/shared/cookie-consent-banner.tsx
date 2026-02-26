@@ -173,7 +173,7 @@ export function CookieConsentBanner() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
-      <div className="w-124 p-5 rounded-xl border shadow bg-background flex flex-col items-center justify-center gap-5">
+      <div className="w-80 md:w-124 p-5 rounded-xl border shadow bg-background flex flex-col items-center justify-center gap-5">
         <div className="w-full flex flex-col items-center justify-center gap-2.5">
           <div className="w-full flex items-center justify-center gap-3.5">
             <Cookie className="size-4" />
@@ -194,7 +194,7 @@ export function CookieConsentBanner() {
             .
           </p>
         </div>
-        <div className="w-full flex items-center justify-center">
+        <div className="w-full flex items-center justify-center gap-5">
           <div className="flex-1 flex flex-col items-center justify-center">
             <span className="w-full text-sm text-left font-medium">
               Essential Cookies
@@ -205,7 +205,7 @@ export function CookieConsentBanner() {
           </div>
           <Switch checked={true} disabled />
         </div>
-        <div className="w-full flex items-center justify-center">
+        <div className="w-full flex items-center justify-center gap-5">
           <div className="flex-1 flex flex-col items-center justify-center">
             <span className="w-full text-sm text-left font-medium">
               Functional Cookies
@@ -219,7 +219,7 @@ export function CookieConsentBanner() {
             onCheckedChange={(e) => setConsent({ ...consent, functional: e })}
           />
         </div>
-        <div className="w-full flex items-center justify-center">
+        <div className="w-full flex items-center justify-center gap-5">
           <div className="flex-1 flex flex-col items-center justify-center">
             <span className="w-full text-sm text-left font-medium">
               Analytics Cookies
@@ -233,7 +233,7 @@ export function CookieConsentBanner() {
             onCheckedChange={(e) => setConsent({ ...consent, analytics: e })}
           />
         </div>
-        <div className="w-full flex items-center justify-center">
+        <div className="w-full flex items-center justify-center gap-5">
           <div className="flex-1 flex flex-col items-center justify-center">
             <span className="w-full text-sm text-left font-medium">
               Marketing Cookies
@@ -247,14 +247,19 @@ export function CookieConsentBanner() {
             onCheckedChange={(e) => setConsent({ ...consent, marketing: e })}
           />
         </div>
-        <div className="w-full grid grid-cols-3 items-center justify-center gap-2.5">
+        <div className="w-full grid grid-cols-2 md:grid-cols-3 items-center justify-center gap-2.5">
           <Button type="button" variant="default" onClick={handleAcceptAll}>
             Accept All
           </Button>
           <Button type="button" variant="outline" onClick={handleRejectAll}>
             Reject All
           </Button>
-          <Button type="button" variant="outline" onClick={handleSaveCustom}>
+          <Button
+            type="button"
+            variant="outline"
+            className="col-span-2 md:col-span-1"
+            onClick={handleSaveCustom}
+          >
             Save Preferences
           </Button>
         </div>

@@ -3,6 +3,7 @@
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Menu } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Logo } from "@/components/shared/logo";
 import { useIsXl } from "@/hooks/use-mobile";
@@ -19,11 +20,20 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 
+const NAVBAR_BORDER = {
+  light: "#e5e5e5",
+  dark: "#ffffff1a",
+} as const;
+
 export function Navbar() {
   const isXl = useIsXl();
   const { scrollY } = useScroll();
+  const { resolvedTheme } = useTheme();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const borderColor =
+    resolvedTheme === "dark" ? NAVBAR_BORDER.dark : NAVBAR_BORDER.light;
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setIsScrolled(latest > 50);
@@ -33,7 +43,7 @@ export function Navbar() {
     <nav className="w-full max-w-[100vw] z-50 fixed top-0 px-5 xl:px-0 py-5 overflow-x-clip">
       <motion.div
         className="p-2.5 gap-8 xl:gap-0 mx-auto border backdrop-blur-md max-w-full xl:max-w-6xl rounded-lg flex items-center justify-between bg-background/30 min-w-0"
-        {...(isXl
+        {...(isXl === true
           ? {
               animate: {
                 width: isScrolled ? "980px" : "1152px",
@@ -41,11 +51,11 @@ export function Navbar() {
                 backdropFilter: isScrolled ? "blur(8px)" : "blur(0px)",
               },
               transition: { duration: 0.3, ease: "easeInOut" },
-              style: { borderColor: "#222222" },
+              style: { borderColor },
             }
-          : {
-              style: { width: "100%", maxWidth: "100%" },
-            })}
+          : isXl === false
+            ? { style: { width: "100%", maxWidth: "100%", borderColor } }
+            : {})}
       >
         <div className="w-[222px] shrink-0 min-w-0">
           <Logo size={32} />
