@@ -59,7 +59,7 @@ export function Contact() {
   return (
     <section
       id="contact"
-      className="w-full relative flex flex-col max-w-7xl mx-auto border-x"
+      className="w-full relative flex flex-col max-w-7xl mx-auto border-x overflow-x-hidden"
     >
       <DottedMap
         markers={[
@@ -67,9 +67,9 @@ export function Contact() {
           { lat: 51.5074, lng: -0.1278, size: 0.5 },
           { lat: 35.6762, lng: 139.6503, size: 0.5 },
         ]}
-        className="opacity-35 z-0"
+        className="opacity-35 z-0 hidden lg:block"
       />
-      <div className="absolute inset-0 z-1 grid grid-cols-2 items-center justify-center bg-linear-to-tr from-primary/20 via-background to-primary/20">
+      <div className="relative lg:absolute lg:inset-0 z-1 grid grid-cols-1 lg:grid-cols-2 items-center justify-center bg-linear-to-tr from-primary/20 via-background to-primary/20">
         <motion.div
           className="w-full h-full col-span-1 p-5 flex flex-col items-center justify-center gap-6"
           initial={{ opacity: 0, x: -30 }}
@@ -86,7 +86,7 @@ export function Contact() {
               back to you as soon as possible.
             </p>
           </div>
-          <div className="w-full flex flex-col items-start justify-start gap-4">
+          <div className="w-full hidden lg:flex flex-col items-start justify-start gap-4">
             {[
               {
                 icon: MapPin,

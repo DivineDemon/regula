@@ -28,7 +28,7 @@ const stats: Stat[] = [
 
 export function Stats() {
   return (
-    <section className="w-full flex flex-col py-14 max-w-7xl bg-muted/30 mx-auto border-x">
+    <section className="w-full flex flex-col p-5 lg:px-0 lg:py-14 max-w-7xl bg-muted/30 mx-auto border-x">
       <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
         {stats.map((stat, index) => (
           <motion.div
@@ -36,7 +36,7 @@ export function Stats() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             whileInView={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            viewport={{ once: false, margin: "-100px" }}
+            viewport={{ once: true, amount: 0.15 }}
             className="text-center"
           >
             <div className="text-3xl font-bold font-heading text-primary sm:text-4xl">

@@ -64,9 +64,9 @@ export function Testimonials() {
       id="testimonials"
       className="w-full relative flex flex-col max-w-7xl mx-auto bg-muted/30 border-x"
     >
-      <div className="w-full h-full border-x flex flex-col items-start justify-start">
+      <div className="w-full h-full flex flex-col items-start justify-start">
         <motion.div
-          className="border-b w-full p-10 md:p-14"
+          className="w-full p-10 md:p-14"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}

@@ -7,14 +7,14 @@ import { Logo } from "@/components/shared/logo";
 export function Footer() {
   return (
     <motion.footer
-      className="w-full flex flex-col max-w-7xl mx-auto border-x"
+      className="mt-auto w-full flex flex-col max-w-7xl mx-auto border-x"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
       viewport={{ once: false, margin: "-100px" }}
     >
       <div className="w-full px-6">
-        <div className="w-full h-full border-x flex items-center justify-between py-10 px-5">
+        <div className="w-full h-full border-x grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-0 items-center justify-center py-10 px-5">
           <motion.div
             className="w-fit"
             initial={{ opacity: 0, y: 20 }}
@@ -34,7 +34,7 @@ export function Footer() {
             </p>
           </motion.div>
           <motion.div
-            className="flex items-start justify-start gap-10"
+            className="flex items-start justify-start md:justify-end gap-10"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}

@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export function CTA() {
   return (
-    <section className="w-full flex flex-col max-w-7xl mx-auto border-x">
+    <section className="w-full hidden xl:flex flex-col max-w-7xl mx-auto border-x">
       <motion.div
         className="w-full rounded-3xl bg-primary overflow-hidden relative"
         initial={{ opacity: 0, scale: 0.95 }}

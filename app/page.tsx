@@ -21,7 +21,7 @@ export default function LandingPage() {
       <Comparison />
       <hr className="w-full border-t border-border" />
       <Testimonials />
-      <hr className="w-full border-t border-border" />
+      <hr className="w-full hidden xl:block border-t border-border" />
       <CTA />
       <hr className="w-full border-t border-border" />
       <Contact />

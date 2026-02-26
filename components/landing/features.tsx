@@ -19,8 +19,7 @@ import { useEffect, useState } from "react";
 const features = [
   {
     title: "Real-Time Monitoring",
-    description:
-      "Continuous monitoring of regulatory websites with instant change detection",
+    description: "Continuous monitoring with instant change detection",
     icon: Zap,
     component: RealTimeMonitoring,
   },
@@ -32,8 +31,7 @@ const features = [
   },
   {
     title: "AI-Powered Analysis",
-    description:
-      "Intelligent summaries and impact scoring powered by Google Gemini",
+    description: "Intelligent summaries and impact scoring using Google Gemini",
     icon: Search,
     component: AIPoweredAnalysis,
   },
@@ -45,8 +43,7 @@ const features = [
   },
   {
     title: "Analytics & Dashboard",
-    description:
-      "Comprehensive metrics and visualizations to track compliance health",
+    description: "Comprehensive metrics and visualizations to track compliance",
     icon: BarChart3,
     component: AnalyticsDashboard,
   },
@@ -504,7 +501,7 @@ export function Features() {
       className="w-full min-h-screen relative flex flex-col max-w-7xl mx-auto border-x"
     >
       <div className="absolute top-0 right-0 h-full w-4 md:w-14 text-border bg-size-[10px_10px] bg-[repeating-linear-gradient(315deg,currentColor_0_1px,#0000_0_50%)]" />
-      <div className="w-[calc(100%-112px)] mx-auto h-full border-x flex flex-col items-start justify-start">
+      <div className="w-[calc(100%-32px)] md:w-[calc(100%-112px)] xl:w-[calc(100%-112px)] mx-auto h-full border-x flex flex-col items-start justify-start">
         <motion.div
           className="border-b w-full p-10 md:p-14"
           initial={{ opacity: 0, y: 30 }}
@@ -522,7 +519,7 @@ export function Features() {
             </p>
           </div>
         </motion.div>
-        <div className="w-full h-full grid grid-cols-2">
+        <div className="w-full h-full grid grid-cols-1 lg:grid-cols-2">
           {features.map((feature, index) => {
             const FeatureComponent = feature.component;
             return (
@@ -532,7 +529,7 @@ export function Features() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: false, margin: "-100px" }}
-                className="w-full h-full border-r even:border-r-0 border-b nth-5:border-b-0 nth-6:border-b-0 hover:bg-muted/30 transition-colors group"
+                className="w-full h-full last:border-t lg:last:border-t-0 lg:border-r even:border-r-0 border-b nth-5:border-b-0 nth-6:border-b-0 hover:bg-muted/30 transition-colors group"
               >
                 <div className="p-4 border-b">
                   <div className="flex items-center gap-3">
