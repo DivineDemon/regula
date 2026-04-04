@@ -263,6 +263,8 @@ export async function getMedianTimeToFirstAction(params: {
   endDate: Date;
 }): Promise<TimeToFirstActionResult> {
   const { organizationId, startDate, endDate } = params;
+  const startDateIso = startDate.toISOString();
+  const endDateIso = endDate.toISOString();
 
   const orgClause =
     organizationId === undefined
@@ -291,8 +293,8 @@ export async function getMedianTimeToFirstAction(params: {
     FROM first_action fa
     INNER JOIN "alerts" a ON a.id = fa."alertId"
     WHERE ${orgClause}
-      AND a."createdAt" >= ${startDate}
-      AND a."createdAt" <= ${endDate}
+      AND a."createdAt" >= ${startDateIso}::timestamptz
+      AND a."createdAt" <= ${endDateIso}::timestamptz
       AND fa."firstAt" >= a."createdAt"
   `);
 

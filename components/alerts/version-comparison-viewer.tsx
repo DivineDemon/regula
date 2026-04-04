@@ -95,7 +95,7 @@ export function VersionComparisonViewer({
   }, [currentVersionId, previousVersionId, organizationId]);
 
   const renderDiffContent = (content: string, type: "current" | "previous") => {
-    if (!diffResult || !diffResult.hasChanges) {
+    if (!diffResult?.hasChanges) {
       return (
         <div className="whitespace-pre-wrap font-mono text-sm p-4">
           {content}
@@ -105,12 +105,17 @@ export function VersionComparisonViewer({
 
     // Simple diff highlighting (can be enhanced with a proper diff library)
     const lines = content.split("\n");
+    const lineKeyCounts = new Map<string, number>();
+
     return (
       <div className="font-mono text-sm">
         {lines.map((line, index) => {
           const structuralChange = diffResult.structuralChanges.find(
             (change) => change.position === index,
           );
+          const lineOccurrence = lineKeyCounts.get(line) ?? 0;
+          lineKeyCounts.set(line, lineOccurrence + 1);
+          const stableLineKey = `${type}-${line}-${lineOccurrence}`;
 
           if (structuralChange) {
             const bgColor =
@@ -122,7 +127,7 @@ export function VersionComparisonViewer({
 
             return (
               <div
-                key={`line-${index}-${structuralChange.action}-${structuralChange.position}`}
+                key={`line-${structuralChange.action}-${structuralChange.position}-${stableLineKey}`}
                 className={`${bgColor} p-1`}
               >
                 {structuralChange.action === "added" && type === "current" && (
@@ -138,7 +143,7 @@ export function VersionComparisonViewer({
           }
 
           return (
-            <div key={`line-${index}-${line.slice(0, 20)}`} className="p-1">
+            <div key={stableLineKey} className="p-1">
               {line}
             </div>
           );
@@ -300,9 +305,9 @@ export function VersionComparisonViewer({
               </div>
               <div className="max-h-[600px] overflow-auto p-4">
                 <div className="space-y-2">
-                  {diffResult?.structuralChanges.map((change, index) => (
+                  {diffResult?.structuralChanges.map((change) => (
                     <div
-                      key={`change-${change.position}-${change.action}-${index}`}
+                      key={`change-${change.position ?? "na"}-${change.action}-${change.type}-${change.content ?? ""}`}
                       className={`p-2 rounded ${
                         change.action === "added"
                           ? "bg-green-500/20 border-l-4 border-green-500"

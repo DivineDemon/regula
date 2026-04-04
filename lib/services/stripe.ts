@@ -5,8 +5,8 @@ import {
   type PlanType,
 } from "@/lib/plans";
 
-export { PLAN_CONFIGS, isCrawlFrequencyAllowed };
 export type { PlanType };
+export { isCrawlFrequencyAllowed, PLAN_CONFIGS };
 
 /**
  * Get Stripe client instance (lazy initialization)
@@ -26,7 +26,7 @@ function getStripeClient(): Stripe {
 
   if (!globalForStripe.stripeClient) {
     globalForStripe.stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2025-12-15.clover",
+      apiVersion: "2026-02-25.clover",
       typescript: true,
     });
   }

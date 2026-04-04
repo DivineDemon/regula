@@ -73,7 +73,7 @@ export async function isAlertSnoozed(
     )
     .limit(1);
 
-  if (!alert || !alert.snoozedUntil) {
+  if (!alert?.snoozedUntil) {
     return false;
   }
 

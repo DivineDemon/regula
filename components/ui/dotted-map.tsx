@@ -72,7 +72,7 @@ export function DottedMap({
       role="img"
       aria-label="World map with location markers"
     >
-      {points.map((point, index) => {
+      {points.map((point) => {
         const rowIndex = yToRowIndex.get(point.y) ?? 0;
         const offsetX = stagger && rowIndex % 2 === 1 ? xStep / 2 : 0;
         return (
@@ -81,11 +81,11 @@ export function DottedMap({
             cy={point.y}
             r={dotRadius}
             fill="currentColor"
-            key={`${point.x}-${point.y}-${index}`}
+            key={`${point.x}-${point.y}`}
           />
         );
       })}
-      {processedMarkers.map((marker, index) => {
+      {processedMarkers.map((marker) => {
         const rowIndex = yToRowIndex.get(marker.y) ?? 0;
         const offsetX = stagger && rowIndex % 2 === 1 ? xStep / 2 : 0;
         return (
@@ -94,7 +94,7 @@ export function DottedMap({
             cy={marker.y}
             r={marker.size ?? dotRadius}
             fill={markerColor}
-            key={`${marker.x}-${marker.y}-${index}`}
+            key={`${marker.x}-${marker.y}-${marker.size ?? dotRadius}`}
           />
         );
       })}

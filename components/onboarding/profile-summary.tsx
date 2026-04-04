@@ -268,9 +268,9 @@ export function ProfileSummary({
             </p>
           ) : (
             <div className="space-y-4">
-              {profile.countryOperations.map((op, index) => (
+              {profile.countryOperations.map((op) => (
                 <div
-                  key={`${op.countryCode}-${index}`}
+                  key={`${op.countryCode}-${op.operationType}-${op.licenseStatus}-${op.services.join("|")}`}
                   className="rounded-lg border p-4"
                 >
                   <div className="mb-3 font-medium">
@@ -366,9 +366,9 @@ export function ProfileSummary({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {profile.complianceMapping.map((mapping, index) => (
+              {profile.complianceMapping.map((mapping) => (
                 <div
-                  key={`${mapping.service}-${mapping.countryCode}-${index}`}
+                  key={`${mapping.service}-${mapping.countryCode}-${mapping.complianceRequirements.join("|")}-${mapping.context ?? ""}`}
                   className="rounded-lg border p-3"
                 >
                   <div className="mb-2 font-medium text-sm">

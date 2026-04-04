@@ -47,7 +47,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           .where(eq(users.email, credentials.email as string))
           .limit(1);
 
-        if (!user || !user.password) {
+        if (!user?.password) {
           return null;
         }
 

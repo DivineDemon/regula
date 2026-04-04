@@ -255,12 +255,12 @@ function TeamCollaborationDemo() {
   return (
     <div className="p-6 h-[410px] flex flex-col justify-end gap-2 overflow-hidden">
       <ul className="space-y-2 list-none p-0 m-0">
-        {TEAM_MESSAGES.map((message, index) => {
+        {TEAM_MESSAGES.map((message) => {
           const isCurrentUser = message.isCurrentUser;
           const userInitial = isCurrentUser ? "Y" : message.user[0];
           return (
             <li
-              key={`${message.user}-${index}`}
+              key={`${message.user}-${message.text}`}
               className={`flex items-end gap-2 ${
                 isCurrentUser ? "flex-row-reverse" : "flex-row"
               }`}

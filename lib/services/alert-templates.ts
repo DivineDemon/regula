@@ -149,7 +149,7 @@ export async function checkAlertMatchesTemplate(
   },
 ): Promise<boolean> {
   const template = await getAlertTemplate(templateId, organizationId);
-  if (!template || !template.config) return false;
+  if (!template?.config) return false;
 
   const config = template.config as CreateAlertTemplateParams["config"];
   if (!config) {

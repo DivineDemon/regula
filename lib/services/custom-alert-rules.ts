@@ -247,7 +247,7 @@ export async function applyRuleActions(
   alertId: string,
 ) {
   const rule = await getCustomAlertRule(ruleId, organizationId);
-  if (!rule || !rule.actions) {
+  if (!rule?.actions) {
     return null;
   }
 
