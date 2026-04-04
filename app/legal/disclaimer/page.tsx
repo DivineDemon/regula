@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Regulatory Content Disclaimer | Regula",
-  description:
-    "Regulatory Content Disclaimer for Regula - Real-Time Regulatory Intelligence Platform",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/disclaimer",
+  "Regulatory Content Disclaimer | Regula",
+  "Regulatory Content Disclaimer for Regula - Real-Time Regulatory Intelligence Platform",
+);
 
 export default function RegulatoryContentDisclaimerPage() {
   return (

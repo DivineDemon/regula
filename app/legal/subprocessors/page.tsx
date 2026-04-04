@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Subprocessors | Regula",
-  description: "List of subprocessors used by Regula.",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/subprocessors",
+  "Subprocessors | Regula",
+  "List of subprocessors used by Regula.",
+);
 
 export default function SubprocessorsPage() {
   return (

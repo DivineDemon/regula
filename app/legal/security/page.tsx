@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Security Policy | Regula",
-  description: "Security policy and vulnerability reporting for Regula.",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/security",
+  "Security Policy | Regula",
+  "Security policy and vulnerability reporting for Regula.",
+);
 
 export default function SecurityPolicyPage() {
   return (

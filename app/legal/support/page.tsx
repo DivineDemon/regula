@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Support | Regula",
-  description: "Support and service levels for Regula customers.",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/support",
+  "Support | Regula",
+  "Support and service levels for Regula customers.",
+);
 
 export default function SupportPage() {
   return (

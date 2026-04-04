@@ -9,7 +9,12 @@ import {
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { transactionalMetadata } from "@/lib/seo-metadata";
 import { AcceptInvitationClient } from "../../components/invitation/accept-invitation-client";
+
+export const metadata = transactionalMetadata("Accept invitation", {
+  description: "Accept your Regula organization invitation.",
+});
 
 async function checkUserExists(email: string) {
   const [user] = await db

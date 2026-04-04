@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Terms of Service | Regula",
-  description:
-    "Terms of Service for Regula - Real-Time Regulatory Intelligence Platform",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/terms",
+  "Terms of Service | Regula",
+  "Terms of Service for Regula - Real-Time Regulatory Intelligence Platform",
+);
 
 export default function TermsOfServicePage() {
   return (

@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -20,13 +17,7 @@ export function Pricing() {
       className="w-full relative flex flex-col max-w-7xl mx-auto border-x bg-muted/30"
     >
       <div className="w-full px-6 py-14 md:py-20">
-        <motion.div
-          className="max-w-2xl mx-auto flex flex-col items-center justify-center gap-2 text-center mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true, margin: "-100px" }}
-        >
+        <div className="max-w-2xl mx-auto flex flex-col items-center justify-center gap-2 text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-medium tracking-tighter text-balance pb-1">
             Pricing That Scales With Compliance Maturity
           </h2>
@@ -35,25 +26,21 @@ export function Pricing() {
             Billing. Upgrade when you need hourly crawls, real-time alerts, or
             longer retention.
           </p>
-        </motion.div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {PLAN_ORDER.map((planType, index) => {
+          {PLAN_ORDER.map((planType) => {
             const config = PLAN_CONFIGS[planType];
             const isStarter = planType === "starter";
             const isFree = planType === "free";
 
             return (
-              <motion.div
+              <div
                 key={planType}
                 className={`rounded-xl border p-6 flex flex-col ${
                   isStarter
                     ? "border-2 border-primary bg-primary/5 shadow-lg"
                     : "bg-card"
                 }`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                viewport={{ once: true, margin: "-50px" }}
               >
                 {isStarter && (
                   <div className="flex items-center gap-2 mb-2">
@@ -91,7 +78,7 @@ export function Pricing() {
                       : "Start free, upgrade anytime"}
                   </Link>
                 </Button>
-              </motion.div>
+              </div>
             );
           })}
         </div>

@@ -5,7 +5,12 @@ import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { auth } from "@/lib/auth/config";
 import { db } from "@/lib/db";
 import { targets } from "@/lib/db/schema";
+import { transactionalMetadata } from "@/lib/seo-metadata";
 import { getCurrentOrganization } from "@/lib/utils/organization";
+
+export const metadata = transactionalMetadata("Onboarding", {
+  description: "Finish setting up your Regula workspace.",
+});
 
 export default async function OnboardingPage() {
   const session = await auth();

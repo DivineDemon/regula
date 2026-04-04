@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
@@ -19,6 +20,11 @@ import { auth } from "@/lib/auth/config";
 import { isPlatformAdmin } from "@/lib/auth/platform-admin";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations, users } from "@/lib/db/schema";
+import { nonPublicRobots } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = {
+  robots: nonPublicRobots,
+};
 
 export default async function DashboardLayout({
   children,

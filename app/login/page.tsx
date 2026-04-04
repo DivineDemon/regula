@@ -1,4 +1,9 @@
+import { transactionalMetadata } from "@/lib/seo-metadata";
 import { LoginClient } from "../../components/auth/login-client";
+
+export const metadata = transactionalMetadata("Sign in", {
+  description: "Sign in to your Regula account.",
+});
 
 export default async function LoginPage({
   searchParams,

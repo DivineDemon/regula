@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Data Processing Addendum | Regula",
-  description: "Data Processing Addendum for Regula Enterprise customers",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/dpa",
+  "Data Processing Addendum | Regula",
+  "Data Processing Addendum for Regula Enterprise customers",
+);
 
 export default function DataProcessingAddendumPage() {
   return (

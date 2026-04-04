@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Acceptable Use Policy | Regula",
-  description:
-    "Acceptable Use Policy for Regula - Real-Time Regulatory Intelligence Platform",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/aup",
+  "Acceptable Use Policy | Regula",
+  "Acceptable Use Policy for Regula - Real-Time Regulatory Intelligence Platform",
+);
 
 export default function AcceptableUsePolicyPage() {
   return (

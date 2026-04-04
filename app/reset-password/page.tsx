@@ -3,7 +3,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { verificationTokens } from "@/lib/db/schema";
+import { transactionalMetadata } from "@/lib/seo-metadata";
 import { ResetPasswordClient } from "../../components/auth/reset-password-client";
+
+export const metadata = transactionalMetadata("Reset password", {
+  description: "Choose a new password for your Regula account.",
+});
 
 async function validateResetToken(token: string, email: string) {
   const identifier = `password-reset:${email}`;

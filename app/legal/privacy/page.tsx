@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicLegalMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | Regula",
-  description:
-    "Privacy Policy for Regula - Real-Time Regulatory Intelligence Platform",
-};
+export const metadata = publicLegalMetadata(
+  "/legal/privacy",
+  "Privacy Policy | Regula",
+  "Privacy Policy for Regula - Real-Time Regulatory Intelligence Platform",
+);
 
 export default function PrivacyPolicyPage() {
   return (

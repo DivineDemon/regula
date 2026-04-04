@@ -2,6 +2,13 @@ import { Layers } from "lucide-react";
 import Link from "next/link";
 import { HeroVideoDialog } from "../ui/hero-video-dialog";
 
+/** Canonical hero copy — keep JSON-LD and on-page text in sync. */
+export const LANDING_HERO_HEADLINE =
+  "Regulatory Operations for Emerging-Market FinTech Teams" as const;
+
+export const LANDING_HERO_DESCRIPTION =
+  "Discover targets, crawl on a schedule you choose, detect material changes, and route them into triage workflows with history you can export—then measure engagement and coverage in Analytics." as const;
+
 const HERO_TRUST_CHIPS = [
   "Free: 3 targets · daily crawls (see Pricing)",
   "Impact scoring, diffs & version compare",
@@ -23,13 +30,10 @@ export function Hero() {
             </p>
             <div className="flex flex-col items-center justify-center gap-5 md:p-5 lg:p-0">
               <h1 className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl font-medium tracking-tighter text-balance text-center">
-                Regulatory Operations for Emerging-Market FinTech Teams
+                {LANDING_HERO_HEADLINE}
               </h1>
               <p className="text-sm md:text-lg text-center text-muted-foreground font-medium text-balance leading-relaxed tracking-tight">
-                Discover targets, crawl on a schedule you choose, detect
-                material changes, and route them into triage workflows with
-                history you can export—then measure engagement and coverage in
-                Analytics.
+                {LANDING_HERO_DESCRIPTION}
               </p>
             </div>
             <div className="flex flex-col items-center gap-4 w-full">

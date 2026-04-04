@@ -3,6 +3,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { users, verificationTokens } from "@/lib/db/schema";
+import { transactionalMetadata } from "@/lib/seo-metadata";
+
+export const metadata = transactionalMetadata("Verify email", {
+  description: "Confirm your email address for your Regula account.",
+});
 
 async function verifyEmail(token: string, email: string) {
   // Find verification token

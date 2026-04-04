@@ -75,6 +75,13 @@ Regula addresses this with **published self-serve tiers** (including a free tier
 - **Consent management** for data processing
 - **Data privacy** controls and settings
 
+### 🌐 Technical SEO & Discoverability
+- **Canonical metadata strategy** with `metadataBase` derived from `NEXT_PUBLIC_APP_URL` / `VERCEL_URL`
+- **Route-level robots control** using shared helpers (`transactionalMetadata`, `publicLegalMetadata`)
+- **Dynamic crawler endpoints**: `app/robots.ts`, `app/sitemap.ts`, and `app/opengraph-image.tsx`
+- **Homepage JSON-LD** (`Organization`, `WebSite`, `SoftwareApplication`) generated from live landing and plan config data
+- **SEO governance docs**: `docs/seo-release-gate.md` and `docs/landing-copy-inventory.md`
+
 ### 💳 Subscription & Billing
 - **Flexible pricing tiers** (Free, Starter, Growth, Enterprise)
 - **Free tier**: 3 targets, daily crawls, 30-day data retention
@@ -91,7 +98,7 @@ Regula addresses this with **published self-serve tiers** (including a free tier
 - **Next.js 16** with App Router and React Server Components
 - **TypeScript** for type safety
 - **Tailwind CSS 4** with custom design system and oklch color space
-- **shadcn/ui** components built on **Base UI** and Radix UI
+- **shadcn/ui** components built on Radix UI primitives
 - **React Hook Form** with Zod validation
 - **Recharts** with **shadcn/ui Chart** components for data visualization
 - **Sonner** for toast notifications
@@ -122,8 +129,8 @@ Regula addresses this with **published self-serve tiers** (including a free tier
 
 ### Prerequisites
 
-- **Node.js** 20+ or **Bun** (recommended)
-- **PostgreSQL** database (local or managed like Neon, Supabase, or Vercel Postgres)
+- **Node.js** 20+ or **Bun** 1.x
+- **PostgreSQL** database (local or managed like Neon, Supabase, etc.)
 
 ### Installation
 
@@ -314,10 +321,10 @@ regula/
 │   │       ├── organization/    # Org settings, profile editor & member management
 │   │       ├── billing/         # Subscription & billing
 │   │       ├── notifications/   # Notification preferences
-│   │       ├── usage/           # Usage dashboard
 │   │       ├── audit-logs/      # Audit log viewer
 │   │       ├── data-privacy/    # Data privacy settings
-│   │       └── consent/         # Consent management
+│   │       ├── consent/         # Consent management
+│   │       └── incidents/       # Incident response and tracking
 │   ├── api/                     # API routes
 │   │   ├── alerts/              # Alert endpoints (CRUD, export, bulk)
 │   │   ├── targets/             # Target management & version history API
@@ -331,10 +338,13 @@ regula/
 │   │   ├── notification-preferences/  # Notification settings
 │   │   └── inngest/             # Inngest webhook handler
 │   ├── onboarding/              # User onboarding wizard
+│   ├── robots.ts                # robots.txt generation
+│   ├── sitemap.ts               # sitemap.xml generation
+│   ├── opengraph-image.tsx      # Open Graph image generation
 │   ├── legal/                   # Legal pages (terms, privacy, etc.)
 │   └── accept-invitation/       # Organization invitation acceptance
 ├── components/                   # React components
-│   ├── ui/                      # shadcn/ui components (Base UI & Radix)
+│   ├── ui/                      # shadcn/ui component primitives
 │   └── ...                      # Feature components (dashboard-nav, etc.)
 ├── lib/
 │   ├── db/
@@ -360,7 +370,6 @@ regula/
 - **Legal Pages**: Terms of Service, Privacy Policy, Disclaimer, Data Processing Agreement, Acceptable Use Policy, Cookie Policy, Security Policy, Subprocessors, Support SLA
 - **GDPR Compliance**: Data export, deletion, and consent management capabilities
 - **Security runbook**: [docs/security-runbook.md](docs/security-runbook.md) for dependency scanning, patching cadence, and penetration testing
-- **Dependency audit**: Run `bun run audit` to check for known vulnerabilities in dependencies
 
 ## 🔄 Background Processing
 
@@ -422,10 +431,11 @@ bun run db:generate  # Generate migration files
 bun run db:migrate   # Run migrations
 bun run db:push      # Push schema (dev only)
 bun run db:studio    # Open Drizzle Studio
-
-# Security
-bun run audit        # Audit dependencies for known vulnerabilities
 ```
+
+### SEO release gate
+
+Technical SEO validation criteria and release checks live in [`docs/seo-release-gate.md`](docs/seo-release-gate.md), with copy-level inventory in [`docs/landing-copy-inventory.md`](docs/landing-copy-inventory.md). Keep `app/robots.ts`, `app/sitemap.ts`, metadata helpers, and landing copy aligned whenever public-route messaging or indexing behavior changes.
 
 ### Code Style
 
@@ -512,6 +522,7 @@ Additional documentation is available in the `docs/` directory:
 - **Onboarding Guide** - Step-by-step onboarding guide (`docs/onboarding-guide.md`)
 - **Security Runbook** - Dependency scanning, patching cadence, and penetration testing (`docs/security-runbook.md`)
 - **Security Implementation** - Implemented security features (`docs/security-implementation.md`)
+- **SEO release gate** - Automated and manual SEO verification plus ship criteria (`docs/seo-release-gate.md`)
 
 ## 📋 Documentation alignment & implementation inventory
 
@@ -589,7 +600,8 @@ Aligns with `lib/crawl/*`, `lib/services/content-graph.ts`, `lib/services/adapti
 
 #### App Router — pages
 
-- **Marketing**: `/` — landing (hero, features, pricing, contact + server action, CTA, footer, etc.).
+- **Marketing**: `/` — landing (hero, features, comparison, pricing, contact + server action, CTA, footer, JSON-LD, etc.).
+- **Crawler-facing metadata routes**: `/robots.txt`, `/sitemap.xml`, and generated Open Graph image endpoint from `app/opengraph-image.tsx`.
 - **Auth**: `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/check-email`, `/accept-invitation`.
 - **Dashboard**: `/dashboard`, `/analytics`, `/targets`, `/alerts`, `/alerts/[id]`, `/alerts/compare`, `/onboarding`.
 - **Settings**: profile, organization (incl. org profile editor), organization members, billing, notifications, consent, data privacy, audit logs, incidents.

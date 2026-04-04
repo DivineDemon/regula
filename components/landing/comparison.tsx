@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { Check, Minus, X } from "lucide-react";
 import { comparisons } from "@/lib/constants";
 
@@ -12,13 +9,7 @@ export function Comparison() {
     >
       <div className="w-full px-6">
         <div className="w-full border-x flex flex-col items-center justify-center">
-          <motion.div
-            className="border-b w-full p-10 md:p-14"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: false, margin: "-100px" }}
-          >
+          <div className="border-b w-full p-10 md:p-14">
             <div className="max-w-xl mx-auto flex flex-col items-center justify-center gap-2">
               <h2 className="text-3xl md:text-4xl font-medium tracking-tighter text-center text-balance pb-1">
                 Why FinTech Teams Choose Regula
@@ -30,15 +21,9 @@ export function Comparison() {
                 publish competitor benchmarks.
               </p>
             </div>
-          </motion.div>
+          </div>
           <div className="overflow-x-auto w-full">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              viewport={{ once: false, margin: "-100px" }}
-              className="min-w-[920px] rounded-xl w-full"
-            >
+            <div className="min-w-[920px] rounded-xl w-full">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
@@ -60,13 +45,9 @@ export function Comparison() {
                   </tr>
                 </thead>
                 <tbody>
-                  {comparisons.map((row, index) => (
-                    <motion.tr
+                  {comparisons.map((row) => (
+                    <tr
                       key={row.feature}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.05 }}
-                      viewport={{ once: false, margin: "-100px" }}
                       className="border-b last:border-0 hover:bg-muted/5 transition-colors"
                     >
                       <td className="p-4 font-medium">{row.feature}</td>
@@ -82,11 +63,11 @@ export function Comparison() {
                       <td className="p-4 text-center">
                         {renderValue(row.gnowit)}
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
