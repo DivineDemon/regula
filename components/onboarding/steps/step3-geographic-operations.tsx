@@ -24,16 +24,19 @@ import {
 } from "@/components/ui/select";
 import { COUNTRIES } from "@/lib/data/countries";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
+import { cn } from "@/lib/utils";
 import type { CompanyProfileInput } from "@/lib/validations/organization-profile";
 import { companyProfileSchema } from "@/lib/validations/organization-profile";
 
 interface Step3GeographicOperationsProps {
+  className?: string;
   initialData?: Partial<OrganizationProfile>;
   onComplete: (data: Partial<OrganizationProfile>) => void;
   onBack: () => void;
 }
 
 export function Step3GeographicOperations({
+  className,
   initialData,
   onComplete,
   onBack,
@@ -114,7 +117,12 @@ export function Step3GeographicOperations({
   };
 
   return (
-    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+    <div
+      className={cn(
+        "w-full mx-auto flex flex-col items-start justify-start gap-5",
+        className,
+      )}
+    >
       <div className="w-full flex items-center justify-center">
         <div className="flex-1 flex flex-col items-center justify-center">
           <h2 className="w-full text-left text-2xl font-bold">

@@ -45,7 +45,7 @@ Create `docs/technical-architecture.md` following the existing documentation for
 - Frontend: Next.js 14+, TypeScript, Tailwind CSS, React Query
 - Backend: Next.js API Routes, Server Actions
 - Database: PostgreSQL (Neon/Vercel Postgres), Drizzle ORM
-- Storage: Vercel Blob or S3, Upstash Redis
+- Storage: Vercel Blob or S3; application cache and rate limits in PostgreSQL; optional Upstash QStash for HTTP messaging
 - External Services: Crawl4AI, Google Gemini, Stripe
 - Background Workers: Inngest/Trigger.dev or separate Node.js service
 - Deployment: Vercel for Next.js app

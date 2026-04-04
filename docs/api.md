@@ -434,7 +434,7 @@ Error responses include a user-friendly message and optional details for debuggi
 
 ## Rate Limiting
 
-API endpoints are rate-limited using Redis. Rate limits vary by endpoint and subscription plan. When rate limits are exceeded, a `429 Too Many Requests` response is returned.
+API endpoints are rate-limited using PostgreSQL-backed counters. Rate limits vary by endpoint and subscription plan. When rate limits are exceeded, a `429 Too Many Requests` response is returned.
 
 ## Audit Logging
 

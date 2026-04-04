@@ -388,4 +388,178 @@ This link will expire in 1 hour. If you didn't request a password reset, you can
       text,
     });
   },
+
+  /**
+   * Send 24-hour onboarding success email (first day check-in)
+   */
+  async sendOnboardingSuccess24h({
+    to,
+    organizationName,
+    dashboardUrl,
+  }: {
+    to: string | string[];
+    organizationName: string;
+    dashboardUrl: string;
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const subject = "[Regula] You’re all set — here’s what to do next";
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">You’re all set</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none;">
+            <h2 style="margin-top: 0; color: #111827;">Hi ${organizationName},</h2>
+            <p style="margin: 16px 0; color: #374151;">Thanks for completing onboarding. Here are quick next steps to get the most out of Regula:</p>
+            <ul style="margin: 16px 0; padding-left: 24px; color: #374151;">
+              <li>Check your <strong>Dashboard</strong> for a summary of targets and any early alerts.</li>
+              <li>Review <strong>Alert settings</strong> under Settings → Notifications so your team gets the right updates.</li>
+              <li>Add more targets anytime from the Targets page if you want to expand coverage.</li>
+            </ul>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${dashboardUrl}" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Open dashboard</a>
+            </div>
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">Questions? Reply to this email.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const text = `
+You're all set — ${organizationName}
+
+Thanks for completing onboarding. Quick next steps:
+- Check your Dashboard for targets and any early alerts.
+- Review Alert settings under Settings → Notifications.
+- Add more targets from the Targets page if needed.
+
+Open dashboard: ${dashboardUrl}
+
+Questions? Reply to this email.
+    `.trim();
+
+    return this.send({ to, subject, html, text });
+  },
+
+  /**
+   * Send 7-day onboarding success / check-in email
+   */
+  async sendOnboardingSuccess7d({
+    to,
+    organizationName,
+    dashboardUrl,
+    alertsCount,
+  }: {
+    to: string | string[];
+    organizationName: string;
+    dashboardUrl: string;
+    alertsCount?: number;
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const subject = "[Regula] One week in — how’s monitoring going?";
+
+    const alertsLine =
+      alertsCount !== undefined && alertsCount > 0
+        ? `<p style="margin: 16px 0; color: #374151;">You’ve had <strong>${alertsCount}</strong> alert${alertsCount !== 1 ? "s" : ""} in the past week. Review them in the dashboard to stay on top of changes.</p>`
+        : '<p style="margin: 16px 0; color: #374151;">No new alerts yet — we’ll notify you as soon as we detect relevant changes.</p>';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">One week in</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none;">
+            <h2 style="margin-top: 0; color: #111827;">Hi ${organizationName},</h2>
+            <p style="margin: 16px 0; color: #374151;">You’ve been using Regula for about a week. Here’s a quick check-in.</p>
+            ${alertsLine}
+            <p style="margin: 16px 0; color: #374151;">If you want to adjust targets or notification preferences, use the Targets page or Settings → Notifications.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${dashboardUrl}" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Open dashboard</a>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const text = `
+One week in — ${organizationName}
+
+You've been using Regula for about a week.
+${alertsCount !== undefined && alertsCount > 0 ? `You've had ${alertsCount} alert(s) in the past week. Review them in the dashboard.\n` : "No new alerts yet — we'll notify you when we detect changes.\n"}
+Adjust targets on the Targets page or notifications under Settings → Notifications.
+
+Open dashboard: ${dashboardUrl}
+    `.trim();
+
+    return this.send({ to, subject, html, text });
+  },
+
+  /**
+   * Send low-engagement / “we’re here to help” email to org admins
+   */
+  async sendLowEngagementOutreach({
+    to,
+    organizationName,
+    dashboardUrl,
+  }: {
+    to: string | string[];
+    organizationName: string;
+    dashboardUrl: string;
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const subject = "[Regula] A few tips to get more from your monitoring";
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">We’re here to help</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none;">
+            <h2 style="margin-top: 0; color: #111827;">Hi ${organizationName},</h2>
+            <p style="margin: 16px 0; color: #374151;">We noticed you haven’t been active in Regula lately. If you’d like to get more value from your monitoring:</p>
+            <ul style="margin: 16px 0; padding-left: 24px; color: #374151;">
+              <li>Review and triage open alerts so your team stays in the loop.</li>
+              <li>Add or refine targets to cover more regulators or jurisdictions.</li>
+              <li>Adjust notification preferences so the right people get the right alerts.</li>
+            </ul>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${dashboardUrl}" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Open dashboard</a>
+            </div>
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If you have questions or need help, reply to this email.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const text = `
+We're here to help — ${organizationName}
+
+We noticed you haven't been active lately. Tips to get more value:
+- Review and triage open alerts.
+- Add or refine targets for more coverage.
+- Adjust notification preferences.
+
+Open dashboard: ${dashboardUrl}
+
+Questions? Reply to this email.
+    `.trim();
+
+    return this.send({ to, subject, html, text });
+  },
 };

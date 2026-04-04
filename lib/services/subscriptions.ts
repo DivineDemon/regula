@@ -3,11 +3,8 @@ import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
 import { organizations, subscriptions } from "@/lib/db/schema";
 import type { SubscriptionStatus } from "@/lib/db/schema/subscriptions";
-import {
-  PLAN_CONFIGS,
-  type PlanType as StripePlanType,
-  stripeService,
-} from "./stripe";
+import { PLAN_CONFIGS, type PlanType as StripePlanType } from "@/lib/plans";
+import { stripeService } from "./stripe";
 
 /**
  * Subscription management service

@@ -1,4 +1,6 @@
-import { redis } from "@/lib/services/redis";
+import { eq, sql } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { rateLimitEntries } from "@/lib/db/schema/kv-store";
 
 export interface RateLimitOptions {
   /**
@@ -23,56 +25,85 @@ export interface RateLimitResult {
 }
 
 /**
- * Rate limit middleware using Upstash Redis
+ * Fixed-window rate limiting using Postgres (serialized per key via advisory lock).
  */
 export async function rateLimit(
   key: string,
   options: RateLimitOptions,
 ): Promise<RateLimitResult> {
   const { limit, window } = options;
-  const redisKey = `rate_limit:${key}`;
+  const entryKey = `rate_limit:${key}`;
 
   try {
-    // Get current count
-    const current = await redis.get<number>(redisKey);
+    return await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtext(${entryKey}::text))`,
+      );
 
-    if (current === null) {
-      // First request in window
-      await redis.setex(redisKey, window, 1);
+      const rows = await tx
+        .select()
+        .from(rateLimitEntries)
+        .where(eq(rateLimitEntries.key, entryKey))
+        .limit(1);
+
+      const row = rows[0];
+      const now = new Date();
+
+      if (!row) {
+        const expiresAt = new Date(now.getTime() + window * 1000);
+        await tx.insert(rateLimitEntries).values({
+          key: entryKey,
+          count: 1,
+          expiresAt,
+        });
+        return {
+          success: true,
+          limit,
+          remaining: limit - 1,
+          reset: expiresAt.getTime(),
+        };
+      }
+
+      if (row.expiresAt <= now) {
+        const expiresAt = new Date(now.getTime() + window * 1000);
+        await tx
+          .update(rateLimitEntries)
+          .set({ count: 1, expiresAt })
+          .where(eq(rateLimitEntries.key, entryKey));
+        return {
+          success: true,
+          limit,
+          remaining: limit - 1,
+          reset: expiresAt.getTime(),
+        };
+      }
+
+      if (row.count >= limit) {
+        const ttlSec = Math.max(
+          0,
+          Math.ceil((row.expiresAt.getTime() - now.getTime()) / 1000),
+        );
+        return {
+          success: false,
+          limit,
+          remaining: 0,
+          reset: now.getTime() + ttlSec * 1000,
+        };
+      }
+
+      const newCount = row.count + 1;
+      await tx
+        .update(rateLimitEntries)
+        .set({ count: newCount })
+        .where(eq(rateLimitEntries.key, entryKey));
+
       return {
         success: true,
         limit,
-        remaining: limit - 1,
-        reset: Date.now() + window * 1000,
+        remaining: limit - newCount,
+        reset: row.expiresAt.getTime(),
       };
-    }
-
-    if (current >= limit) {
-      // Rate limit exceeded
-      const ttl = await redis.ttl(redisKey);
-      return {
-        success: false,
-        limit,
-        remaining: 0,
-        reset: Date.now() + (ttl > 0 ? ttl * 1000 : window * 1000),
-      };
-    }
-
-    // Increment counter
-    const newCount = await redis.incr(redisKey);
-    const ttl = await redis.ttl(redisKey);
-
-    // If key doesn't have TTL (shouldn't happen, but safety check), set it
-    if (ttl === -1) {
-      await redis.expire(redisKey, window);
-    }
-
-    return {
-      success: true,
-      limit,
-      remaining: limit - newCount,
-      reset: Date.now() + (ttl > 0 ? ttl * 1000 : window * 1000),
-    };
+    });
   } catch (error) {
     console.error("Rate limit error:", error);
     // On error, allow the request (fail open)

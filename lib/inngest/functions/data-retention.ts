@@ -25,6 +25,10 @@ export const dataRetentionCleanup = inngest.createFunction(
         0,
       ),
       totalAlertsDeleted: results.reduce((sum, r) => sum + r.deletedAlerts, 0),
+      totalAuditLogsDeleted: results.reduce(
+        (sum, r) => sum + r.deletedAuditLogs,
+        0,
+      ),
       details: results,
     };
   },

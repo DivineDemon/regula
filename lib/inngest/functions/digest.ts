@@ -12,6 +12,7 @@ import { email } from "@/lib/services/email";
 import {
   getNotificationPreferences,
   meetsThreshold,
+  passesCategoryFilter,
 } from "@/lib/services/notifications";
 
 /**
@@ -75,8 +76,11 @@ export const sendDailyDigests = inngest.createFunction(
           if (!prefs.emailEnabled || !prefs.emailDigest) {
             continue;
           }
+          if (prefs.emailDigestFrequency !== "daily") {
+            continue;
+          }
 
-          // Filter alerts by threshold
+          // Filter alerts by threshold and category
           const filteredAlerts = recentAlerts
             .map(({ alert, target }) => ({
               id: alert.id,
@@ -84,13 +88,22 @@ export const sendDailyDigests = inngest.createFunction(
               summary: alert.summary ?? "",
               impactScore: alert.impactScore ?? undefined,
               createdAt: alert.createdAt,
+              category: target.category ?? null,
             }))
-            .filter((alert) =>
-              meetsThreshold(
-                alert.impactScore ?? null,
-                prefs.alertThreshold as "all" | "low" | "medium" | "high",
-              ),
-            );
+            .filter((alert) => {
+              if (
+                !meetsThreshold(
+                  alert.impactScore ?? null,
+                  prefs.alertThreshold as "all" | "low" | "medium" | "high",
+                )
+              ) {
+                return false;
+              }
+              return passesCategoryFilter(
+                alert.category,
+                prefs.categoryFilters ?? null,
+              );
+            });
 
           if (filteredAlerts.length === 0) {
             continue;
@@ -175,8 +188,11 @@ export const sendWeeklyDigests = inngest.createFunction(
           if (!prefs.emailEnabled || !prefs.emailDigest) {
             continue;
           }
+          if (prefs.emailDigestFrequency !== "weekly") {
+            continue;
+          }
 
-          // Filter alerts by threshold
+          // Filter alerts by threshold and category
           const filteredAlerts = recentAlerts
             .map(({ alert, target }) => ({
               id: alert.id,
@@ -184,13 +200,22 @@ export const sendWeeklyDigests = inngest.createFunction(
               summary: alert.summary ?? "",
               impactScore: alert.impactScore ?? undefined,
               createdAt: alert.createdAt,
+              category: target.category ?? null,
             }))
-            .filter((alert) =>
-              meetsThreshold(
-                alert.impactScore ?? null,
-                prefs.alertThreshold as "all" | "low" | "medium" | "high",
-              ),
-            );
+            .filter((alert) => {
+              if (
+                !meetsThreshold(
+                  alert.impactScore ?? null,
+                  prefs.alertThreshold as "all" | "low" | "medium" | "high",
+                )
+              ) {
+                return false;
+              }
+              return passesCategoryFilter(
+                alert.category,
+                prefs.categoryFilters ?? null,
+              );
+            });
 
           if (filteredAlerts.length === 0) {
             continue;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { JsonHighlighter } from "@/components/shared/json-highlighter";
@@ -19,6 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AuditAction } from "@/lib/services/audit";
 
 interface AuditLogDetail {
@@ -108,8 +109,23 @@ export function AuditDetailSheet({
         </SheetHeader>
         <div className="w-full h-[calc(100vh-83px)] flex flex-col items-start justify-start divide-y overflow-y-auto">
           {loading ? (
-            <div className="w-full h-full flex items-center justify-center">
-              <Loader2 className="size-10 text-primary animate-spin" />
+            <div className="w-full flex flex-col items-start justify-start gap-4 p-4">
+              <div className="w-full space-y-2">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-full max-w-[280px]" />
+              </div>
+              <div className="w-full space-y-2">
+                <Skeleton className="h-4 w-14" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <div className="w-full space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <div className="w-full space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-32 w-full rounded-lg" />
+              </div>
             </div>
           ) : error ? (
             <Empty>

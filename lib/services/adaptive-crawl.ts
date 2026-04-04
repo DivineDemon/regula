@@ -1,10 +1,14 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contentGraphs } from "@/lib/db/schema";
 import {
   type ContentGraph,
   discoverContentIntelligently,
 } from "./content-discovery";
+import {
+  enrichGraphWithVersionFamilies,
+  rankGoalDocuments,
+} from "./content-graph";
 import type { CrawlResult } from "./crawler";
 import { crawlUrl } from "./crawler";
 import {
@@ -47,10 +51,13 @@ export async function adaptiveCrawlTarget(params: {
   const isFirstCrawl = !previousGraph;
 
   // Step 2: Discover content intelligently
-  const contentGraph = await discoverContentIntelligently(
+  let contentGraph = await discoverContentIntelligently(
     targetUrl,
     targetConfig,
   );
+
+  // Enrich graph with version_of edges from version families before storing
+  contentGraph = enrichGraphWithVersionFamilies(contentGraph);
 
   // Step 3: Get detected pattern and adapt strategy
   const patternInfo = await detectUpdatePattern(targetId);
@@ -68,9 +75,16 @@ export async function adaptiveCrawlTarget(params: {
   const versionsCreated: Array<{ id: string; contentHash: string }> = [];
   const crawlResults: Array<{ url: string; result: CrawlResult }> = [];
 
-  // Crawl PDFs directly if strategy says so
+  // Rank goal documents (distance, relevance, recency, doc confidence)
+  const goalDocs = rankGoalDocuments(contentGraph, targetConfig);
+
+  // Crawl PDFs directly if strategy says so; use goal-doc ranking when available
   if (strategy.directPdfUrls) {
-    const pdfNodes = contentGraph.nodes.filter((n) => n.type === "pdf");
+    const pdfGoals = goalDocs.filter((g) => g.node.type === "pdf");
+    const pdfNodes =
+      pdfGoals.length > 0
+        ? pdfGoals.map((g) => g.node)
+        : contentGraph.nodes.filter((n) => n.type === "pdf");
     const nodesToCrawl = pdfNodes.slice(0, maxPdfs);
 
     if (isFirstCrawl && pdfNodes.length > maxPdfs) {
@@ -138,7 +152,7 @@ export async function adaptiveCrawlTarget(params: {
     }
   }
 
-  // Step 5: Store content graph
+  // Step 5: Store content graph (includes links_to, contains, version_of edges)
   const sitemapSource = await getSitemapSourceForTarget(targetUrl);
   await storeContentGraph(targetId, contentGraph, sitemapSource);
 
@@ -205,7 +219,7 @@ export async function shouldRefreshContentGraph(
     .select()
     .from(contentGraphs)
     .where(eq(contentGraphs.targetId, targetId))
-    .orderBy(contentGraphs.lastAnalyzed)
+    .orderBy(desc(contentGraphs.lastAnalyzed))
     .limit(1);
 
   if (!latestGraph) {

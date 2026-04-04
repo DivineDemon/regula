@@ -33,7 +33,7 @@ const [version] = await db
 A middleware (`middleware.ts`) enforces tenant context and rate limiting:
 
 - **Authentication Check**: Verifies user session for protected routes
-- **Rate Limiting**: Implements rate limiting using Upstash Redis
+- **Rate Limiting**: Implements rate limiting using PostgreSQL-backed counters
 - **Route Protection**: Redirects unauthenticated users to login
 
 ### Rate Limits
@@ -120,7 +120,7 @@ CSRF protection is enabled by default in Next.js. No additional configuration is
 
 ## 8. Rate Limiting
 
-Rate limiting is implemented using **Upstash Redis**:
+Rate limiting is implemented using **PostgreSQL** (fixed-window counters):
 
 - **Middleware-based**: Applied at the middleware level for all API routes
 - **Per-endpoint**: Different rate limits for different endpoint types

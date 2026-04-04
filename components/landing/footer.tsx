@@ -16,7 +16,7 @@ export function Footer() {
       <div className="w-full px-6">
         <div className="w-full h-full border-x grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-0 items-center justify-center py-10 px-5">
           <motion.div
-            className="w-fit"
+            className="w-fit h-full flex flex-col items-start justify-start"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -26,11 +26,9 @@ export function Footer() {
               <Logo size={24} />
               <span className="font-bold text-lg font-heading">Regula</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              AI-Powered Regulatory Intelligence for
-              <br />
-              Emerging Markets. Automate compliance <br />
-              and manage risk with ease.
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+              Regulatory intelligence and compliance operations for
+              emerging-market FinTech teams.
             </p>
           </motion.div>
           <motion.div
@@ -61,6 +59,14 @@ export function Footer() {
                 </li>
                 <li>
                   <Link
+                    href="#pricing"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     href="#contact"
                     className="hover:text-primary transition-colors"
                   >
@@ -69,7 +75,6 @@ export function Footer() {
                 </li>
               </ul>
             </div>
-
             <div>
               <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -87,6 +92,22 @@ export function Footer() {
                     className="hover:text-primary transition-colors"
                   >
                     Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/legal/security"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Security Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/legal/cookies"
+                    className="hover:text-primary transition-colors"
+                  >
+                    Cookies
                   </Link>
                 </li>
               </ul>

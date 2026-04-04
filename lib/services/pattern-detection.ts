@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
 import {
+  contentEdges,
   contentGraphs,
   contentNodes,
   type UpdatePattern,
@@ -37,7 +38,7 @@ export async function detectUpdatePattern(targetId: string): Promise<{
     .select()
     .from(contentGraphs)
     .where(eq(contentGraphs.targetId, targetId))
-    .orderBy(contentGraphs.lastAnalyzed)
+    .orderBy(desc(contentGraphs.lastAnalyzed))
     .limit(10);
 
   if (graphHistory.length < 2) {
@@ -238,6 +239,20 @@ export async function storeContentGraph(
         },
       });
   }
+
+  // Store edges (replace existing for this target so stored graph matches current)
+  await db.delete(contentEdges).where(eq(contentEdges.targetId, targetId));
+  const now = new Date();
+  for (const edge of graph.edges) {
+    await db.insert(contentEdges).values({
+      id: nanoid(),
+      targetId,
+      fromNodeId: edge.from,
+      toNodeId: edge.to,
+      relationship: edge.relationship,
+      discoveredAt: now,
+    });
+  }
 }
 
 /**
@@ -250,7 +265,7 @@ export async function getLatestContentGraph(
     .select()
     .from(contentGraphs)
     .where(eq(contentGraphs.targetId, targetId))
-    .orderBy(contentGraphs.lastAnalyzed)
+    .orderBy(desc(contentGraphs.lastAnalyzed))
     .limit(1);
 
   if (!latest) {

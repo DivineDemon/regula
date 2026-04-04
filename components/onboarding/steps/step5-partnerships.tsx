@@ -19,16 +19,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
+import { cn } from "@/lib/utils";
 import type { CompanyProfileInput } from "@/lib/validations/organization-profile";
 import { companyProfileSchema } from "@/lib/validations/organization-profile";
 
 interface Step5PartnershipsProps {
+  className?: string;
   initialData?: Partial<OrganizationProfile>;
   onComplete: (data: Partial<OrganizationProfile>) => void;
   onBack: () => void;
 }
 
 export function Step5Partnerships({
+  className,
   initialData,
   onComplete,
   onBack,
@@ -122,7 +125,12 @@ export function Step5Partnerships({
       : [];
 
   return (
-    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+    <div
+      className={cn(
+        "w-full mx-auto flex flex-col items-start justify-start gap-5",
+        className,
+      )}
+    >
       <div className="w-full flex flex-col items-center justify-center">
         <h2 className="w-full text-left text-2xl font-bold">Partnerships</h2>
         <p className="w-full text-left text-muted-foreground">

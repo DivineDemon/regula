@@ -15,6 +15,8 @@ export const notificationPreferences = pgTable("notification_preferences", {
   emailDigestFrequency: text("emailDigestFrequency").notNull().default("daily"), // daily, weekly
   // Alert threshold - only send notifications for alerts above this impact score
   alertThreshold: text("alertThreshold").notNull().default("all"), // all, low, medium, high
+  // Category filter - only send for these categories (empty/null = all)
+  categoryFilters: text("categoryFilters").array(),
   // Webhook preferences
   webhookEnabled: boolean("webhookEnabled").notNull().default(false),
   webhookUrl: text("webhookUrl"),

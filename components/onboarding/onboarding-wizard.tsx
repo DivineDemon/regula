@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/shared/logo";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useOnboardingState } from "@/hooks/use-onboarding-state";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
@@ -32,7 +33,8 @@ export function OnboardingWizard({
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [_completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-  const { profile, saveProfile } = useOnboardingState(organizationId);
+  const { profile, saveProfile, clearProfile } =
+    useOnboardingState(organizationId);
   const [discoveredTargets, setDiscoveredTargets] = useState<
     Array<{
       url: string;
@@ -68,6 +70,11 @@ export function OnboardingWizard({
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
+  const handleResetOnboarding = () => {
+    clearProfile();
+    setCurrentStep(1);
+  };
+
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center gap-5 p-5">
       <div className="w-full flex flex-col items-center justify-center">
@@ -78,18 +85,29 @@ export function OnboardingWizard({
         </p>
       </div>
       <div className="w-full max-w-1/2 mx-auto flex flex-col items-center justify-center gap-2.5">
-        <div className="w-full flex items-center justify-center">
+        <div className="w-full flex items-center justify-between gap-2">
           <span className="w-full text-left font-medium">
             Step {currentStep} of {TOTAL_STEPS}
           </span>
-          <span className="w-full text-right text-muted-foreground">
-            {Math.round(progress)}% complete
-          </span>
+          <div className="flex items-center justify-end gap-3">
+            <span className="text-right text-muted-foreground">
+              {Math.round(progress)}% complete
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleResetOnboarding}
+            >
+              Reset onboarding
+            </Button>
+          </div>
         </div>
         <Progress value={progress} />
       </div>
       {currentStep === 1 && (
         <Step1CompanyProfile
+          className="max-w-1/2"
           organizationId={organizationId}
           initialData={profile}
           onComplete={(data) => handleStepComplete(1, data)}
@@ -98,6 +116,7 @@ export function OnboardingWizard({
       )}
       {currentStep === 2 && (
         <Step2Services
+          className="max-w-1/2"
           initialData={profile}
           onComplete={(data) => handleStepComplete(2, data)}
           onBack={handleBack}
@@ -105,6 +124,7 @@ export function OnboardingWizard({
       )}
       {currentStep === 3 && (
         <Step3GeographicOperations
+          className="max-w-1/2"
           initialData={profile}
           onComplete={(data) => handleStepComplete(3, data)}
           onBack={handleBack}
@@ -112,6 +132,7 @@ export function OnboardingWizard({
       )}
       {currentStep === 4 && (
         <Step4ComplianceMapping
+          className="max-w-1/2"
           initialData={profile}
           onComplete={(data) => handleStepComplete(4, data)}
           onBack={handleBack}
@@ -119,6 +140,7 @@ export function OnboardingWizard({
       )}
       {currentStep === 5 && (
         <Step5Partnerships
+          className="max-w-1/2"
           initialData={profile}
           onComplete={(data) => handleStepComplete(5, data)}
           onBack={handleBack}

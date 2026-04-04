@@ -192,10 +192,10 @@ export default function PrivacyPolicyPage() {
             <p className="mt-4">
               To exercise these rights, contact us at&nbsp;
               <a
-                href="mailto:privacy@regula.com"
+                href="mailto:privacy@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                privacy@regula.com
+                privacy@regula.mushoodhanif.com
               </a>
               .
             </p>
@@ -274,10 +274,10 @@ export default function PrivacyPolicyPage() {
             <p className="mt-2">
               Email:&nbsp;
               <a
-                href="mailto:privacy@regula.com"
+                href="mailto:privacy@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                privacy@regula.com
+                privacy@regula.mushoodhanif.com
               </a>
             </p>
           </section>

@@ -209,10 +209,10 @@ export default function RegulatoryContentDisclaimerPage() {
             <p className="mt-2">
               Email:&nbsp;
               <a
-                href="mailto:support@regula.com"
+                href="mailto:support@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                support@regula.com
+                support@regula.mushoodhanif.com
               </a>
             </p>
           </section>

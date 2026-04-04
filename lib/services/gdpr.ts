@@ -5,13 +5,19 @@ import {
   alertAssignments,
   alertComments,
   alerts,
+  apiKeys,
+  auditLogs,
   type GDPRRequestStatus,
   type GDPRRequestType,
   gdprRequests,
+  notificationPreferences,
   organizationMembers,
+  organizations,
   targets,
+  userConsents,
   users,
   versions,
+  webhookConfigs,
 } from "@/lib/db/schema";
 import { createAuditLog } from "./audit";
 
@@ -62,11 +68,19 @@ export const gdprService = {
     organizationId: string,
   ): Promise<{
     user: unknown;
-    organizations: unknown[];
+    organization: unknown;
+    membership: unknown | null;
     targets: unknown[];
-    alerts: unknown[];
     versions: unknown[];
-    memberships: unknown[];
+    alerts: unknown[];
+    alertAssignments: unknown[];
+    alertComments: unknown[];
+    apiKeys: unknown[];
+    notificationPreferences: unknown[];
+    webhookConfigs: unknown[];
+    auditLogs: unknown[];
+    gdprRequests: unknown[];
+    userConsents: unknown[];
   }> {
     // Get user data
     const [user] = await db
@@ -79,11 +93,26 @@ export const gdprService = {
       throw new Error("User not found");
     }
 
-    // Get user's organizations
-    const userOrgs = await db
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, organizationId))
+      .limit(1);
+
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    const [membership] = await db
       .select()
       .from(organizationMembers)
-      .where(eq(organizationMembers.userId, userId));
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
 
     // Get targets for the specific organization
     const orgTargets = await db
@@ -115,7 +144,7 @@ export const gdprService = {
 
     // Get alert assignments
     const alertIds = orgAlerts.map((a) => a.id);
-    const _assignments =
+    const assignments =
       alertIds.length > 0
         ? await db
             .select()
@@ -124,13 +153,63 @@ export const gdprService = {
         : [];
 
     // Get alert comments
-    const _comments =
+    const comments =
       alertIds.length > 0
         ? await db
             .select()
             .from(alertComments)
             .where(inArray(alertComments.alertId, alertIds))
         : [];
+
+    const prefs = await db
+      .select()
+      .from(notificationPreferences)
+      .where(
+        and(
+          eq(notificationPreferences.organizationId, organizationId),
+          eq(notificationPreferences.userId, userId),
+        ),
+      );
+
+    const keys = await db
+      .select()
+      .from(apiKeys)
+      .where(
+        and(
+          eq(apiKeys.organizationId, organizationId),
+          eq(apiKeys.userId, userId),
+        ),
+      );
+
+    const hooks = await db
+      .select()
+      .from(webhookConfigs)
+      .where(eq(webhookConfigs.organizationId, organizationId));
+
+    const logs = await db
+      .select()
+      .from(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.organizationId, organizationId),
+          eq(auditLogs.userId, userId),
+        ),
+      );
+
+    const requests = await db
+      .select()
+      .from(gdprRequests)
+      .where(
+        and(
+          eq(gdprRequests.organizationId, organizationId),
+          eq(gdprRequests.userId, userId),
+        ),
+      );
+
+    const consents = await db
+      .select()
+      .from(userConsents)
+      .where(eq(userConsents.userId, userId));
 
     return {
       user: {
@@ -140,9 +219,9 @@ export const gdprService = {
         createdAt: user.createdAt,
         emailVerified: user.emailVerified,
       },
-      organizations: userOrgs,
+      organization: org,
+      membership: membership ?? null,
       targets: orgTargets,
-      alerts: orgAlerts,
       versions: orgVersions.map((v) => ({
         id: v.id,
         targetId: v.targetId,
@@ -151,7 +230,26 @@ export const gdprService = {
         hasChanges: v.hasChanges,
         // Note: Full content may be large, consider excluding or providing separately
       })),
-      memberships: userOrgs,
+      alerts: orgAlerts,
+      alertAssignments: assignments,
+      alertComments: comments,
+      apiKeys: keys.map((k) => ({
+        id: k.id,
+        organizationId: k.organizationId,
+        userId: k.userId,
+        name: k.name,
+        lastUsedAt: k.lastUsedAt,
+        expiresAt: k.expiresAt,
+        status: k.status,
+        scopes: k.scopes,
+        createdAt: k.createdAt,
+        updatedAt: k.updatedAt,
+      })),
+      notificationPreferences: prefs,
+      webhookConfigs: hooks,
+      auditLogs: logs,
+      gdprRequests: requests,
+      userConsents: consents,
     };
   },
 
@@ -168,15 +266,32 @@ export const gdprService = {
     // 3. Handle cascading deletes properly
     // 4. Delete from external storage (S3, etc.)
 
-    // Delete user's alert assignments
+    // Delete org-scoped artifacts tied to the user.
     await db
       .delete(alertAssignments)
       .where(eq(alertAssignments.userId, userId));
 
-    // Delete user's alert comments
     await db.delete(alertComments).where(eq(alertComments.userId, userId));
 
-    // Remove user from organization (this will cascade)
+    await db
+      .delete(notificationPreferences)
+      .where(
+        and(
+          eq(notificationPreferences.organizationId, organizationId),
+          eq(notificationPreferences.userId, userId),
+        ),
+      );
+
+    await db
+      .delete(apiKeys)
+      .where(
+        and(
+          eq(apiKeys.organizationId, organizationId),
+          eq(apiKeys.userId, userId),
+        ),
+      );
+
+    // Remove user from organization membership.
     await db
       .delete(organizationMembers)
       .where(
@@ -185,6 +300,19 @@ export const gdprService = {
           eq(organizationMembers.organizationId, organizationId),
         ),
       );
+
+    // If this was the last member of the org, delete the org to fully remove org data
+    // (targets, versions, alerts, webhooks, etc. are org-scoped and cascade).
+    const remainingMembersInOrg = await db
+      .select()
+      .from(organizationMembers)
+      .where(eq(organizationMembers.organizationId, organizationId));
+
+    if (remainingMembersInOrg.length === 0) {
+      await db
+        .delete(organizations)
+        .where(eq(organizations.id, organizationId));
+    }
 
     // If user has no other organizations, delete the user account
     const remainingOrgs = await db

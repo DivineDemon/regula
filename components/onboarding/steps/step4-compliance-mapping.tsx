@@ -93,6 +93,7 @@ const SERVICE_OPTIONS: {
 ];
 
 interface Step4ComplianceMappingProps {
+  className?: string;
   initialData?: Partial<OrganizationProfile>;
   onComplete: (data: Partial<OrganizationProfile>) => void;
   onBack: () => void;
@@ -103,6 +104,7 @@ function getServiceLabel(value: string) {
 }
 
 export function Step4ComplianceMapping({
+  className,
   initialData,
   onComplete,
   onBack,
@@ -216,7 +218,12 @@ export function Step4ComplianceMapping({
   };
 
   return (
-    <div className="w-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+    <div
+      className={cn(
+        "w-full mx-auto flex flex-col items-start justify-start gap-5",
+        className,
+      )}
+    >
       <div className="w-full flex items-center justify-center">
         <div className="flex-1 flex flex-col items-center justify-center">
           <h2 className="w-full text-left text-2xl font-bold">
@@ -548,7 +555,7 @@ export function Step4ComplianceMapping({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs uppercase text-muted-foreground">
-                      Compliance Requirements{" "}
+                      Compliance Requirements&nbsp;
                       <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>

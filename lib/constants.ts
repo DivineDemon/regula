@@ -1,3 +1,17 @@
+/** Application domain (used for emails, docs, and public URLs when env is not set) */
+export const APP_DOMAIN = "regula.mushoodhanif.com";
+
+/** Support & help links (e.g. marketing, legal pages; use NEXT_PUBLIC_ vars for client-visible values) */
+export const SUPPORT = {
+  email:
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ??
+    process.env.SUPPORT_EMAIL ??
+    `support@${APP_DOMAIN}`,
+  docsUrl: process.env.NEXT_PUBLIC_DOCS_URL ?? `https://${APP_DOMAIN}/docs`,
+  statusPageUrl:
+    process.env.NEXT_PUBLIC_STATUS_PAGE_URL ?? `https://${APP_DOMAIN}/status`,
+} as const;
+
 export const navbarItems = [
   {
     label: "Features",
@@ -8,8 +22,8 @@ export const navbarItems = [
     href: "#comparison",
   },
   {
-    label: "Testimonials",
-    href: "#testimonials",
+    label: "Pricing",
+    href: "#pricing",
   },
   {
     label: "Contact",
@@ -90,6 +104,13 @@ export const testimonials = [
 
 export const comparisons = [
   {
+    feature: "Starting price",
+    regula: "$39/month",
+    regology: "Contact for pricing (est. $800–6,000/month)",
+    corlytics: "Contact for pricing (est. $800–6,000/month)",
+    gnowit: "Contact for pricing (est. $800–6,000/month)",
+  },
+  {
     feature: "SMB Friendly Pricing",
     regula: true,
     regology: false,
@@ -102,6 +123,34 @@ export const comparisons = [
     regology: false,
     corlytics: false,
     gnowit: false,
+  },
+  {
+    feature: "Workflow depth",
+    regula: true,
+    regology: "partial",
+    corlytics: "partial",
+    gnowit: "partial",
+  },
+  {
+    feature: "Version history & side-by-side compare",
+    regula: true,
+    regology: "partial",
+    corlytics: "partial",
+    gnowit: "partial",
+  },
+  {
+    feature: "In-product team collaboration",
+    regula: true,
+    regology: "partial",
+    corlytics: "partial",
+    gnowit: "partial",
+  },
+  {
+    feature: "Governance",
+    regula: true,
+    regology: "partial",
+    corlytics: "partial",
+    gnowit: "partial",
   },
   {
     feature: "Real-Time Crawling",

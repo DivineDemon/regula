@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { Clock, Loader2, Mail, MapPin, Phone, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SUPPORT } from "@/lib/constants";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -69,52 +71,47 @@ export function Contact() {
         ]}
         className="opacity-35 z-0 hidden lg:block"
       />
-      <div className="relative lg:absolute lg:inset-0 z-1 grid grid-cols-1 lg:grid-cols-2 items-center justify-center bg-linear-to-tr from-primary/20 via-background to-primary/20">
+      <div className="relative lg:absolute lg:inset-0 z-1 grid grid-cols-1 lg:grid-cols-2 lg:items-stretch items-start justify-center bg-linear-to-tr from-primary/20 via-background to-primary/20">
         <motion.div
-          className="w-full h-full col-span-1 p-5 flex flex-col items-center justify-center gap-6"
+          className="w-full h-full col-span-1 p-5 flex flex-col items-stretch justify-start lg:justify-center gap-8"
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: false, margin: "-100px" }}
         >
-          <div className="w-full h-fit flex flex-col items-start justify-start gap-3">
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-              Have questions?
-            </h2>
-            <p className="text-base text-muted-foreground max-w-md leading-relaxed">
-              We're here to help. Please fill out the form below and we'll get
-              back to you as soon as possible.
-            </p>
-          </div>
-          <div className="w-full hidden lg:flex flex-col items-start justify-start gap-4">
-            {[
-              {
-                icon: MapPin,
-                text: "123 Business Street, San Francisco, CA 94105",
-              },
-              { icon: Phone, text: "+1 (555) 123-4567" },
-              { icon: Mail, text: "hello@regula.com" },
-              { icon: Clock, text: "Monday - Friday: 9:00 AM - 5:00 PM" },
-            ].map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <motion.div
-                  key={item.text}
-                  className="flex items-center justify-start gap-3 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-border/50 w-full"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  viewport={{ once: false, margin: "-100px" }}
+          <div className="w-full h-fit flex flex-col items-start justify-start gap-8 max-w-lg">
+            <div className="w-full flex flex-col items-start justify-start gap-3">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground text-balance">
+                Need jurisdiction-specific coverage ?
+              </h2>
+              <p className="text-base text-muted-foreground leading-relaxed">
+                Talk to us about multi-jurisdiction rollouts, and how your team
+                runs regulatory ops. We respond within 24 hours.
+                <br />
+                <br />
+                Prefer email?&nbsp;
+                <Link
+                  href={`mailto:${SUPPORT.email}`}
+                  className="text-primary font-medium underline underline-offset-2 hover:no-underline"
                 >
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="text-sm text-foreground font-medium">
-                    {item.text}
-                  </span>
-                </motion.div>
-              );
-            })}
+                  {SUPPORT.email}
+                </Link>
+              </p>
+            </div>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 w-full">
+              <p className="text-sm font-semibold text-foreground mb-1">
+                Pilot and enterprise assist
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                We&apos;re onboarding teams that need deeper coverage and
+                workflow fit—especially across SBP, CBN, and MENA contexts.
+                Request a pilot to get early access and shape the roadmap with
+                us.
+              </p>
+              <Button asChild size="sm" className="rounded-full">
+                <Link href="/register">Request a pilot</Link>
+              </Button>
+            </div>
           </div>
         </motion.div>
         <motion.div

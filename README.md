@@ -56,7 +56,8 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 ### 👥 Compliance Workspace
 - **Alert management** with status tracking (new → triaged → actioned → closed)
 - **Team collaboration** with assignments, comments, and notes
-- **Alert detail pages** with version comparison viewer
+- **Alert detail pages** with version comparison viewer and **Version history** (related versions per target with Compare links)
+- **Version comparison** page to compare any two versions side-by-side
 - **Audit-ready history** with complete regulatory change timeline via audit logs
 - **Advanced search & filtering** across all alerts and versions
 - **Export capabilities** (CSV, PDF) for compliance reporting and audits
@@ -66,6 +67,7 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 - **Multi-tenant SaaS** with complete data isolation
 - **Role-based access control** (Admin, Analyst, Viewer roles)
 - **Organization management** with invitations and member administration
+- **Full organization profile editor** in Settings → Organization (edit company info, services, geographic operations, compliance mapping, and partnerships by section)
 - **Usage tracking & quotas** with configurable limits per subscription tier
 - **Usage dashboard** with detailed metrics and quota monitoring
 - **Audit logging** for all critical actions with filtering and export
@@ -75,7 +77,8 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 
 ### 💳 Subscription & Billing
 - **Flexible pricing tiers** (Free, Starter, Growth, Enterprise)
-- **Usage-based metering** with quota tracking and warnings
+- **Free tier**: 3 targets, daily crawls, 30-day data retention
+- **Usage-based metering** with quota tracking and warnings (80% and 100% notifications)
 - **Stripe integration** for secure payments and invoicing
 - **Plan management** with easy upgrades and downgrades
 - **Payment method management** via Stripe
@@ -107,7 +110,7 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 - **Stripe** for payment processing and subscription management
 - **Resend** for transactional emails
 - **AWS S3** for document storage
-- **Upstash Redis** for caching and rate limiting
+- **Upstash QStash** for HTTP messaging and schedules; **PostgreSQL** stores application cache entries and rate-limit counters
 
 ### DevOps & Infrastructure
 - **Vercel** for deployment and hosting
@@ -121,7 +124,6 @@ Regula solves these by providing automated, real-time regulatory intelligence at
 
 - **Node.js** 20+ or **Bun** (recommended)
 - **PostgreSQL** database (local or managed like Neon, Supabase, or Vercel Postgres)
-- **Redis** instance (local or Upstash)
 
 ### Installation
 
@@ -204,9 +206,12 @@ STRIPE_PRICE_ID_ENTERPRISE=price_...
 RESEND_API_KEY=re_...
 EMAIL_FROM=noreply@yourdomain.com
 
-# Redis (Upstash)
-UPSTASH_REDIS_REST_URL=https://...
-UPSTASH_REDIS_REST_TOKEN=...
+# QStash (HTTP messaging / schedules — optional base URL for local dev)
+QSTASH_URL=
+QSTASH_TOKEN=
+# Signing keys for verifying inbound QStash callbacks (receiver routes only)
+QSTASH_CURRENT_SIGNING_KEY=
+QSTASH_NEXT_SIGNING_KEY=
 
 # AWS S3 (Document Storage)
 AWS_ACCESS_KEY_ID=...
@@ -264,15 +269,19 @@ The application is organized into service modules in `lib/services/`:
 - **`audit.ts`** - Audit logging for compliance
 - **`dashboard.ts`** - Dashboard metrics aggregation
 - **`analytics.ts`** - Analytics and reporting
+- **`kpi.ts`** - Platform KPIs and North Star metrics (founder dashboard)
 - **`api-keys.ts`** - API key management
 - **`compliance-health.ts`** - Compliance health scoring
 - **`custom-alert-rules.ts`** - Custom alert rule engine
 - **`content-discovery.ts`** - Content discovery and sitemap parsing
+- **`content-graph.ts`** - Content graph and version family ranking for adaptive crawl
 - **`content-relevance.ts`** - Content relevance scoring
+- **`customer-health.ts`** - Organization health scoring and low-engagement detection
 - **`pattern-detection.ts`** - Pattern detection in regulatory content
 - **`sitemap-discovery.ts`** - Sitemap discovery and parsing
 - **`s3.ts`** - Document storage on AWS S3
-- **`redis.ts`** - Redis caching and rate limiting
+- **`qstash.ts`** - QStash client for reliable HTTP delivery and schedules
+- **`cache-store.ts`** - Postgres-backed application cache (used by `cache-helpers`)
 - **`cache-helpers.ts`** - Cache utility functions
 - **`gdpr.ts`** - GDPR compliance (data export/deletion)
 - **`consent.ts`** - Consent management
@@ -297,12 +306,12 @@ The application uses a comprehensive set of shadcn/ui components:
 regula/
 ├── app/                          # Next.js App Router
 │   ├── (dashboard)/             # Dashboard routes (protected)
-│   │   ├── alerts/              # Alert management & detail pages
+│   │   ├── alerts/              # Alert management, detail pages & version compare
 │   │   ├── targets/             # Target configuration
 │   │   ├── dashboard/           # Dashboard with chart components
 │   │   └── settings/            # Settings pages
 │   │       ├── profile/         # User profile settings
-│   │       ├── organization/    # Org settings & member management
+│   │       ├── organization/    # Org settings, profile editor & member management
 │   │       ├── billing/         # Subscription & billing
 │   │       ├── notifications/   # Notification preferences
 │   │       ├── usage/           # Usage dashboard
@@ -311,7 +320,7 @@ regula/
 │   │       └── consent/         # Consent management
 │   ├── api/                     # API routes
 │   │   ├── alerts/              # Alert endpoints (CRUD, export, bulk)
-│   │   ├── targets/             # Target management
+│   │   ├── targets/             # Target management & version history API
 │   │   ├── versions/            # Version comparison & documents
 │   │   ├── auth/                # Authentication & registration
 │   │   ├── billing/             # Stripe webhooks & billing
@@ -347,9 +356,11 @@ regula/
 - **Authorization**: Role-based access control (RBAC) at organization level
 - **Encryption**: Sensitive data encrypted at rest and in transit
 - **Audit Logging**: Complete audit trail for compliance and security
-- **Rate Limiting**: Redis-based rate limiting to prevent abuse
-- **Legal Pages**: Terms of Service, Privacy Policy, Disclaimer, Data Processing Agreement, Acceptable Use Policy, Cookie Policy
+- **Rate Limiting**: Postgres-backed fixed-window rate limiting to prevent abuse
+- **Legal Pages**: Terms of Service, Privacy Policy, Disclaimer, Data Processing Agreement, Acceptable Use Policy, Cookie Policy, Security Policy, Subprocessors, Support SLA
 - **GDPR Compliance**: Data export, deletion, and consent management capabilities
+- **Security runbook**: [docs/security-runbook.md](docs/security-runbook.md) for dependency scanning, patching cadence, and penetration testing
+- **Dependency audit**: Run `bun run audit` to check for known vulnerabilities in dependencies
 
 ## 🔄 Background Processing
 
@@ -364,7 +375,9 @@ The application uses **Inngest** for background job processing:
 Inngest functions are defined in `lib/inngest/functions/`:
 - `crawl.ts` - Target crawling workflow
 - `adaptive-crawl.ts` - Intelligent crawl scheduling
-- `digest.ts` - Alert digest generation
+- `digest.ts` - Alert digest generation (daily/weekly)
+- `customer-success.ts` - 24h and 7-day onboarding check-in emails, low-engagement outreach
+- `data-retention.ts` - Periodic data retention cleanup per plan
 
 ## 📊 Database Schema
 
@@ -409,6 +422,9 @@ bun run db:generate  # Generate migration files
 bun run db:migrate   # Run migrations
 bun run db:push      # Push schema (dev only)
 bun run db:studio    # Open Drizzle Studio
+
+# Security
+bun run audit        # Audit dependencies for known vulnerabilities
 ```
 
 ### Code Style
@@ -442,9 +458,13 @@ The enhanced onboarding system captures comprehensive fintech company informatio
 
 **Features:**
 - **Auto-save**: Progress saved to localStorage for resume capability
+- **Print Summary**: Print or save the review summary before submitting (Step 6)
+- **Manual target add**: Add targets manually in Step 8 alongside AI-discovered ones
+- **Reset onboarding**: Clear saved progress and restart the wizard if needed
 - **AI Target Discovery**: LLM analyzes company profile to suggest relevant regulatory monitoring targets
 - **Bulk Target Creation**: Selected targets automatically created in bulk
 - **Profile Persistence**: Complete organization profile stored in database for future reference
+- **Post-onboarding editing**: Full organization profile can be edited anytime in **Settings → Organization** (section-by-section: company, services, geographic operations, compliance mapping, partnerships)
 
 ### Adding a New Target
 
@@ -464,8 +484,9 @@ The enhanced onboarding system captures comprehensive fintech company informatio
 4. **Creation**: Alert added to inbox and notification queued
 5. **Delivery**: Email/webhook sent, alert visible in inbox
 6. **Management**: User can assign, comment, and update status
-7. **Comparison**: User can compare versions side-by-side
-8. **Archive**: Closed alerts retained for audit and export
+7. **Comparison**: User can compare versions side-by-side (from alert detail or via Version history for the target)
+8. **Version history**: Alert detail sidebar shows related versions for the same target with links to compare any two versions
+9. **Archive**: Closed alerts retained for audit and export
 
 ### Dashboard Metrics
 
@@ -489,6 +510,206 @@ Additional documentation is available in the `docs/` directory:
 - **Roadmap** - Product roadmap and milestones
 - **API Documentation** - Complete API reference (`docs/api.md`)
 - **Onboarding Guide** - Step-by-step onboarding guide (`docs/onboarding-guide.md`)
+- **Security Runbook** - Dependency scanning, patching cadence, and penetration testing (`docs/security-runbook.md`)
+- **Security Implementation** - Implemented security features (`docs/security-implementation.md`)
+
+## 📋 Documentation alignment & implementation inventory
+
+This section maps `docs/` claims to the codebase and lists what is implemented in **app routes**, **API routes**, **components**, and **lib** services. It is a static audit (not load testing or SLA verification).
+
+### Documentation vs codebase
+
+#### `docs/functional-requirements.md` (FRD)
+
+| Area | Status |
+|------|--------|
+| Registration, email verify, login | Implemented: auth pages + `app/api/auth/*` |
+| Organizations, tenant isolation | Implemented: org APIs, member APIs, scoped queries |
+| Targets (add/remove, metadata, history) | Implemented: targets UI + APIs + services |
+| Crawl, attachments, async pipeline | Implemented: Inngest crawl, adaptive crawl, Crawl4AI, PDF paths, QStash |
+| Diff / versions | Implemented: `lib/services/diff`, `versions`, compare APIs, viewers |
+| LLM summary, classification, impact scoring | Implemented: `llm`, `impact-scoring`, `pattern-detection`, alerts pipeline |
+| Notifications, digest, webhooks | Implemented: email, digest Inngest, webhook configs, Slack/Teams URL detection on webhooks |
+| Search, export, retention | **Partial**: filters + CSV/PDF export APIs; retention services exist; NFR performance targets not proven from code alone |
+| Billing, quotas, usage warnings | Implemented: Stripe, `lib/plans.ts`, usage, quotas, billing APIs |
+| Security, RBAC, audit | Implemented: roles, audit service + UI, `proxy.ts` rate limits; **2FA not implemented** (FRD lists as future) |
+
+#### `docs/project-spec.md`
+
+Product positioning is marketing copy. Technical claims (crawling, AI diff, summaries, alerts, email, Slack/webhook, audit history, triage) match implemented services and UI.
+
+#### `docs/api.md`
+
+Documented endpoints align with `app/api/**` (e.g. organization profile, target discovery, bulk targets). Additional routes exist beyond the written API doc; see **Implemented surface** below and `app/api/docs/route.ts` where applicable.
+
+#### `docs/onboarding-guide.md`
+
+The 8-step wizard, profile fields, services, geography, compliance mapping, partnerships, AI discovery, and target selection match `components/onboarding/*` and organization profile APIs.
+
+#### `docs/technical-architecture.md`
+
+The file is largely a **structure/plan** (outline and todos), not a finished as-built spec. The repo is a **single Next.js app**, not a multi-package monorepo as some outlines suggest.
+
+#### `docs/security-implementation.md`
+
+| Topic | Note |
+|-------|------|
+| `middleware.ts` | **Outdated name**: request interception lives in **`proxy.ts`** (Next.js 16). |
+| “No server actions” | **Partially outdated**: `app/actions.ts` exposes **`sendContactEmail`** for the landing contact form. |
+| RLS pattern, bcrypt, rate limits, API helpers | Matches current patterns. |
+
+#### `docs/non-functional-requirements.md` (NFR)
+
+Throughput, SLA percentages, backup guarantees, and export latency targets are **operational/infra**; they are **not** verifiable from application source alone.
+
+#### `docs/operational-model.md`
+
+| Claim | Code |
+|-------|------|
+| Crawlers, queue, diff, LLM, notifications | Implemented |
+| In-app LLM **support chatbot** | **Not implemented** (no chatbot routes/components) |
+| Customer health / success | Partial: `customer-health`, `customer-success` Inngest, KPI services |
+| Weekly digest | Implemented: `lib/inngest/functions/digest.ts` |
+
+#### Legal / compliance docs (`docs/legal-requirements.md`, `app/legal/*`)
+
+Legal routes exist (terms, privacy, disclaimer, DPA, cookies, AUP, security, support, subprocessors). Full copy audit across every email template is out of scope for this inventory.
+
+#### Strategy / non-product docs
+
+Files such as `business-model.md`, `competitive-analysis.md`, `gtm-playbook.md`, `roadmap.md`, `risk-plan.md`, `use-cases.md`, `docs/potential-leads/*.csv` describe **business or sales context**, not shipped product features.
+
+#### `docs/adaptive-crawling-generated-sitemap.md`
+
+Aligns with `lib/crawl/*`, `lib/services/content-graph.ts`, `lib/services/adaptive-crawl.ts`, and Inngest adaptive crawl.
+
+---
+
+### Implemented surface (inventory)
+
+#### App Router — pages
+
+- **Marketing**: `/` — landing (hero, features, pricing, contact + server action, CTA, footer, etc.).
+- **Auth**: `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/check-email`, `/accept-invitation`.
+- **Dashboard**: `/dashboard`, `/analytics`, `/targets`, `/alerts`, `/alerts/[id]`, `/alerts/compare`, `/onboarding`.
+- **Settings**: profile, organization (incl. org profile editor), organization members, billing, notifications, consent, data privacy, audit logs, incidents.
+- **Admin**: `/admin/kpis` (platform admin).
+- **Legal**: terms, privacy, cookies, AUP, disclaimer, DPA, support, security, subprocessors.
+
+#### API routes (`app/api/**`)
+
+Auth & users; organizations (CRUD, switch, profile, members, invitations); targets (CRUD, validate, discover, bulk, trigger crawl, versions); alerts (CRUD, filters, bulk, **CSV/PDF export**, categories, jurisdictions, comments, tags, relationships, snooze, false-positive); versions (compare, document, **proxy-document**); analytics + analytics export; dashboard metrics; billing (Stripe, checkout, subscription, payment methods, invoices, sync, webhook); settings (profile, organization, usage); consent; GDPR export/deletion; API keys; webhook configs; `webhooks/notify`; custom alert rules; alert templates; alert-tags; notification-preferences; audit logs; incidents; admin KPIs; Inngest; API docs route.
+
+#### Components (`components/**`)
+
+Dashboard, landing, full onboarding stack, targets, alerts (list, detail, viewers, compare, version history, assign), analytics charts, settings (billing, notifications, consent, data privacy, audit, members, org profile, incidents), organizations (switcher, create), auth flows, invitation/check-email, profile form, usage client, shared nav/cookie/error utilities, shadcn UI primitives.
+
+#### `lib/` services & jobs (representative)
+
+Alerts, analytics, audit, adaptive crawl, API keys, cache, consent, content discovery/graph/relevance, crawler stack, customer health, custom alert rules, dashboard, data retention, diff, email, GDPR, impact scoring, KPI, LLM, notifications (+ Slack/Teams helpers), organization profile, pattern detection, quotas, QStash, S3, Stripe, subscriptions, usage, usage warnings, versions, webhooks, compliance-health, alert templates/tags/relationships/snoozing, crawl modules under `lib/crawl/`.
+
+#### Background jobs (`lib/inngest/functions/`)
+
+`crawl`, `adaptive-crawl`, `digest`, `data-retention`, `customer-success`.
+
+#### Cross-cutting
+
+- **`proxy.ts`**: session checks for protected routes, API rate limiting (replaces legacy `middleware.ts` naming in older docs).
+- **`lib/auth`**: NextAuth, roles, platform admin.
+
+#### API-only (no dedicated settings UI found)
+
+**API keys**, **webhook configuration**, **custom alert rules**, and **alert templates** have REST APIs and services; there are no dedicated dashboard components for managing them (integrations may use the API or future UI).
+
+### Known gaps & doc drift
+
+- **Support chatbot** (`docs/operational-model.md`): not in repo.
+- **2FA / enterprise SSO**: not implemented in code (FRD allows “future”).
+- **NFR** numeric targets: require ops/load testing, not code review alone.
+- **`docs/security-implementation.md`**: should reference **`proxy.ts`** and the contact **server action** in `app/actions.ts` when updating that doc.
+
+### Deep codebase inventory (complete analysis snapshot)
+
+This section captures a full codebase pass across `app/**`, `components/**`, `lib/**`, `docs/**`, and project config.
+
+#### 1) Product surfaces and implemented features
+
+- **Public marketing**: `/` with landing sections (`Navbar`, `Hero`, `Features`, `Comparison`, `Pricing`, `CTA`, `Contact`, `Footer`).
+- **Legal pages**: `/legal/privacy`, `/legal/terms`, `/legal/cookies`, `/legal/aup`, `/legal/disclaimer`, `/legal/dpa`, `/legal/security`, `/legal/subprocessors`, `/legal/support`.
+- **Auth lifecycle**: `/login`, `/register`, `/verify-email`, `/check-email`, `/forgot-password`, `/reset-password`, `/accept-invitation`.
+- **Onboarding**: `/onboarding` multi-step flow (profile capture -> review -> AI discovery -> target selection).
+- **Core app**: `/dashboard`, `/targets`, `/alerts`, `/alerts/[id]`, `/alerts/compare`, `/analytics`.
+- **Settings/governance**: profile, organization, members, billing, notifications, consent, data privacy, audit logs, incidents.
+- **Platform admin**: `/admin/kpis`.
+
+#### 2) API surface (major groups)
+
+- **Auth**: register, invitation register, verify email, forgot/reset password, token validation, resend verification, NextAuth handlers.
+- **Organizations**: create/switch org, org profile CRUD-ish endpoints, members/invitations management.
+- **Targets**: list/create/update/delete, validate URL, discover targets from org profile, bulk create, trigger crawl, version history.
+- **Alerts**: list/filter/detail/update, comments, assignments, snooze, tags, relationships, false-positive, bulk actions, categories, jurisdictions, CSV/PDF export.
+- **Versions/documents**: version read/compare/document endpoints and `proxy-document`.
+- **Analytics/dashboard**: analytics queries and exports, dashboard metrics.
+- **Billing**: checkout, sync, subscription read/update, payment methods, invoices, Stripe webhook.
+- **Compliance/privacy**: consent APIs, GDPR export/deletion, audit log APIs.
+- **Additional APIs**: API keys, webhook configs, custom alert rules, alert templates, alert tags, notification preferences, admin KPIs, Inngest route, OpenAPI docs route.
+
+#### 3) Background processing and automation
+
+- **Inngest functions registered**: crawl, schedule crawls, adaptive crawl, daily digest, weekly digest, data retention cleanup, customer-success outreach functions.
+- **Pipeline**: target crawl -> version store -> diff detection -> AI summarization/classification/impact -> alert generation -> notifications -> usage/quota checks.
+- **Scheduling**: hourly crawl scheduling, daily/weekly digest cadences, nightly retention cleanup.
+
+#### 4) Data model inventory (stored entities)
+
+- **Auth/identity**: `users`, `accounts`, `sessions`, `verificationTokens`.
+- **Tenancy/access**: `organizations`, `organization_members`, `invitations`.
+- **Monitoring domain**: `targets`, `versions`, `alerts`, `alert_assignments`, `alert_comments`, `alert_feedback`.
+- **Alert extensions**: `alert_tags`, `alert_tag_assignments`, `alert_relationships`, `alert_templates`, `custom_alert_rules`.
+- **Governance/ops**: `audit_logs`, `notification_preferences`, `gdpr_requests`, `user_consents`, `incidents`, `feedback`.
+- **Billing/usage**: `subscriptions`, `usage_metrics`, `api_keys`, `webhook_configs`.
+- **Infra/meta**: `content_graphs`, `content_nodes`, `content_edges`, `kv_cache`, `rate_limit_entries`.
+
+#### 5) Core service map (`lib/services/**`)
+
+- **Crawl/intelligence**: `crawler`, `adaptive-crawl`, `content-discovery`, `content-graph`, `pattern-detection`, `content-relevance`, `sitemap-discovery`.
+- **Versioning/diffs/alerts**: `versions`, `diff`, `alerts`, `impact-scoring`, `llm`, plus alert rule/template/tag/relationship/snooze services.
+- **Notifications/delivery**: `notifications`, `email`, `webhook`, `webhook-configs`, Slack/Teams integrations.
+- **SaaS operations**: `analytics`, `dashboard`, `kpi`, `customer-health`, `quotas`, `usage`, `usage-warnings`, `subscriptions`, `stripe`, `plans`.
+- **Privacy/compliance**: `audit`, `consent`, `gdpr`, `data-retention`, organization profile persistence/validation.
+- **Infrastructure**: `cache-store`, `cache-helpers`, `qstash`, `s3`.
+
+#### 6) UI/component inventory (`components/**`)
+
+- **Landing**: marketing section components including pricing/contact.
+- **Dashboard/analytics**: KPI widgets, charts, founder KPI admin client.
+- **Alerts**: list/detail clients, document viewer, version compare/history, assignment dialog.
+- **Onboarding**: wizard orchestration, step components (1-8), profile summary/export, manual target add.
+- **Settings**: billing, notifications, consent, data privacy, members/invites, audit logs, org profile settings.
+- **Incidents/targets/organizations**: dedicated management clients/dialogs/tables.
+- **Shared/providers/ui**: nav user + org switching, cookie consent banner, theme/session/toaster providers, shadcn-style primitives and utility components.
+
+#### 7) Integrations and external systems
+
+- **Core**: PostgreSQL (Drizzle), NextAuth, Inngest, Stripe, Resend, AWS S3, Gemini (`@google/generative-ai`), Crawl4AI API.
+- **Additional**: Slack/Teams webhooks, generic webhook delivery, Upstash QStash client.
+
+#### 8) Auth, authorization, and data boundaries
+
+- **AuthN**: NextAuth Credentials with JWT sessions; session context read via `auth()`.
+- **Tenant scoping**: org membership checks (`organization_members`) through helpers like `requireOrgAccess` / tenant utilities.
+- **Role checks**: org admin checks for privileged settings/billing/incidents paths; platform admin checks for founder KPIs.
+- **Protection layer**: `proxy.ts` handles route protection and API rate limiting with DB-backed fixed windows.
+- **Compliance controls**: consent management, GDPR export/deletion flows, audit logging, plan-driven retention cleanup.
+
+#### 9) Gaps and risk signals (implementation-level)
+
+- OpenAPI docs include API key auth semantics, but most route enforcement is session-based in current handlers.
+- Some endpoints are intentionally public and require abuse-hardening review (`/api/users/check`, `/api/targets/validate`, webhook notify receiver).
+- `proxy-document` performs authenticated server-side URL fetching and should continue to be tightly constrained.
+- Multi-org context selection is inconsistent in parts of settings/dashboard logic (cookie-selected org vs first-org patterns).
+- Migration metadata snapshots appear behind latest journal entries in `lib/db/migrations/meta/`.
+- A few unused/deprecated component paths exist (for example, orphaned or superseded UI helpers).
 
 ## 🤝 Contributing
 
@@ -506,7 +727,7 @@ See [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
-For support, email support@regula.com or open an issue in the repository.
+For support, email support@regula.mushoodhanif.com or open an issue in the repository.
 
 ## 🗺️ Roadmap
 

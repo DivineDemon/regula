@@ -2,15 +2,15 @@
 
 import { motion } from "framer-motion";
 import {
-  BarChart3,
   Bell,
   CheckCircle2,
+  GitCompare,
+  LayoutDashboard,
   Mail,
   MessageSquare,
-  Search,
   Shield,
   Slack,
-  TrendingUp,
+  Sparkles,
   Users,
   Zap,
 } from "lucide-react";
@@ -18,50 +18,56 @@ import { useEffect, useState } from "react";
 
 const features = [
   {
-    title: "Real-Time Monitoring",
-    description: "Continuous monitoring with instant change detection",
+    title: "Adaptive Regulatory Monitoring",
+    description:
+      "Continuous crawling, discovery, and schedules that adapt to how sources change",
     icon: Zap,
     component: RealTimeMonitoring,
   },
   {
-    title: "Compliance Ready",
-    description: "Enterprise-grade security and audit capabilities",
-    icon: Shield,
-    component: ComplianceReady,
-  },
-  {
-    title: "AI-Powered Analysis",
-    description: "Intelligent summaries and impact scoring using Google Gemini",
-    icon: Search,
+    title: "Context-Aware AI Analysis",
+    description:
+      "Summaries, classification, impact scoring, and extraction—signal over raw diffs",
+    icon: Sparkles,
     component: AIPoweredAnalysis,
   },
   {
-    title: "Multi-Channel Alerts",
-    description: "Receive notifications where you work, when you need them",
+    title: "Version Intelligence & Evidence",
+    description:
+      "History, side-by-side compare, and navigation across related versions",
+    icon: GitCompare,
+    component: VersionIntelligence,
+  },
+  {
+    title: "Multi-Channel Delivery",
+    description:
+      "In-app, email digests, Slack, Teams, and webhooks where you work",
     icon: Bell,
     component: MultiChannelAlerts,
   },
   {
-    title: "Analytics & Dashboard",
-    description: "Comprehensive metrics and visualizations to track compliance",
-    icon: BarChart3,
-    component: AnalyticsDashboard,
-  },
-  {
-    title: "Team Collaboration",
-    description: "Work together with your compliance team effectively",
+    title: "Compliance Team Workspace",
+    description:
+      "Assignments, comments, triage, snoozes, and lifecycle without leaving the app",
     icon: Users,
     component: TeamCollaboration,
   },
+  {
+    title: "Governance and Trust Controls",
+    description:
+      "Audit logs, consent, GDPR export and deletion, retention, and role-aware access",
+    icon: Shield,
+    component: ComplianceReady,
+  },
 ];
+
+const REGULATOR_SITES = ["SBP", "SECP", "CBN", "BNM"];
 
 function RealTimeMonitoring() {
   const [status, setStatus] = useState("monitoring");
-  const [count, setCount] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCount((prev) => (prev + 1) % 100);
       setStatus((prev) => (prev === "monitoring" ? "detected" : "monitoring"));
     }, 2000);
     return () => clearInterval(interval);
@@ -73,28 +79,26 @@ function RealTimeMonitoring() {
         <div className="relative size-4 bg-primary rounded-full">
           <div className="absolute inset-0 rounded-full bg-primary animate-ping" />
         </div>
-        <span className="text-sm font-medium flex-1">Live Monitoring</span>
+        <span className="text-sm font-medium flex-1">Adaptive coverage</span>
         <span className="text-xs text-muted-foreground ml-auto">
-          {count} sites
+          {REGULATOR_SITES.length} sources
         </span>
       </div>
       <div className="space-y-2">
-        {["SEC.gov", "FCA.org.uk", "ASIC.gov.au", "MAS.gov.sg"].map(
-          (site, i) => (
-            <motion.div
-              key={site}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.2 }}
-              className="flex items-center justify-between p-3 rounded-lg border bg-card"
-            >
-              <span className="text-sm flex-1">{site}</span>
-              <div className="relative size-3 bg-green-500 rounded-full">
-                <div className="absolute inset-0 rounded-full bg-green-500 animate-ping" />
-              </div>
-            </motion.div>
-          ),
-        )}
+        {REGULATOR_SITES.map((site, i) => (
+          <motion.div
+            key={site}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.2 }}
+            className="flex items-center justify-between p-3 rounded-lg border bg-card"
+          >
+            <span className="text-sm flex-1">{site}</span>
+            <div className="relative size-3 bg-green-500 rounded-full">
+              <div className="absolute inset-0 rounded-full bg-green-500 animate-ping" />
+            </div>
+          </motion.div>
+        ))}
       </div>
       {status === "detected" && (
         <motion.div
@@ -104,7 +108,7 @@ function RealTimeMonitoring() {
           className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20"
         >
           <p className="text-xs font-medium text-primary">
-            Change detected on SEC.gov
+            Change detected on SBP
           </p>
         </motion.div>
       )}
@@ -208,11 +212,11 @@ function MultiChannelAlerts() {
   const [isExiting, setIsExiting] = useState(false);
 
   const channels = [
+    { name: "In-app", icon: LayoutDashboard },
     { name: "Email", icon: Mail },
     { name: "Slack", icon: Slack },
     { name: "Teams", icon: MessageSquare },
     { name: "Webhook", icon: Bell },
-    { name: "SMS", icon: MessageSquare },
   ];
 
   useEffect(() => {
@@ -277,60 +281,77 @@ function MultiChannelAlerts() {
   );
 }
 
-function AnalyticsDashboard() {
-  const [data, setData] = useState([20, 35, 45, 30, 50, 40, 60]);
+function VersionIntelligence() {
+  const [highlight, setHighlight] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setData((prev) =>
-        prev.map((v) =>
-          Math.max(10, Math.min(80, v + (Math.random() - 0.5) * 10)),
-        ),
-      );
-    }, 2000);
+      setHighlight((prev) => (prev + 1) % 3);
+    }, 2200);
     return () => clearInterval(interval);
   }, []);
 
-  const maxValue = Math.max(...data);
-
   return (
-    <div className="p-6 w-full h-[410px] flex flex-col items-start justify-start gap-4">
-      <div className="w-full flex flex-col items-start justify-start gap-1">
-        <div className="w-full flex items-baseline gap-2">
-          <span className="text-2xl font-bold">{maxValue.toFixed(2)}</span>
-          <TrendingUp className="w-4 h-4 text-primary" />
+    <div className="p-6 h-[410px] flex flex-col justify-start gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">Version lineage</span>
+        <span className="text-[10px] font-medium rounded-full bg-primary/15 text-primary px-2 py-0.5">
+          Compare
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <motion.div
+          className="rounded-lg border bg-card p-3 space-y-2"
+          animate={{ opacity: highlight === 1 ? 0.85 : 1 }}
+        >
+          <p className="text-[10px] text-muted-foreground">Current</p>
+          <p className="text-xs font-semibold">Circular v4</p>
+          <p className="text-[10px] text-muted-foreground">Captured 2h ago</p>
+        </motion.div>
+        <motion.div
+          className="rounded-lg border bg-muted/40 p-3 space-y-2"
+          animate={{ opacity: highlight === 2 ? 0.85 : 1 }}
+        >
+          <p className="text-[10px] text-muted-foreground">Previous</p>
+          <p className="text-xs font-semibold">Circular v3</p>
+          <p className="text-[10px] text-muted-foreground">6 days ago</p>
+        </motion.div>
+      </div>
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="flex items-center gap-2 border-b px-3 py-2 bg-muted/30">
+          <GitCompare className="size-3.5 text-primary shrink-0" />
+          <span className="text-xs font-medium">Side-by-side diff</span>
         </div>
-        <p className="text-xs text-muted-foreground">Alerts this month</p>
-      </div>
-      <div className="flex items-end gap-2 w-full h-full">
-        {data.map((value, i) => {
-          const key = `chart-bar-${i}-${value}`;
-          return (
-            <motion.div
-              key={key}
-              className="flex-1 flex flex-col items-center gap-1"
-              initial={{ height: 0 }}
-              animate={{ height: `${(value / maxValue) * 100}%` }}
-              transition={{ duration: 0.8, delay: i * 0.1 }}
+        <div className="p-3 space-y-2 font-mono text-[10px] leading-relaxed">
+          {[
+            {
+              line: "- Retention: 5 years for transaction records",
+              tone: "removed",
+            },
+            {
+              line: "+ Retention: 7 years for transaction records",
+              tone: "added",
+            },
+            { line: "  … unchanged licensing requirements …", tone: "neutral" },
+          ].map((row, i) => (
+            <p
+              key={row.line}
+              className={`rounded px-2 py-1 transition-shadow duration-300 ${
+                row.tone === "added"
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                  : row.tone === "removed"
+                    ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                    : "text-muted-foreground"
+              } ${highlight === i ? "ring-2 ring-primary/35 ring-offset-2 ring-offset-background" : ""}`}
             >
-              <motion.div
-                className="w-full rounded-t bg-primary relative overflow-hidden"
-                animate={{ height: "100%" }}
-                transition={{ duration: 0.8, delay: i * 0.1 }}
-              >
-                <motion.div
-                  className="absolute inset-0 bg-linear-to-t from-primary/50 to-primary"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              </motion.div>
-              <span className="text-[10px] text-muted-foreground">
-                {["M", "T", "W", "T", "F", "S", "S"][i]}
-              </span>
-            </motion.div>
-          );
-        })}
+              {row.line}
+            </p>
+          ))}
+        </div>
       </div>
+      <p className="text-[10px] text-muted-foreground">
+        Open related versions and attach evidence to audit-ready threads.
+      </p>
     </div>
   );
 }
@@ -340,20 +361,36 @@ function TeamCollaboration() {
   const [isExiting, setIsExiting] = useState(false);
 
   const messages = [
-    { user: "Sarah", text: "This needs review", isCurrentUser: false },
-    { user: "You", text: "I'll take a look", isCurrentUser: true },
+    {
+      user: "Sarah",
+      text: "Can you own triage on this alert?",
+      isCurrentUser: false,
+    },
+    {
+      user: "You",
+      text: "Assigned to Legal — added context in thread",
+      isCurrentUser: true,
+    },
     {
       user: "Priya",
-      text: "Let's discuss this in the meeting",
+      text: "Snoozed until after board prep; flagged not FP",
       isCurrentUser: false,
     },
     {
       user: "John",
-      text: "This is critical - needs immediate attention",
+      text: "Policy change looks high impact — need sign-off",
       isCurrentUser: false,
     },
-    { user: "Jane", text: "I can help with that", isCurrentUser: false },
-    { user: "You", text: "Perfect, let's sync up", isCurrentUser: true },
+    {
+      user: "Jane",
+      text: "Tagged AML — bulk-updated related items",
+      isCurrentUser: false,
+    },
+    {
+      user: "You",
+      text: "Resolved with evidence link in audit trail",
+      isCurrentUser: true,
+    },
   ];
 
   useEffect(() => {
@@ -438,56 +475,27 @@ function TeamCollaboration() {
   );
 }
 
+const GOVERNANCE_CONTROLS = [
+  "Organization audit logs",
+  "GDPR export and deletion requests",
+  "Data retention aligned to your policy",
+  "Role-aware access in your workspace",
+] as const;
+
 function ComplianceReady() {
-  const [badges, setBadges] = useState<
-    Array<{ id: number; name: string; checked: boolean }>
-  >([
-    { id: 1, name: "GDPR", checked: false },
-    { id: 2, name: "SOC 2", checked: false },
-    { id: 3, name: "HIPAA", checked: false },
-    { id: 4, name: "PCI DSS", checked: false },
-    { id: 5, name: "ISO 27001", checked: false },
-    { id: 6, name: "ISO 27002", checked: false },
-  ]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBadges((prev) => {
-        const unchecked = prev.filter((b) => !b.checked);
-        if (unchecked.length > 0) {
-          const randomIndex = Math.floor(Math.random() * unchecked.length);
-          return prev.map((b) =>
-            b.id === unchecked[randomIndex].id ? { ...b, checked: true } : b,
-          );
-        }
-        return prev.map((b) => ({ ...b, checked: false }));
-      });
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="p-6 h-[410px] flex flex-col justify-start gap-3">
-      {badges.map((badge) => (
+      <p className="text-xs text-muted-foreground mb-2">
+        Controls you can operationalize today—no certification theater.
+      </p>
+      {GOVERNANCE_CONTROLS.map((label) => (
         <motion.div
-          key={badge.id}
+          key={label}
           className="flex items-center justify-between p-3 rounded-lg border bg-card"
           whileHover={{ scale: 1.02 }}
         >
-          <span className="text-sm font-medium">{badge.name}</span>
-          <motion.div
-            initial={false}
-            animate={{
-              scale: badge.checked ? [1, 1.2, 1] : 1,
-              opacity: badge.checked ? 1 : 0.3,
-            }}
-          >
-            <CheckCircle2
-              className={`w-5 h-5 ${
-                badge.checked ? "text-primary" : "text-muted-foreground"
-              }`}
-            />
-          </motion.div>
+          <span className="text-sm font-medium">{label}</span>
+          <CheckCircle2 className="w-5 h-5 text-muted-foreground/60 shrink-0" />
         </motion.div>
       ))}
     </div>
@@ -511,11 +519,11 @@ export function Features() {
         >
           <div className="max-w-xl mx-auto flex flex-col items-center justify-center gap-2">
             <h2 className="text-3xl md:text-4xl font-medium tracking-tighter text-center text-balance pb-1">
-              Everything You Need for Regulatory Compliance
+              A Regulatory Operations System, Not a Document Watcher
             </h2>
             <p className="text-muted-foreground text-center text-balance font-medium">
-              Comprehensive tools designed specifically for FinTech teams in
-              emerging markets.
+              From coverage discovery to compliance execution, Regula connects
+              detection, intelligence, and team action in one workflow.
             </p>
           </div>
         </motion.div>

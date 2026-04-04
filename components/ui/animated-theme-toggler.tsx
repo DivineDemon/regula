@@ -19,11 +19,14 @@ export const AnimatedThemeToggler = ({
 }: AnimatedThemeTogglerProps) => {
   const { resolvedTheme, setTheme } = useTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
-  // Fallback for first paint before next-themes has resolved; useLayoutEffect runs before paint
+  // Fallback for first paint before next-themes has resolved
   const [clientDark, setClientDark] = useState(false);
+  // Avoid hydration mismatch: theme is only known on client; render consistent icon until mounted
+  const [mounted, setMounted] = useState(false);
 
   useLayoutEffect(() => {
     setClientDark(document.documentElement.classList.contains("dark"));
+    setMounted(true);
   }, []);
 
   const isDark =
@@ -65,6 +68,9 @@ export const AnimatedThemeToggler = ({
     );
   }, [isDark, setTheme, duration]);
 
+  // Before mount: render a single icon so server and client HTML match (avoids hydration mismatch)
+  const icon = !mounted ? <Moon /> : isDark ? <Sun /> : <Moon />;
+
   return (
     <button
       ref={buttonRef}
@@ -72,7 +78,7 @@ export const AnimatedThemeToggler = ({
       className={cn(className)}
       {...props}
     >
-      {isDark ? <Sun /> : <Moon />}
+      {icon}
       <span className="sr-only">Toggle theme</span>
     </button>
   );

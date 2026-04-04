@@ -11,6 +11,7 @@ import {
   getUsageAnalytics,
 } from "@/lib/services/analytics";
 import { calculateComplianceHealthScore } from "@/lib/services/compliance-health";
+import { getOrgComplianceAnalytics } from "@/lib/services/kpi";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const organizationId = searchParams.get("organizationId");
-    const type = searchParams.get("type"); // trends, statistics, health, usage
+    const type = searchParams.get("type"); // trends, statistics, health, usage, compliance-analytics
 
     if (!organizationId) {
       return NextResponse.json(
@@ -103,10 +104,34 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ usage });
       }
 
+      case "compliance-analytics": {
+        const startDate = searchParams.get("startDate");
+        const endDate = searchParams.get("endDate");
+        const groupBy =
+          (searchParams.get("groupBy") as "day" | "week") || "day";
+        if (!startDate || !endDate) {
+          return NextResponse.json(
+            {
+              error:
+                "startDate and endDate are required for compliance-analytics",
+            },
+            { status: 400 },
+          );
+        }
+        const analytics = await getOrgComplianceAnalytics(
+          organizationId,
+          new Date(startDate),
+          new Date(endDate),
+          groupBy,
+        );
+        return NextResponse.json(analytics);
+      }
+
       default:
         return NextResponse.json(
           {
-            error: "Invalid type. Must be trends, statistics, health, or usage",
+            error:
+              "Invalid type. Must be trends, statistics, health, usage, or compliance-analytics",
           },
           { status: 400 },
         );

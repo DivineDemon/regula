@@ -3,21 +3,29 @@
 import {
   AlertCircle,
   ArrowLeft,
-  FileText,
   Loader2,
   MessageSquare,
   Send,
+  XCircle,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { AssignMemberDialog } from "@/components/alerts/assign-member-dialog";
-import { DocumentViewer } from "@/components/alerts/document-viewer";
 import { VersionComparisonViewer } from "@/components/alerts/version-comparison-viewer";
+
+// react-pdf uses DOMMatrix and other browser APIs; load only on client to avoid SSR errors
+const DocumentViewer = dynamic(
+  () =>
+    import("@/components/alerts/document-viewer").then((m) => m.DocumentViewer),
+  { ssr: false },
+);
+
+import { VersionHistoryCard } from "@/components/alerts/version-history-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -80,6 +88,7 @@ interface AlertDetail {
       image: string | null;
     };
   }>;
+  markedAsFalsePositive?: boolean;
 }
 
 export function AlertDetailClient({
@@ -91,7 +100,6 @@ export function AlertDetailClient({
   organizationId: string;
   alertId: string;
 }) {
-  const _router = useRouter();
   const [alertDetail, setAlertDetail] =
     useState<AlertDetail>(initialAlertDetail);
   const [updating, setUpdating] = useState(false);
@@ -101,6 +109,7 @@ export function AlertDetailClient({
   const [newComment, setNewComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [markingFalsePositive, setMarkingFalsePositive] = useState(false);
 
   const fetchAlert = useCallback(async () => {
     try {
@@ -175,6 +184,32 @@ export function AlertDetailClient({
       console.error("Error adding comment:", error);
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleMarkFalsePositive = async () => {
+    if (!alertId || !organizationId || alertDetail.markedAsFalsePositive)
+      return;
+
+    setMarkingFalsePositive(true);
+    try {
+      const response = await fetch(`/api/alerts/${alertId}/false-positive`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to mark as false positive");
+      }
+
+      await fetchAlert();
+      toast.success("Alert marked as false positive");
+    } catch (error) {
+      console.error("Error marking as false positive:", error);
+      toast.error("Failed to mark as false positive. Please try again.");
+    } finally {
+      setMarkingFalsePositive(false);
     }
   };
 
@@ -277,24 +312,14 @@ export function AlertDetailClient({
 
             if (hasAttachments || isPDF) {
               return (
-                <Card className="w-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Document Viewer
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <DocumentViewer
-                      versionId={alertDetail.version.id}
-                      organizationId={organizationId}
-                      filename={
-                        metadata?.attachments?.[0]?.filename ||
-                        `document-${alertDetail.version.id}.pdf`
-                      }
-                    />
-                  </CardContent>
-                </Card>
+                <DocumentViewer
+                  versionId={alertDetail.version.id}
+                  organizationId={organizationId}
+                  filename={
+                    metadata?.attachments?.[0]?.filename ||
+                    `document-${alertDetail.version.id}.pdf`
+                  }
+                />
               );
             }
 
@@ -422,6 +447,33 @@ export function AlertDetailClient({
               )}
             </div>
           </div>
+          <div className="w-full flex items-center justify-center gap-2.5 p-5 border-b">
+            <span className="flex-1 text-left text-sm font-medium">
+              False positive
+            </span>
+            {alertDetail.markedAsFalsePositive ? (
+              <Badge variant="secondary" className="gap-1">
+                <XCircle className="size-3.5" />
+                Marked as not relevant
+              </Badge>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMarkFalsePositive}
+                disabled={markingFalsePositive}
+              >
+                {markingFalsePositive ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <>
+                    <XCircle className="mr-1.5 size-4" />
+                    Mark as false positive
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
           <div className="w-full flex flex-col items-center justify-center gap-2.5 p-5 border-b">
             <div className="w-full flex items-center justify-center gap-5">
               <span className="flex-1 text-left font-bold">URL</span>
@@ -506,6 +558,14 @@ export function AlertDetailClient({
                 ))}
               </div>
             )}
+          </div>
+          <div className="w-full p-5">
+            <VersionHistoryCard
+              targetId={alertDetail.target.id}
+              targetLabel={alertDetail.target.label}
+              currentVersionId={alertDetail.version.id}
+              organizationId={organizationId}
+            />
           </div>
         </div>
       </div>

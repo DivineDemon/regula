@@ -8,6 +8,10 @@ export type RobotsPolicy = {
   isAllowed: (url: string) => boolean;
 };
 
+function denyAllPolicy(userAgent: string): RobotsPolicy {
+  return { userAgent, isAllowed: () => false };
+}
+
 function stripComment(line: string): string {
   const idx = line.indexOf("#");
   return idx >= 0 ? line.slice(0, idx) : line;
@@ -146,7 +150,11 @@ async function fetchText(
 /**
  * Fetch + parse robots.txt for an origin, returning a lightweight policy checker.
  *
- * If robots.txt is missing or cannot be fetched, this returns a policy that allows all.
+ * Defaults to "allow all" when robots.txt is missing (404) or empty.
+ *
+ * Security/politeness note:
+ * - If robots.txt is present and explicitly disallows, we respect it.
+ * - If robots.txt is forbidden/unauthorized (401/403), we default to deny-all for that origin.
  */
 export async function loadRobotsPolicy(
   origin: string,
@@ -156,10 +164,13 @@ export async function loadRobotsPolicy(
 
   try {
     const { status, text } = await fetchText(robotsUrl, opts.timeoutMs);
-    // Treat missing/forbidden robots as "allow all" for this prototype.
-    if (status >= 400 || !text.trim()) {
+    if (status === 401 || status === 403) return denyAllPolicy(opts.userAgent);
+    // Missing robots.txt is common; allow all by default.
+    if (status === 404)
       return { userAgent: opts.userAgent, isAllowed: () => true };
-    }
+    // Other errors: default allow-all to avoid breaking crawls on flaky hosts.
+    if (status >= 400 || !text.trim())
+      return { userAgent: opts.userAgent, isAllowed: () => true };
 
     const sections = parseRobotsTxt(text);
     const rules = pickRulesForUserAgent(sections, opts.userAgent);

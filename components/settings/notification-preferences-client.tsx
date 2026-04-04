@@ -4,6 +4,7 @@ import { Bell, Mail, Webhook } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +18,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Switch } from "../ui/switch";
 
+const ALERT_CATEGORIES = [
+  { value: "aml", label: "AML" },
+  { value: "kyc", label: "KYC" },
+  { value: "licensing", label: "Licensing" },
+  { value: "fees", label: "Fees" },
+  { value: "regulations", label: "Regulations" },
+  { value: "other", label: "Other" },
+] as const;
+
 interface NotificationPreferences {
   id?: string;
   emailEnabled: boolean;
@@ -24,6 +34,7 @@ interface NotificationPreferences {
   emailDigest: boolean;
   emailDigestFrequency: "daily" | "weekly";
   alertThreshold: "all" | "low" | "medium" | "high";
+  categoryFilters: string[] | null;
   webhookEnabled: boolean;
   webhookUrl: string | null;
   webhookSecret: string | null;
@@ -42,6 +53,7 @@ export function NotificationPreferencesClient({
     emailDigest: true,
     emailDigestFrequency: "daily",
     alertThreshold: "all",
+    categoryFilters: null,
     webhookEnabled: false,
     webhookUrl: null,
     webhookSecret: null,
@@ -56,7 +68,10 @@ export function NotificationPreferencesClient({
         );
         if (response.ok) {
           const data = await response.json();
-          setPreferences(data);
+          setPreferences({
+            ...data,
+            categoryFilters: data.categoryFilters ?? null,
+          });
         }
       } catch (error) {
         console.error("Error fetching preferences:", error);
@@ -330,6 +345,51 @@ export function NotificationPreferencesClient({
                 <SelectItem value="high">High Only</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
+        <div className="w-full flex flex-col items-start justify-start border rounded-3xl">
+          <div className="w-full flex items-center justify-start p-5 border-b gap-3.5">
+            <div className="size-12 p-3 rounded-full bg-primary/20 text-primary">
+              <Bell className="size-full" />
+            </div>
+            <div className="flex-1 flex flex-col items-start justify-start">
+              <span className="text-lg font-bold">Category Filter</span>
+              <span className="text-sm text-muted-foreground">
+                Only receive notifications for these alert categories (leave all
+                unchecked for all categories)
+              </span>
+            </div>
+          </div>
+          <div className="w-full flex flex-wrap items-center justify-start gap-4 p-5">
+            {ALERT_CATEGORIES.map((cat) => {
+              const selected = (preferences.categoryFilters ?? []).includes(
+                cat.value,
+              );
+              return (
+                <div key={cat.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`category-${cat.value}`}
+                    checked={selected}
+                    onCheckedChange={(checked) => {
+                      const current = preferences.categoryFilters ?? [];
+                      const next = checked
+                        ? [...current, cat.value]
+                        : current.filter((c) => c !== cat.value);
+                      setPreferences((prev) => ({
+                        ...prev,
+                        categoryFilters: next.length > 0 ? next : null,
+                      }));
+                    }}
+                  />
+                  <Label
+                    htmlFor={`category-${cat.value}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {cat.label}
+                  </Label>
+                </div>
+              );
+            })}
           </div>
         </div>
         <div className="w-full flex flex-col items-start justify-start border rounded-3xl">

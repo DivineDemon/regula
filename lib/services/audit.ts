@@ -22,6 +22,7 @@ export type AuditAction =
   | "alert.status_changed"
   | "alert.assigned"
   | "alert.comment_added"
+  | "alert.false_positive_marked"
   | "alert.exported"
   // Organization operations
   | "organization.created"
@@ -50,7 +51,9 @@ export type AuditAction =
   | "system.crawl_failed"
   // Webhook operations
   | "webhook.delivered"
-  | "webhook.failed";
+  | "webhook.failed"
+  // Usage / quotas
+  | "usage.quota_warning_sent";
 
 /**
  * Audit log metadata structure

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { CreateOrganizationDialog } from "@/components/organizations/create-organization-dialog";
 import { OrganizationList } from "@/components/organizations/organization-list";
 import { OrganizationSettingsForm } from "@/components/organizations/organization-settings-form";
+import { OrganizationProfileSettings } from "@/components/settings/organization-profile-settings";
 import { auth } from "@/lib/auth/config";
 import { UserRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
@@ -74,12 +75,15 @@ export default async function OrganizationSettingsPage() {
         </div>
         <CreateOrganizationDialog />
       </div>
-      <div className="w-full h-full grid grid-cols-2 items-start justify-start gap-5">
+      <div className="w-full grid grid-cols-2 items-start justify-start gap-5">
+        <OrganizationList organizations={userOrganizations} />
         <OrganizationSettingsForm
           organizationId={currentOrg.id}
           initialName={currentOrg.name}
         />
-        <OrganizationList organizations={userOrganizations} />
+        <div className="w-full h-full col-span-2">
+          <OrganizationProfileSettings organizationId={currentOrg.id} />
+        </div>
       </div>
     </div>
   );

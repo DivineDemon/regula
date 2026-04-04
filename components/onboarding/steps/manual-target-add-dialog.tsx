@@ -59,6 +59,7 @@ interface DiscoveredTarget {
   reasoning?: string;
   relevantServices?: string[];
   relevantCountries?: string[];
+  isManual?: boolean;
 }
 
 interface ManualTargetAddDialogProps {
@@ -93,6 +94,7 @@ export function ManualTargetAddDialog({
         jurisdiction: data.jurisdiction || undefined,
         category: data.category || undefined,
         confidence: 1.0, // Manual targets have 100% confidence
+        isManual: true,
       };
 
       onAddTarget(newTarget);

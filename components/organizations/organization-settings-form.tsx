@@ -81,7 +81,7 @@ export function OrganizationSettingsForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="w-full h-[calc(100vh-200px)] flex flex-col items-start justify-start gap-5 p-5 border shadow rounded-3xl bg-card"
+        className="w-full h-fit flex flex-col items-start justify-start gap-5 p-5 border shadow rounded-3xl bg-card"
       >
         <FormField
           control={form.control}

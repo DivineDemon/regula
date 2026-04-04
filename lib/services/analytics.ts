@@ -1,6 +1,12 @@
 import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { alerts, targets, usageMetrics, versions } from "@/lib/db/schema";
+import {
+  alertFeedback,
+  alerts,
+  targets,
+  usageMetrics,
+  versions,
+} from "@/lib/db/schema";
 import type { AlertStatus } from "@/lib/db/schema/alerts";
 import { CACHE_KEYS, CACHE_TTL, withCache } from "./cache-helpers";
 
@@ -104,8 +110,26 @@ export async function getAlertStatistics(organizationId: string) {
         .from(alerts)
         .where(eq(alerts.organizationId, organizationId));
 
+      const total = Number(stats.total);
+
+      // False positive count (distinct alerts marked as false positive)
+      const [fpStats] = await db
+        .select({
+          falsePositiveCount: count(),
+        })
+        .from(alertFeedback)
+        .where(
+          and(
+            eq(alertFeedback.organizationId, organizationId),
+            eq(alertFeedback.type, "false_positive"),
+          ),
+        );
+
+      const falsePositiveCount = Number(fpStats?.falsePositiveCount ?? 0);
+      const falsePositiveRate = total > 0 ? falsePositiveCount / total : 0;
+
       return {
-        total: Number(stats.total),
+        total,
         byStatus: {
           new: Number(stats.new),
           triaged: Number(stats.triaged),
@@ -114,6 +138,8 @@ export async function getAlertStatistics(organizationId: string) {
         },
         avgImpactScore: stats.avgImpactScore ? Number(stats.avgImpactScore) : 0,
         highImpactCount: Number(stats.highImpact),
+        falsePositiveCount,
+        falsePositiveRate,
       };
     },
   );

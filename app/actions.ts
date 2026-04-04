@@ -22,7 +22,9 @@ export async function sendContactEmail(data: z.infer<typeof contactSchema>) {
 
   try {
     const { error } = await resend.emails.send({
-      from: "Regula Contact <onboarding@resend.dev>", // Default Resend test domain or configured domain
+      from:
+        process.env.EMAIL_FROM ??
+        "Regula Contact <onboarding@regula.mushoodhanif.com>",
       to: ["infoscintia@gmail.com"], // Assuming this is the recipient based on conversation history context
       subject: `New Inquiry from ${name}`,
       replyTo: email,

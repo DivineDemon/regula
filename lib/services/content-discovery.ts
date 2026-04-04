@@ -493,7 +493,7 @@ async function extractFromArchive(
         method: "HEAD",
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.ai)",
+            "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.mushoodhanif.com)",
         },
         signal: AbortSignal.timeout(5000), // 5 second timeout
       });
@@ -906,7 +906,7 @@ async function generateFingerprint(url: string): Promise<string> {
       method: "HEAD",
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.ai)",
+          "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.mushoodhanif.com)",
       },
       // Add timeout to prevent hanging
       signal: AbortSignal.timeout(10000), // 10 second timeout

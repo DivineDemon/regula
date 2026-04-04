@@ -1,10 +1,12 @@
 "use client";
 import {
+  Bell,
   Building2,
   ChevronsUpDown,
   ClipboardCheck,
   LogOut,
   Settings,
+  Shield,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -209,6 +211,18 @@ export function NavUser({
                 <Link href="/settings/consent">
                   <ClipboardCheck className="mr-2 h-4 w-4" />
                   Consent
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/notifications">
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifications
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/data-privacy">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Data Privacy
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>

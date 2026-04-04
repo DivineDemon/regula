@@ -1,4 +1,4 @@
-import { cache } from "./redis";
+import { cache } from "./cache-store";
 
 /**
  * Cache keys
@@ -35,8 +35,7 @@ export const CACHE_TTL = {
 
 /**
  * Invalidate cache for a specific key
- * Note: Upstash Redis REST API doesn't support pattern-based deletion (SCAN),
- * so this function only deletes exact keys. For pattern-based invalidation,
+ * Only exact keys are deleted (no pattern scan). For bulk invalidation,
  * call invalidateCacheKeys with an array of specific keys.
  */
 export async function invalidateCache(key: string): Promise<boolean> {

@@ -1,7 +1,7 @@
 import { and, count, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { alerts, organizations, targets, versions } from "@/lib/db/schema";
-import { PLAN_CONFIGS, type PlanType } from "./stripe";
+import { PLAN_CONFIGS, type PlanType } from "@/lib/plans";
 import { usageService } from "./usage";
 
 /**

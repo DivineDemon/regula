@@ -223,6 +223,8 @@ Stripe handles PCI-sensitive information
 Tax collection handled per country (VAT/GST if necessary)
 Invoices meet regulatory guidelines for each region
 Billing data stored securely and tamper-resistant
+
+**Implementation note (tax and invoicing):** Payment processing is implemented via Stripe. PCI-sensitive data is not stored by Regula. Tax and invoicing behaviour (VAT/GST, jurisdiction-specific invoice formats) should be configured in Stripe (e.g. Stripe Tax, invoice templates) and reviewed per operating region. Any gaps for specific countries (e.g. local invoice layout or tax rules) should be documented and addressed as part of regional rollout.
 9. 📝 Legal Documents Regula Must Publish
 1. Terms of Service
 2. Privacy Policy

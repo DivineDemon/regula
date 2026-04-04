@@ -416,6 +416,14 @@ export function BillingClient({
           },
         )}
       </div>
+      {PLAN_CONFIGS[currentPlan].supportGuarantee && (
+        <div className="w-full rounded-lg border bg-muted/30 px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Support: </span>
+            {PLAN_CONFIGS[currentPlan].supportGuarantee}
+          </p>
+        </div>
+      )}
       {paymentMethods.length === 0 ? (
         <Empty>
           <EmptyHeader>

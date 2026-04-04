@@ -172,10 +172,10 @@ export default function AcceptableUsePolicyPage() {
               If you become aware of any violation of this AUP, please report it
               to us immediately at&nbsp;
               <a
-                href="mailto:abuse@regula.com"
+                href="mailto:abuse@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                abuse@regula.com
+                abuse@regula.mushoodhanif.com
               </a>
               .
             </p>
@@ -212,10 +212,10 @@ export default function AcceptableUsePolicyPage() {
             <p className="mt-2">
               Email:&nbsp;
               <a
-                href="mailto:legal@regula.com"
+                href="mailto:legal@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                legal@regula.com
+                legal@regula.mushoodhanif.com
               </a>
             </p>
           </section>

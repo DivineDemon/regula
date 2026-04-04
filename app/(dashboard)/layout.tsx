@@ -16,6 +16,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { auth } from "@/lib/auth/config";
+import { isPlatformAdmin } from "@/lib/auth/platform-admin";
 import { db } from "@/lib/db";
 import { organizationMembers, organizations, users } from "@/lib/db/schema";
 
@@ -62,6 +63,8 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const currentOrgId = cookieStore.get("currentOrganizationId")?.value ?? null;
 
+  const platformAdmin = isPlatformAdmin(session.user.email ?? undefined);
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -76,7 +79,10 @@ export default async function DashboardLayout({
             </div>
           </div>
         </SidebarHeader>
-        <DashboardNav userRole={userOrgs[0]?.role} />
+        <DashboardNav
+          userRole={userOrgs[0]?.role}
+          isPlatformAdmin={platformAdmin}
+        />
         <SidebarFooter>
           <NavUser
             user={{

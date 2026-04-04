@@ -178,9 +178,11 @@ export function VersionComparisonViewer({
   return (
     <>
       {diffResult && (
-        <div className="w-full grid grid-cols-2 items-start justify-start gap-5">
-          <div className="w-full col-span-1 flex items-center justify-center rounded-lg border p-2.5">
-            <span className="flex-1 text-left font-bold">Changes Detected</span>
+        <div className="grid w-full min-w-0 grid-cols-2 items-start justify-start gap-5">
+          <div className="w-full min-w-0 col-span-1 flex items-center justify-center rounded-lg border p-2.5">
+            <span className="flex-1 min-w-0 text-left font-bold">
+              Changes Detected
+            </span>
             <span
               className={cn("text-sm px-4 py-1 rounded-full", {
                 "bg-green-500/20 text-green-600": diffResult.hasChanges,
@@ -190,8 +192,10 @@ export function VersionComparisonViewer({
               {diffResult.hasChanges ? "Yes" : "No"}
             </span>
           </div>
-          <div className="w-full col-span-1 flex items-center justify-center rounded-lg border p-2.5">
-            <span className="flex-1 text-left font-bold">Similarity Score</span>
+          <div className="w-full min-w-0 col-span-1 flex items-center justify-center rounded-lg border p-2.5">
+            <span className="flex-1 min-w-0 text-left font-bold">
+              Similarity Score
+            </span>
             <span
               className={cn("text-sm px-4 py-1 rounded-full", {
                 "bg-green-500/20 text-green-600":
@@ -207,25 +211,27 @@ export function VersionComparisonViewer({
                 : "N/A"}
             </span>
           </div>
-          <div className="w-full col-span-1 flex flex-col items-start justify-start rounded-lg border gap-2.5 p-2.5">
-            <span className="w-full text-left font-bold">
+          <div className="w-full col-span-1 flex min-w-0 flex-col items-start justify-start gap-2.5 rounded-lg border p-2.5 overflow-hidden">
+            <span className="w-full shrink-0 text-left font-bold">
               Affected Sections
             </span>
-            <div className="w-full flex items-start justify-start flex-wrap">
+            <div className="flex min-w-0 w-full flex-wrap gap-1">
               {diffResult.affectedSections.map((t) => (
-                <div className="p-0.5 inline-block w-fit" key={t}>
-                  <Badge key={t}>{t}</Badge>
-                </div>
+                <span key={t} className="max-w-full min-w-0 shrink">
+                  <Badge className="block max-w-full truncate">{t}</Badge>
+                </span>
               ))}
             </div>
           </div>
-          <div className="w-full col-span-1 flex flex-col items-start justify-start rounded-lg border gap-2.5 p-2.5">
-            <span className="w-full text-left font-bold">Change Types</span>
-            <div className="w-full flex items-start justify-start flex-wrap">
+          <div className="w-full col-span-1 flex min-w-0 flex-col items-start justify-start gap-2.5 rounded-lg border p-2.5 overflow-hidden">
+            <span className="w-full shrink-0 text-left font-bold">
+              Change Types
+            </span>
+            <div className="flex min-w-0 w-full flex-wrap gap-1">
               {diffResult.changeTypes.map((t) => (
-                <div className="p-0.5 inline-block w-fit" key={t}>
-                  <Badge key={t}>{t}</Badge>
-                </div>
+                <span key={t} className="max-w-full min-w-0 shrink">
+                  <Badge>{t}</Badge>
+                </span>
               ))}
             </div>
           </div>

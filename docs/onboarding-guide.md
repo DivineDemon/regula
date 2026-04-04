@@ -301,7 +301,7 @@ You can update your organization profile at any time:
 ## Support
 
 If you need help during onboarding:
-- 📧 Email: support@regula.com
+- 📧 Email: support@regula.mushoodhanif.com
 - 💬 In-app chat (if available)
 - 📚 Check the documentation
 - 🐛 Report bugs via GitHub issues

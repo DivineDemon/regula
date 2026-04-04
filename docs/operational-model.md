@@ -153,7 +153,7 @@ Tenant data isolation
 Strict RBAC
 Audit logs for every action
 4.2 Data Retention
-Free: 3 months
+Free: 30 days
 Starter: 1 year
 Growth: 3 years
 Enterprise: 5+ years

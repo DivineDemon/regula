@@ -5,8 +5,7 @@ import { Features } from "@/components/landing/features";
 import { Footer } from "@/components/landing/footer";
 import { Hero } from "@/components/landing/hero";
 import { Navbar } from "@/components/landing/navbar";
-import { Stats } from "@/components/landing/stats";
-import { Testimonials } from "@/components/landing/testimonials";
+import { Pricing } from "@/components/landing/pricing";
 
 export default function LandingPage() {
   return (
@@ -16,12 +15,10 @@ export default function LandingPage() {
       <hr className="w-full border-t border-border" />
       <Features />
       <hr className="w-full border-t border-border" />
-      <Stats />
-      <hr className="w-full border-t border-border" />
       <Comparison />
       <hr className="w-full border-t border-border" />
-      <Testimonials />
-      <hr className="w-full hidden xl:block border-t border-border" />
+      <Pricing />
+      <hr className="w-full border-t border-border" />
       <CTA />
       <hr className="w-full border-t border-border" />
       <Contact />

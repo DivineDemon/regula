@@ -25,6 +25,7 @@ interface DiscoveredTarget {
   reasoning?: string;
   relevantServices?: string[];
   relevantCountries?: string[];
+  isManual?: boolean;
 }
 
 interface Step8TargetSelectionProps {
@@ -232,6 +233,11 @@ export function Step8TargetSelection({
                       "border-b": target.reasoning,
                     })}
                   >
+                    {target.isManual && (
+                      <Badge variant="outline" className="bg-primary/5">
+                        Manual
+                      </Badge>
+                    )}
                     {target.jurisdiction && (
                       <Badge variant="outline">{target.jurisdiction}</Badge>
                     )}

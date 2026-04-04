@@ -320,19 +320,19 @@ export default function DataProcessingAddendumPage() {
             <p className="mt-2">
               Email:&nbsp;
               <a
-                href="mailto:privacy@regula.com"
+                href="mailto:privacy@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                privacy@regula.com
+                privacy@regula.mushoodhanif.com
               </a>
             </p>
             <p className="mt-2">
               Data Protection Officer:&nbsp;
               <a
-                href="mailto:dpo@regula.com"
+                href="mailto:dpo@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                dpo@regula.com
+                dpo@regula.mushoodhanif.com
               </a>
             </p>
           </section>

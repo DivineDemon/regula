@@ -47,7 +47,7 @@ export async function POST(request: Request) {
           signal: controller.signal,
           headers: {
             "User-Agent":
-              "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.app)",
+              "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.mushoodhanif.com)",
           },
           redirect: "follow",
         });
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
             signal: getController.signal,
             headers: {
               "User-Agent":
-                "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.app)",
+                "Mozilla/5.0 (compatible; RegulaBot/1.0; +https://regula.mushoodhanif.com)",
             },
             redirect: "follow",
           });

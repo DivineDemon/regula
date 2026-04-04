@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   alertAssignments,
   alertComments,
+  alertFeedback,
   alerts,
   targets,
   users,
@@ -229,6 +230,7 @@ export async function generateAlert(params: {
     summary: alert.summary ?? "",
     impactScore: alert.impactScore ?? null,
     alertUrl,
+    targetCategory: target.category ?? null,
   }).catch((error) => {
     console.error("Error sending real-time alert notifications:", error);
     // Don't throw - notification failures shouldn't break alert creation
@@ -344,6 +346,18 @@ export async function getAlertWithDetails(
     .where(eq(alertComments.alertId, alertId))
     .orderBy(desc(alertComments.createdAt));
 
+  // Check if marked as false positive
+  const [fp] = await db
+    .select()
+    .from(alertFeedback)
+    .where(
+      and(
+        eq(alertFeedback.alertId, alertId),
+        eq(alertFeedback.type, "false_positive"),
+      ),
+    )
+    .limit(1);
+
   return {
     ...alertData,
     assignments: assignments.map((a) => ({
@@ -354,7 +368,43 @@ export async function getAlertWithDetails(
       ...c.comment,
       user: c.user,
     })),
+    markedAsFalsePositive: !!fp,
   };
+}
+
+/**
+ * Mark alert as false positive (or "not relevant")
+ */
+export async function markAlertFalsePositive(
+  alertId: string,
+  organizationId: string,
+  userId: string,
+  reason?: string | null,
+) {
+  const [alert] = await db
+    .select()
+    .from(alerts)
+    .where(
+      and(eq(alerts.id, alertId), eq(alerts.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  if (!alert) {
+    throw new Error("Alert not found or access denied");
+  }
+
+  const id = nanoid();
+  await db.insert(alertFeedback).values({
+    id,
+    organizationId,
+    alertId,
+    userId,
+    type: "false_positive",
+    reason: reason ?? null,
+    createdAt: new Date(),
+  });
+
+  return { id };
 }
 
 /**

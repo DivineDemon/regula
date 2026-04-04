@@ -211,10 +211,10 @@ export default function TermsOfServicePage() {
               If you have any questions about these Terms, please contact us
               at&nbsp;
               <a
-                href="mailto:legal@regula.com"
+                href="mailto:legal@regula.mushoodhanif.com"
                 className="text-primary hover:underline"
               >
-                legal@regula.com
+                legal@regula.mushoodhanif.com
               </a>
               .
             </p>

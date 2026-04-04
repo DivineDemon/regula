@@ -1,11 +1,17 @@
 "use client";
 
-import { Edit, FileText } from "lucide-react";
+import { Edit, FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCountryName } from "@/lib/data/countries";
+import { downloadMarkdownAsPdf } from "@/lib/onboarding/markdown-to-pdf";
+import {
+  buildOrganizationProfileMarkdown,
+  organizationProfilePdfFilename,
+} from "@/lib/onboarding/profile-to-markdown";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
 import { cn } from "@/lib/utils";
 
@@ -65,8 +71,22 @@ export function ProfileSummary({
     });
   };
 
-  const handlePrint = () => {
-    window.print();
+  const [pdfExporting, setPdfExporting] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setPdfExporting(true);
+    try {
+      const markdown = buildOrganizationProfileMarkdown(profile);
+      await downloadMarkdownAsPdf(
+        markdown,
+        organizationProfilePdfFilename(profile),
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not generate the PDF. Please try again.");
+    } finally {
+      setPdfExporting(false);
+    }
   };
 
   return (
@@ -74,9 +94,18 @@ export function ProfileSummary({
       <div className="flex items-center justify-between print:hidden">
         <h2 className="text-xl font-bold">Profile Summary</h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint}>
-            <FileText className="mr-2 size-4" />
-            Print / Save
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={pdfExporting}
+          >
+            {pdfExporting ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <FileText className="mr-2 size-4" />
+            )}
+            {pdfExporting ? "Generating…" : "Download PDF"}
           </Button>
         </div>
       </div>

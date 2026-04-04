@@ -8,6 +8,8 @@ import type { CrawlResult } from "@/lib/services/crawler";
 import { crawlUrl } from "@/lib/services/crawler";
 import { detectChanges } from "@/lib/services/diff";
 import { quotaService } from "@/lib/services/quotas";
+import { usageService } from "@/lib/services/usage";
+import { usageWarningService } from "@/lib/services/usage-warnings";
 import { getVersion, storeVersion } from "@/lib/services/versions";
 
 /**
@@ -199,6 +201,20 @@ export const crawlTarget = inngest.createFunction(
         });
       });
 
+      // Meter usage (monthly)
+      await step.run("meter-usage-crawl", async () => {
+        await usageService.incrementMetric({
+          organizationId,
+          metricType: "crawls",
+          amount: 1,
+        });
+        await usageService.incrementMetric({
+          organizationId,
+          metricType: "storage_bytes",
+          amount: crawlResult.content.length,
+        });
+      });
+
       // Step 6: Check for changes
       // Note: Adaptive crawl runs in background, so we only do traditional change detection here
       // Graph-based changes will be detected by the background adaptive crawl function
@@ -385,6 +401,12 @@ export const crawlTarget = inngest.createFunction(
               `Alert generated successfully for target ${targetId}: alertId=${alert.id}, impactScore=${alert.impactScore}`,
             );
 
+            await usageService.incrementMetric({
+              organizationId,
+              metricType: "alerts",
+              amount: 1,
+            });
+
             return { alertId: alert.id, impactScore: alert.impactScore };
           } catch (error) {
             console.error("Error generating alert:", error);
@@ -409,6 +431,11 @@ export const crawlTarget = inngest.createFunction(
             updatedAt: new Date(),
           })
           .where(eq(targets.id, targetId));
+      });
+
+      // Check and send quota warnings (idempotent per period)
+      await step.run("usage-warnings", async () => {
+        await usageWarningService.checkAndSendWarnings(organizationId);
       });
 
       return {

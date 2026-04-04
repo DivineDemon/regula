@@ -1,10 +1,10 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
 
 interface DiscoveredTarget {
@@ -101,13 +101,10 @@ export function Step7TargetDiscovery({
     <div className="w-full max-w-1/2 mx-auto h-[calc(100vh-277px)] flex flex-col items-center justify-center gap-5">
       {isDiscovering && (
         <div className="mt-auto w-full flex flex-col items-center justify-center gap-2">
-          <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">
-            {isDiscovering
-              ? "Our AI is analyzing your profile to find relevant regulatory targets..."
-              : error
-                ? "Discovery failed. Please try again."
-                : "Discovery complete!"}
+          <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+          <p className="text-sm text-muted-foreground text-center max-w-md">
+            Our AI is analyzing your profile to find relevant regulatory
+            targets…
           </p>
         </div>
       )}
@@ -122,11 +119,11 @@ export function Step7TargetDiscovery({
       </div>
       {isDiscovering && (
         <div className="w-full rounded-lg border bg-muted/50 p-4">
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• Analyzing your services and geographic operations</p>
-            <p>• Identifying relevant regulatory authorities</p>
-            <p>• Matching compliance requirements</p>
-            <p>• Generating target recommendations</p>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
           </div>
         </div>
       )}

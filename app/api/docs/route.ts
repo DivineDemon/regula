@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         "API for programmatic access to Regula regulatory monitoring platform",
       contact: {
         name: "Regula Support",
-        email: "support@regula.com",
+        email: "support@regula.mushoodhanif.com",
       },
     },
     servers: [

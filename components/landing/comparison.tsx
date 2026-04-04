@@ -21,11 +21,11 @@ export function Comparison() {
           >
             <div className="max-w-xl mx-auto flex flex-col items-center justify-center gap-2">
               <h2 className="text-3xl md:text-4xl font-medium tracking-tighter text-center text-balance pb-1">
-                Why Choose Regula Over Competitors
+                Why FinTech Teams Choose Regula
               </h2>
               <p className="text-muted-foreground text-center text-balance font-medium">
-                See how Regula compares to leading regulatory compliance
-                platforms. Built for speed, affordability, and emerging markets.
+                Built for fast-moving compliance teams that need emerging-market
+                coverage, actionable analysis, and SMB-friendly pricing.
               </p>
             </div>
           </motion.div>

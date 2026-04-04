@@ -1,12 +1,13 @@
 "use client";
 
 import {
+  Activity,
   AlertCircle,
+  AlertTriangle,
   BarChart3,
-  Bell,
   FileText,
   LayoutDashboard,
-  Shield,
+  LineChart,
   Target,
   Users,
 } from "lucide-react";
@@ -28,6 +29,7 @@ type MenuItem = {
   url: string;
   icon: React.ComponentType<{ className?: string }>;
   adminOnly?: boolean;
+  platformAdminOnly?: boolean;
 };
 
 const menuItems: MenuItem[] = [
@@ -35,6 +37,11 @@ const menuItems: MenuItem[] = [
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Analytics",
+    url: "/analytics",
+    icon: LineChart,
   },
   {
     title: "Targets",
@@ -48,16 +55,18 @@ const menuItems: MenuItem[] = [
   },
 ];
 
+// Org/workspace-level only. User/account items (Profile, Consent, Notifications, Data Privacy) live in nav-user dropdown.
 const settingsItems: MenuItem[] = [
+  {
+    title: "Founder metrics",
+    url: "/admin/kpis",
+    icon: Activity,
+    platformAdminOnly: true,
+  },
   {
     title: "Members",
     url: "/settings/organization/members",
     icon: Users,
-  },
-  {
-    title: "Notifications",
-    url: "/settings/notifications",
-    icon: Bell,
   },
   {
     title: "Billing & Usage",
@@ -71,17 +80,22 @@ const settingsItems: MenuItem[] = [
     adminOnly: true,
   },
   {
-    title: "Data Privacy",
-    url: "/settings/data-privacy",
-    icon: Shield,
+    title: "Incidents",
+    url: "/settings/incidents",
+    icon: AlertTriangle,
+    adminOnly: true,
   },
 ];
 
 interface DashboardNavProps {
   userRole?: string;
+  isPlatformAdmin?: boolean;
 }
 
-export function DashboardNav({ userRole }: DashboardNavProps) {
+export function DashboardNav({
+  userRole,
+  isPlatformAdmin: isPlatformAdminUser = false,
+}: DashboardNavProps) {
   const pathname = usePathname();
   const isAdmin = userRole === UserRole.ADMIN;
 
@@ -117,7 +131,11 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
         <SidebarGroupContent>
           <SidebarMenu>
             {settingsItems
-              .filter((item) => !item.adminOnly || isAdmin)
+              .filter(
+                (item) =>
+                  (!item.adminOnly || isAdmin) &&
+                  (!item.platformAdminOnly || isPlatformAdminUser),
+              )
               .map((item) => {
                 // Check for exact match
                 if (pathname === item.url) {

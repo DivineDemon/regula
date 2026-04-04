@@ -5,13 +5,13 @@ import { db } from "@/lib/db";
 import { organizations, targets } from "@/lib/db/schema";
 import type { TargetCategory, TargetStatus } from "@/lib/db/schema/targets";
 import { triggerCrawl } from "@/lib/inngest/functions/crawl";
-import { createAuditLog } from "@/lib/services/audit";
-import { quotaService } from "@/lib/services/quotas";
 import {
   isCrawlFrequencyAllowed,
   PLAN_CONFIGS,
   type PlanType,
-} from "@/lib/services/stripe";
+} from "@/lib/plans";
+import { createAuditLog } from "@/lib/services/audit";
+import { quotaService } from "@/lib/services/quotas";
 import { usageService } from "@/lib/services/usage";
 import {
   errorResponse,

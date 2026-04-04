@@ -9,6 +9,7 @@ import type {
 } from "./crawl4ai";
 import { crawl, crawlMd } from "./crawl4ai";
 import type { BuildGraphResult, GraphEdge, GraphNode } from "./graph";
+import { loadRobotsPolicy } from "./robots";
 import type { RunContext } from "./run-manifest";
 import { deleteS3Object, presignGetObjectUrl, uploadUrlToS3 } from "./s3";
 import { canonicalizeUrl } from "./url";
@@ -115,6 +116,21 @@ export type WriteDocsOptions = {
    * Defaults to 4.
    */
   concurrency?: number;
+  /**
+   * Respect robots.txt during document fetches.
+   * Defaults to true.
+   */
+  robotsEnabled?: boolean;
+  /**
+   * User-Agent used for robots.txt lookups.
+   * Defaults to "regula-bot".
+   */
+  robotsUserAgent?: string;
+  /**
+   * Timeout for robots.txt fetches.
+   * Defaults to 6000ms.
+   */
+  robotsTimeoutMs?: number;
   /**
    * Optional URL prioritizer used to decide which docs to fetch first.
    * Higher scores are fetched earlier; ties broken lexicographically by URL.
@@ -588,6 +604,10 @@ export async function writeDocsJsonlAndTxt(
 
   const writeDocTxt = opts?.writeDocTxt ?? true;
   const concurrency = opts?.concurrency ?? 4;
+  const robotsEnabled = opts?.robotsEnabled ?? true;
+  const robotsUserAgent = opts?.robotsUserAgent ?? "regula-bot";
+  const robotsTimeoutMs = opts?.robotsTimeoutMs ?? 6000;
+  const robotsByOrigin = new Map<string, ReturnType<typeof loadRobotsPolicy>>();
 
   let docsFetched = 0;
   let docErrors = 0;
@@ -599,6 +619,40 @@ export async function writeDocsJsonlAndTxt(
     const fetchedAt = nowIso();
 
     try {
+      if (robotsEnabled) {
+        const origin = originOf(node.url);
+        if (origin) {
+          let policyPromise = robotsByOrigin.get(origin);
+          if (!policyPromise) {
+            policyPromise = loadRobotsPolicy(origin, {
+              userAgent: robotsUserAgent,
+              timeoutMs: robotsTimeoutMs,
+            });
+            robotsByOrigin.set(origin, policyPromise);
+          }
+          const policy = await policyPromise;
+          if (!policy.isAllowed(node.url)) {
+            docsSkipped += 1;
+            const versioning = analyzeVersioning({ url: node.url });
+            const rec: ExtractedDocRecord = {
+              version: 1,
+              id: bestDocId(canonicalizeUrl(node.url) ?? node.url),
+              fetchedAt,
+              url: node.url,
+              requestedUrl: node.url,
+              classification: node.classification,
+              versioning,
+              contentType:
+                node.classification?.docKind === "pdf" ? "pdf" : "unknown",
+              lineage,
+              skipped: true,
+              skipReason: "robots:disallowed",
+            };
+            return rec;
+          }
+        }
+      }
+
       // Conservative default: avoid fetching cross-origin docs unless they look "same-site"
       // (same parent domain) or have extremely high relevance. This keeps runs green and
       // avoids wasting budget on random external links.

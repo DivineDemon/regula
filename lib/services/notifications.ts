@@ -47,10 +47,23 @@ export async function getNotificationPreferences(
     emailDigest: true,
     emailDigestFrequency: "daily" as const,
     alertThreshold: "all" as const,
+    categoryFilters: null,
     webhookEnabled: false,
     webhookUrl: null,
     webhookSecret: null,
   };
+}
+
+/**
+ * Check if alert passes category filter (empty filter = allow all)
+ */
+export function passesCategoryFilter(
+  targetCategory: string | null,
+  categoryFilters: string[] | null | undefined,
+): boolean {
+  if (!categoryFilters || categoryFilters.length === 0) return true;
+  if (!targetCategory) return false;
+  return categoryFilters.includes(targetCategory);
 }
 
 /**
@@ -80,6 +93,7 @@ export async function sendRealtimeAlertNotification(params: {
   summary: string;
   impactScore: number | null;
   alertUrl: string;
+  targetCategory?: string | null;
 }) {
   const {
     alertId,
@@ -88,6 +102,7 @@ export async function sendRealtimeAlertNotification(params: {
     summary,
     impactScore,
     alertUrl,
+    targetCategory = null,
   } = params;
 
   // Check if organization's plan allows real-time alerts
@@ -137,6 +152,16 @@ export async function sendRealtimeAlertNotification(params: {
       !meetsThreshold(
         impactScore,
         prefs.alertThreshold as "all" | "low" | "medium" | "high",
+      )
+    ) {
+      return;
+    }
+
+    // Check category filter
+    if (
+      !passesCategoryFilter(
+        targetCategory ?? null,
+        prefs.categoryFilters ?? null,
       )
     ) {
       return;

@@ -1,119 +1,12 @@
 import Stripe from "stripe";
+import {
+  isCrawlFrequencyAllowed,
+  PLAN_CONFIGS,
+  type PlanType,
+} from "@/lib/plans";
 
-/**
- * Plan configuration with limits and pricing
- * These can be imported client-side without initializing the Stripe client
- */
-export type PlanType = "free" | "starter" | "growth" | "enterprise";
-
-export interface PlanConfig {
-  name: string;
-  priceId?: string; // Stripe Price ID for monthly subscription
-  price: number; // Monthly price in cents
-  targets: number; // Maximum number of targets
-  crawlFrequency: string; // Minimum crawl frequency (hourly, daily, weekly, monthly)
-  crawlQuota?: number; // Maximum crawls per month (undefined = unlimited)
-  storageQuota?: number; // Maximum storage in bytes (undefined = unlimited)
-  retentionDays: number; // Data retention in days
-  realTimeAlerts: boolean; // Real-time alerts vs digest only
-  features: string[];
-}
-
-export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
-  free: {
-    name: "Free",
-    price: 0,
-    targets: 3,
-    crawlFrequency: "daily",
-    crawlQuota: 90, // 3 targets × 1 crawl/day × 30 days
-    storageQuota: 1073741824, // 1GB in bytes
-    retentionDays: 90, // 3 months
-    realTimeAlerts: false,
-    features: [
-      "3 targets",
-      "Daily crawls",
-      "Daily digest emails",
-      "3-month data retention",
-    ],
-  },
-  starter: {
-    name: "Starter",
-    priceId: process.env.STRIPE_PRICE_ID_STARTER, // Set in env
-    price: 3900, // $39/month in cents
-    targets: 10,
-    crawlFrequency: "hourly",
-    crawlQuota: 7200, // 10 targets × 24 crawls/day × 30 days
-    storageQuota: 10737418240, // 10GB in bytes
-    retentionDays: 365, // 1 year
-    realTimeAlerts: false,
-    features: [
-      "10 targets",
-      "Hourly crawls",
-      "Daily digest emails",
-      "1-year data retention",
-    ],
-  },
-  growth: {
-    name: "Growth",
-    priceId: process.env.STRIPE_PRICE_ID_GROWTH, // Set in env
-    price: 12900, // $129/month in cents
-    targets: 50,
-    crawlFrequency: "hourly",
-    crawlQuota: 36000, // 50 targets × 24 crawls/day × 30 days
-    storageQuota: 107374182400, // 100GB in bytes
-    retentionDays: 1095, // 3 years
-    realTimeAlerts: true,
-    features: [
-      "50 targets",
-      "Hourly crawls",
-      "Real-time alerts",
-      "3-year data retention",
-    ],
-  },
-  enterprise: {
-    name: "Enterprise",
-    priceId: process.env.STRIPE_PRICE_ID_ENTERPRISE, // Set in env
-    price: 49900, // $499/month in cents (base)
-    targets: Infinity, // Unlimited
-    crawlFrequency: "hourly",
-    // crawlQuota and storageQuota undefined = unlimited
-    retentionDays: Infinity, // 5+ years (effectively unlimited)
-    realTimeAlerts: true,
-    features: [
-      "Unlimited targets",
-      "Hourly crawls",
-      "Real-time alerts",
-      "5+ year data retention",
-      "Priority support",
-      "Custom features",
-    ],
-  },
-};
-
-/**
- * Validate if a crawl frequency is allowed for a plan
- */
-export function isCrawlFrequencyAllowed(
-  plan: PlanType,
-  crawlFrequency: "hourly" | "daily" | "weekly" | "monthly",
-): boolean {
-  const planConfig = PLAN_CONFIGS[plan];
-  const planFrequency = planConfig.crawlFrequency;
-
-  // Define frequency hierarchy (more frequent = higher priority)
-  const frequencyHierarchy: Record<string, number> = {
-    hourly: 4,
-    daily: 3,
-    weekly: 2,
-    monthly: 1,
-  };
-
-  const requestedLevel = frequencyHierarchy[crawlFrequency] ?? 0;
-  const allowedLevel = frequencyHierarchy[planFrequency] ?? 0;
-
-  // User can only use frequencies at or below (less frequent than) their plan allows
-  return requestedLevel <= allowedLevel;
-}
+export { PLAN_CONFIGS, isCrawlFrequencyAllowed };
+export type { PlanType };
 
 /**
  * Get Stripe client instance (lazy initialization)

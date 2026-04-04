@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
       emailDigest: true,
       emailDigestFrequency: "daily",
       alertThreshold: "all",
+      categoryFilters: null,
       webhookEnabled: false,
       webhookUrl: null,
       webhookSecret: null,
@@ -108,6 +109,7 @@ export async function POST(request: NextRequest) {
       emailDigest,
       emailDigestFrequency,
       alertThreshold,
+      categoryFilters,
       webhookEnabled,
       webhookUrl,
       webhookSecret,
@@ -176,6 +178,7 @@ export async function POST(request: NextRequest) {
         emailDigest?: boolean;
         emailDigestFrequency?: string;
         alertThreshold?: string;
+        categoryFilters?: string[] | null;
         webhookEnabled?: boolean;
         webhookUrl?: string | null;
         webhookSecret?: string | null;
@@ -191,6 +194,10 @@ export async function POST(request: NextRequest) {
         updateData.emailDigestFrequency = emailDigestFrequency;
       if (alertThreshold !== undefined)
         updateData.alertThreshold = alertThreshold;
+      if (categoryFilters !== undefined)
+        updateData.categoryFilters = Array.isArray(categoryFilters)
+          ? categoryFilters
+          : null;
       if (webhookEnabled !== undefined)
         updateData.webhookEnabled = webhookEnabled;
       if (webhookUrl !== undefined) updateData.webhookUrl = webhookUrl || null;
@@ -217,6 +224,9 @@ export async function POST(request: NextRequest) {
           emailDigest: emailDigest ?? true,
           emailDigestFrequency: emailDigestFrequency ?? "daily",
           alertThreshold: alertThreshold ?? "all",
+          categoryFilters: Array.isArray(categoryFilters)
+            ? categoryFilters
+            : null,
           webhookEnabled: webhookEnabled ?? false,
           webhookUrl: webhookUrl ?? null,
           webhookSecret: webhookSecret ?? null,

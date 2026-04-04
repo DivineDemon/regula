@@ -25,11 +25,13 @@ import {
 } from "@/components/ui/select";
 import { COUNTRIES } from "@/lib/data/countries";
 import type { OrganizationProfile } from "@/lib/types/organization-profile";
+import { cn } from "@/lib/utils";
 import type { CompanyProfileInput } from "@/lib/validations/organization-profile";
 import { companyProfileSchema } from "@/lib/validations/organization-profile";
 
 interface Step1CompanyProfileProps {
   organizationId: string;
+  className?: string;
   initialData?: Partial<OrganizationProfile>;
   onComplete: (data: Partial<OrganizationProfile>) => void;
   onBack: () => void;
@@ -37,6 +39,7 @@ interface Step1CompanyProfileProps {
 
 export function Step1CompanyProfile({
   organizationId: _organizationId,
+  className,
   initialData,
   onComplete,
   onBack,
@@ -72,7 +75,12 @@ export function Step1CompanyProfile({
   };
 
   return (
-    <div className="w-full h-full max-w-1/2 mx-auto flex flex-col items-start justify-start gap-5">
+    <div
+      className={cn(
+        "w-full h-full mx-auto flex flex-col items-start justify-start gap-5",
+        className,
+      )}
+    >
       <div className="w-full flex flex-col items-center justify-center">
         <h2 className="w-full text-left text-2xl font-bold">Company Profile</h2>
         <p className="w-full text-left text-muted-foreground">

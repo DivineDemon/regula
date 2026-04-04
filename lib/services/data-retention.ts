@@ -1,7 +1,13 @@
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { alerts, organizations, targets, versions } from "@/lib/db/schema";
-import { PLAN_CONFIGS, type PlanType } from "./stripe";
+import {
+  alerts,
+  auditLogs,
+  organizations,
+  targets,
+  versions,
+} from "@/lib/db/schema";
+import { PLAN_CONFIGS, type PlanType } from "@/lib/plans";
 
 /**
  * Data retention service
@@ -35,6 +41,7 @@ export const dataRetentionService = {
   async cleanupOrganizationData(organizationId: string): Promise<{
     deletedVersions: number;
     deletedAlerts: number;
+    deletedAuditLogs: number;
   }> {
     // Get organization plan
     const [org] = await db
@@ -52,7 +59,30 @@ export const dataRetentionService = {
 
     // If unlimited retention, nothing to clean up
     if (!cutoffDate) {
-      return { deletedVersions: 0, deletedAlerts: 0 };
+      return { deletedVersions: 0, deletedAlerts: 0, deletedAuditLogs: 0 };
+    }
+
+    // Delete old audit logs for the organization
+    const auditLogsToDelete = await db
+      .select({ id: auditLogs.id })
+      .from(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.organizationId, organizationId),
+          lt(auditLogs.createdAt, cutoffDate),
+        ),
+      );
+
+    const deletedAuditLogsCount = auditLogsToDelete.length;
+    if (deletedAuditLogsCount > 0) {
+      await db
+        .delete(auditLogs)
+        .where(
+          and(
+            eq(auditLogs.organizationId, organizationId),
+            lt(auditLogs.createdAt, cutoffDate),
+          ),
+        );
     }
 
     // Get all targets for this organization
@@ -64,7 +94,11 @@ export const dataRetentionService = {
     const targetIds = orgTargets.map((t) => t.id);
 
     if (targetIds.length === 0) {
-      return { deletedVersions: 0, deletedAlerts: 0 };
+      return {
+        deletedVersions: 0,
+        deletedAlerts: 0,
+        deletedAuditLogs: deletedAuditLogsCount,
+      };
     }
 
     // Find old versions (before cutoff date) for all targets
@@ -81,7 +115,11 @@ export const dataRetentionService = {
     const versionIds = oldVersions.map((v) => v.id);
 
     if (versionIds.length === 0) {
-      return { deletedVersions: 0, deletedAlerts: 0 };
+      return {
+        deletedVersions: 0,
+        deletedAlerts: 0,
+        deletedAuditLogs: deletedAuditLogsCount,
+      };
     }
 
     // Count alerts that will be deleted (for reporting)
@@ -108,6 +146,7 @@ export const dataRetentionService = {
     return {
       deletedVersions: versionIds.length,
       deletedAlerts: deletedAlertsCount,
+      deletedAuditLogs: deletedAuditLogsCount,
     };
   },
 
@@ -120,6 +159,7 @@ export const dataRetentionService = {
       organizationId: string;
       deletedVersions: number;
       deletedAlerts: number;
+      deletedAuditLogs: number;
     }[]
   > {
     const allOrgs = await db.select().from(organizations);

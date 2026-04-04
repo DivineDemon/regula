@@ -57,6 +57,34 @@
       "when": 1766698324217,
       "tag": "0007_nosy_kabuki",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1766700000000,
+      "tag": "0008_phase3_notification_feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1766701000000,
+      "tag": "0009_incidents",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1766702000000,
+      "tag": "0010_feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1766800000000,
+      "tag": "0011_kv_store",
+      "breakpoints": true
     }
   ]
 }

@@ -126,19 +126,42 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-10 w-64 mb-2" />
+      <div className="w-full h-full flex flex-col items-start justify-start gap-5">
+        <div className="w-full flex flex-col items-start justify-start gap-2">
+          <Skeleton className="h-10 w-64" />
           <Skeleton className="h-6 w-96" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="w-full grid grid-cols-4 gap-5">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32" />
+            <Skeleton key={i} className="h-24 rounded-lg" />
           ))}
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
+        <div className="w-full grid grid-cols-2 gap-5">
+          <Skeleton className="h-96 rounded-3xl" />
+          <Skeleton className="h-96 rounded-3xl" />
+        </div>
+        <div className="w-full h-fit border rounded-3xl flex flex-col items-start justify-start divide-y">
+          <div className="w-full flex items-center justify-between p-5 border-b">
+            <Skeleton className="h-6 flex-1 max-w-[140px]" />
+            <Skeleton className="h-9 w-20 ml-2" />
+          </div>
+          <div className="w-full grid grid-cols-3 items-start justify-start gap-2.5 p-2.5">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="w-full col-span-1 flex flex-col items-start justify-start border rounded-lg p-2.5 gap-2.5"
+              >
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <div className="flex gap-2 mt-2">
+                  <Skeleton className="h-5 w-14" />
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -274,7 +297,7 @@ export function DashboardContent({ organizationId }: DashboardContentProps) {
             </Empty>
           ) : (
             <div className="w-full grid grid-cols-3 items-start justify-start divide-y gap-2.5 p-2.5">
-              {metrics.alerts.recent.map((alert) => (
+              {metrics.alerts.recent.slice(0, 3).map((alert) => (
                 <div
                   key={alert.id}
                   className="w-full col-span-1 flex flex-col items-start justify-start border rounded-lg"
