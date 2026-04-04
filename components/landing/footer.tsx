@@ -27,8 +27,9 @@ export function Footer() {
               <span className="font-bold text-lg font-heading">Regula</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-              Regulatory intelligence and compliance operations for
-              emerging-market FinTech teams.
+              Crawler-backed monitoring, triage workflows, and exports—built for
+              teams that need a clear system of record, not legal advice in a
+              box.
             </p>
           </motion.div>
           <motion.div

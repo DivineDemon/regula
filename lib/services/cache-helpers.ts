@@ -14,6 +14,8 @@ export const CACHE_KEYS = {
     `target-statistics:${organizationId}`,
   complianceHealth: (organizationId: string) =>
     `compliance-health:${organizationId}`,
+  adaptiveFeedbackSignals: (organizationId: string) =>
+    `adaptive-feedback-signals:${organizationId}`,
   apiKey: (keyPrefix: string) => `api-key:${keyPrefix}`,
   webhookConfigs: (organizationId: string) =>
     `webhook-configs:${organizationId}`,
@@ -29,6 +31,7 @@ export const CACHE_TTL = {
   alertStatistics: 300, // 5 minutes
   targetStatistics: 600, // 10 minutes
   complianceHealth: 300, // 5 minutes
+  adaptiveFeedbackSignals: 300, // 5 minutes — feedback/lifecycle aggregates
   apiKey: 86400, // 24 hours
   webhookConfigs: 3600, // 1 hour
 } as const;

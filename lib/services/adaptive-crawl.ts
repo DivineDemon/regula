@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { contentGraphs } from "@/lib/db/schema";
 import {
   type ContentGraph,
+  type ContentNode,
   discoverContentIntelligently,
 } from "./content-discovery";
 import {
@@ -20,7 +21,22 @@ import {
   storeContentGraph,
 } from "./pattern-detection";
 
+import {
+  adaptiveCrawlPriorityMultiplier,
+  getTargetSourceReliability,
+} from "./source-reliability";
 import { storeVersion } from "./versions";
+
+function nodeRecencyScoreForCrawl(node: ContentNode): number {
+  const t = node.metadata?.lastModified
+    ? new Date(node.metadata.lastModified).getTime()
+    : new Date(node.lastSeen).getTime();
+  const ageMs = Date.now() - t;
+  const oneYear = 365 * 24 * 60 * 60 * 1000;
+  if (ageMs <= 0) return 1;
+  if (ageMs >= oneYear) return 0;
+  return 1 - ageMs / oneYear;
+}
 
 export type { GraphDiff };
 
@@ -45,6 +61,9 @@ export async function adaptiveCrawlTarget(params: {
   graphDiff?: GraphDiff;
 }> {
   const { targetId, organizationId, targetUrl, targetConfig } = params;
+
+  const sourceReliability = await getTargetSourceReliability(targetId);
+  const relComposite = sourceReliability.composite;
 
   // Step 1: Get or create content graph
   const previousGraph = await getLatestContentGraph(targetId);
@@ -77,14 +96,43 @@ export async function adaptiveCrawlTarget(params: {
 
   // Rank goal documents (distance, relevance, recency, doc confidence)
   const goalDocs = rankGoalDocuments(contentGraph, targetConfig);
+  const goalDocsByPriority = [...goalDocs].sort((a, b) => {
+    const pa = adaptiveCrawlPriorityMultiplier({
+      goalDocumentScore: a.score,
+      recencyScore: a.recencyScore,
+      targetReliabilityComposite: relComposite,
+    });
+    const pb = adaptiveCrawlPriorityMultiplier({
+      goalDocumentScore: b.score,
+      recencyScore: b.recencyScore,
+      targetReliabilityComposite: relComposite,
+    });
+    return pb - pa;
+  });
 
   // Crawl PDFs directly if strategy says so; use goal-doc ranking when available
   if (strategy.directPdfUrls) {
-    const pdfGoals = goalDocs.filter((g) => g.node.type === "pdf");
+    const pdfGoals = goalDocsByPriority.filter((g) => g.node.type === "pdf");
     const pdfNodes =
       pdfGoals.length > 0
         ? pdfGoals.map((g) => g.node)
-        : contentGraph.nodes.filter((n) => n.type === "pdf");
+        : [...contentGraph.nodes.filter((n) => n.type === "pdf")].sort(
+            (n1, n2) => {
+              const r1 = nodeRecencyScoreForCrawl(n1);
+              const r2 = nodeRecencyScoreForCrawl(n2);
+              const p1 = adaptiveCrawlPriorityMultiplier({
+                goalDocumentScore: 0.5,
+                recencyScore: r1,
+                targetReliabilityComposite: relComposite,
+              });
+              const p2 = adaptiveCrawlPriorityMultiplier({
+                goalDocumentScore: 0.5,
+                recencyScore: r2,
+                targetReliabilityComposite: relComposite,
+              });
+              return p2 - p1;
+            },
+          );
     const nodesToCrawl = pdfNodes.slice(0, maxPdfs);
 
     if (isFirstCrawl && pdfNodes.length > maxPdfs) {
@@ -119,7 +167,23 @@ export async function adaptiveCrawlTarget(params: {
 
   // Crawl pages if strategy says so
   if (maxPages > 0) {
-    const pageNodes = contentGraph.nodes.filter((n) => n.type === "page");
+    const pageNodes = [
+      ...contentGraph.nodes.filter((n) => n.type === "page"),
+    ].sort((n1, n2) => {
+      const r1 = nodeRecencyScoreForCrawl(n1);
+      const r2 = nodeRecencyScoreForCrawl(n2);
+      const p1 = adaptiveCrawlPriorityMultiplier({
+        goalDocumentScore: 0.5,
+        recencyScore: r1,
+        targetReliabilityComposite: relComposite,
+      });
+      const p2 = adaptiveCrawlPriorityMultiplier({
+        goalDocumentScore: 0.5,
+        recencyScore: r2,
+        targetReliabilityComposite: relComposite,
+      });
+      return p2 - p1;
+    });
     const nodesToCrawl = pageNodes.slice(0, maxPages);
 
     if (isFirstCrawl && pageNodes.length > maxPages) {

@@ -1,6 +1,13 @@
 "use client";
 
-import { AlertCircle, Clock, Target, TrendingUp } from "lucide-react";
+import {
+  AlertCircle,
+  Clock,
+  Gauge,
+  Target,
+  Timer,
+  TrendingUp,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   Select,
@@ -12,6 +19,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertsByRegulator } from "./alerts-by-regulator";
 import { AlertsOverTime } from "./alerts-over-time";
+
+interface OrgSourceReliability {
+  activeTargets: number;
+  targetsWithLastCrawl: number;
+  lastCrawlCompleted: number;
+  lastCrawlFailed: number;
+  lastCrawlSuccessPercent: number | null;
+  medianFreshnessHours: number | null;
+}
 
 interface OrgComplianceAnalytics {
   alertsOverTime: Array<{
@@ -28,7 +44,22 @@ interface OrgComplianceAnalytics {
     actionableCount: number;
     actionableRatio: number;
     falsePositiveRate: number;
+    falsePositiveCount: number;
+    triagedCount: number;
+    medianTimeToFirstActionMinutes: number | null;
+    timeToFirstActionSampleSize: number;
   };
+  moat: {
+    sourceReliability: OrgSourceReliability;
+  };
+}
+
+function formatMedianMinutes(minutes: number | null): string {
+  if (minutes == null) return "—";
+  if (minutes >= 120) {
+    return `${Math.round((minutes / 60) * 10) / 10}h`;
+  }
+  return `${minutes}m`;
 }
 
 interface ComplianceHealthScore {
@@ -167,7 +198,8 @@ export function AnalyticsContent({
         <div className="flex-1 flex flex-col items-start justify-start gap-2">
           <h1 className="w-full text-left text-3xl font-bold">Analytics</h1>
           <p className="w-full text-left text-muted-foreground">
-            Alerts over time, engagement, and coverage for {organizationName}
+            Alerts, engagement, false positives, time-to-action, and source
+            reliability for {organizationName}
           </p>
         </div>
         <Select value={rangeDays} onValueChange={setRangeDays}>
@@ -249,50 +281,116 @@ export function AnalyticsContent({
           <AlertsByRegulator data={analytics.byJurisdiction ?? []} />
         )}
       </div>
-      {summary && (summary.totalAlerts ?? 0) > 0 && (
-        <div className="w-full grid grid-cols-3 gap-5 items-center justify-center">
-          <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
-            <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
-              <Clock className="size-full" />
+      {summary && (
+        <>
+          <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-5 items-center justify-center">
+            <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+              <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+                <Clock className="size-full" />
+              </div>
+              <div className="flex-1 flex items-center flex-col justify-center gap-">
+                <span className="w-full text-left text-2xl font-bold">
+                  {summary.openedOrActedCount ?? 0}
+                </span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Actioned / closed
+                </span>
+              </div>
             </div>
-            <div className="flex-1 flex items-center flex-col justify-center gap-">
-              <span className="w-full text-left text-2xl font-bold">
-                {summary.openedOrActedCount ?? 0}
-              </span>
-              <span className="w-full text-left text-sm text-muted-foreground">
-                Opened / acted alerts
-              </span>
+            <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+              <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+                <Target className="size-full" />
+              </div>
+              <div className="flex-1 flex items-center flex-col justify-center gap-">
+                <span className="w-full text-left text-2xl font-bold">
+                  {summary.triagedCount ?? 0}
+                </span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Triaged
+                </span>
+              </div>
+            </div>
+            <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+              <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+                <Target className="size-full" />
+              </div>
+              <div className="flex-1 flex items-center flex-col justify-center gap-">
+                <span className="w-full text-left text-2xl font-bold">
+                  {summary.actionableCount ?? 0}
+                </span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Actionable alerts
+                </span>
+              </div>
+            </div>
+            <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+              <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+                <AlertCircle className="size-full" />
+              </div>
+              <div className="flex-1 flex items-center flex-col justify-center gap-">
+                <span className="w-full text-left text-2xl font-bold">
+                  {summary.falsePositiveRate != null
+                    ? `${Math.round(summary.falsePositiveRate)}%`
+                    : "—"}
+                </span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  False positives ({summary.falsePositiveCount ?? 0} /{" "}
+                  {summary.totalAlerts ?? 0} in range)
+                </span>
+              </div>
             </div>
           </div>
-          <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
-            <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
-              <Target className="size-full" />
+          <div className="w-full grid grid-cols-2 md:grid-cols-3 gap-5 items-center justify-center">
+            <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+              <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+                <Timer className="size-full" />
+              </div>
+              <div className="flex-1 flex items-center flex-col justify-center gap-">
+                <span className="w-full text-left text-2xl font-bold">
+                  {formatMedianMinutes(
+                    summary.medianTimeToFirstActionMinutes ?? null,
+                  )}
+                </span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Median time to first action (n=
+                  {summary.timeToFirstActionSampleSize ?? 0})
+                </span>
+              </div>
             </div>
-            <div className="flex-1 flex items-center flex-col justify-center gap-">
-              <span className="w-full text-left text-2xl font-bold">
-                {summary.actionableCount ?? 0}
-              </span>
-              <span className="w-full text-left text-sm text-muted-foreground">
-                Actionable alerts
-              </span>
+            <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+              <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+                <Gauge className="size-full" />
+              </div>
+              <div className="flex-1 flex items-center flex-col justify-center gap-">
+                <span className="w-full text-left text-2xl font-bold">
+                  {analytics?.moat?.sourceReliability
+                    ?.lastCrawlSuccessPercent != null
+                    ? `${analytics.moat.sourceReliability.lastCrawlSuccessPercent}%`
+                    : "—"}
+                </span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Last crawl succeeded (active targets)
+                </span>
+              </div>
+            </div>
+            <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
+              <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
+                <TrendingUp className="size-full" />
+              </div>
+              <div className="flex-1 flex items-center flex-col justify-center gap-">
+                <span className="w-full text-left text-2xl font-bold">
+                  {analytics?.moat?.sourceReliability?.medianFreshnessHours !=
+                  null
+                    ? `${analytics.moat.sourceReliability.medianFreshnessHours}h`
+                    : "—"}
+                </span>
+                <span className="w-full text-left text-sm text-muted-foreground">
+                  Median source freshness
+                </span>
+              </div>
             </div>
           </div>
-          <div className="w-full col-span-1 p-2.5 rounded-lg border flex items-center justify-center gap-2.5">
-            <div className="size-12 bg-primary/20 text-primary p-3 rounded-lg">
-              <AlertCircle className="size-full" />
-            </div>
-            <div className="flex-1 flex items-center flex-col justify-center gap-">
-              <span className="w-full text-left text-2xl font-bold">
-                {summary.falsePositiveRate != null
-                  ? `${Math.round(summary.falsePositiveRate)}%`
-                  : "—"}
-              </span>
-              <span className="w-full text-left text-sm text-muted-foreground">
-                False positive rate
-              </span>
-            </div>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

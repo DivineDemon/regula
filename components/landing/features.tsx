@@ -522,8 +522,9 @@ export function Features() {
               A Regulatory Operations System, Not a Document Watcher
             </h2>
             <p className="text-muted-foreground text-center text-balance font-medium">
-              From coverage discovery to compliance execution, Regula connects
-              detection, intelligence, and team action in one workflow.
+              From discovery to triage and export, Regula connects detection,
+              scoring, and team action in one workflow—use Analytics to review
+              engagement and operational signals in your organization.
             </p>
           </div>
         </motion.div>

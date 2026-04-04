@@ -54,7 +54,7 @@ export const actionOptions = [
 export const testimonials = [
   {
     content:
-      "Regula has transformed how we monitor regulatory changes. We've eliminated hours of manual work and never miss a critical update.",
+      "Regula centralizes how we watch regulatory sites—fewer spreadsheets, and alerts land with context we can assign and close in one place.",
     author: "Sarah Chen",
     handle: "sarahchen",
     role: "Compliance Director",
@@ -62,7 +62,7 @@ export const testimonials = [
   },
   {
     content:
-      "The AI-powered analysis is incredibly accurate. It helps us prioritize which regulatory changes actually impact our operations.",
+      "Summaries and impact scores help us triage faster; we still verify anything that goes to legal, but the signal-to-noise is much better.",
     author: "Michael Okafor",
     handle: "mokafor",
     role: "Head of Risk",
@@ -70,7 +70,7 @@ export const testimonials = [
   },
   {
     content:
-      "Setting up monitoring for multiple jurisdictions used to take weeks. With Regula, we were up and running in under an hour.",
+      "We connected our first targets and had digest alerts running the same day—onboarding was mostly configuration, not a services project.",
     author: "Priya Sharma",
     handle: "priyasharma",
     role: "CTO",
@@ -78,7 +78,7 @@ export const testimonials = [
   },
   {
     content:
-      "The real-time alerts have been a game-changer. We're always the first to know about regulatory updates in our markets.",
+      "Growth-tier real-time alerts plus Slack routing mean compliance sees changes without refreshing five regulator homepages.",
     author: "David Kim",
     handle: "davidkim",
     role: "VP of Compliance",
@@ -86,7 +86,7 @@ export const testimonials = [
   },
   {
     content:
-      "Regula's impact scoring saves us countless hours. We focus on what matters most to our business operations.",
+      "Impact scoring and tags let analysts agree on what to escalate; exports and audit logs support how we document decisions.",
     author: "Maria Rodriguez",
     handle: "mariarod",
     role: "Regulatory Affairs Manager",
@@ -94,7 +94,7 @@ export const testimonials = [
   },
   {
     content:
-      "The multi-channel notifications ensure our team never misses critical updates, no matter where they are.",
+      "Email digests for some owners, in-app for the core team—notification preferences match how we actually work.",
     author: "James Wilson",
     handle: "jameswilson",
     role: "Chief Compliance Officer",
@@ -102,30 +102,34 @@ export const testimonials = [
   },
 ];
 
+/**
+ * Comparison table: Regula column = shipped capabilities.
+ * Other columns use "Varies" / partial where we do not verify vendor-by-vendor.
+ */
 export const comparisons = [
   {
-    feature: "Starting price",
-    regula: "$39/month",
-    regology: "Contact for pricing (est. $800–6,000/month)",
-    corlytics: "Contact for pricing (est. $800–6,000/month)",
-    gnowit: "Contact for pricing (est. $800–6,000/month)",
+    feature: "Published self-serve pricing",
+    regula: "$39/mo Starter (listed in app)",
+    regology: "Contact vendor",
+    corlytics: "Contact vendor",
+    gnowit: "Contact vendor",
   },
   {
-    feature: "SMB Friendly Pricing",
+    feature: "Free tier (try before buy)",
+    regula: "3 targets, daily crawls, 30-day retention",
+    regology: "Varies",
+    corlytics: "Varies",
+    gnowit: "Varies",
+  },
+  {
+    feature: "Monitors sources you configure",
     regula: true,
-    regology: false,
-    corlytics: false,
-    gnowit: "partial",
+    regology: "Varies",
+    corlytics: "Varies",
+    gnowit: "Varies",
   },
   {
-    feature: "Emerging Market Coverage",
-    regula: true,
-    regology: false,
-    corlytics: false,
-    gnowit: false,
-  },
-  {
-    feature: "Workflow depth",
+    feature: "Alert workflow",
     regula: true,
     regology: "partial",
     corlytics: "partial",
@@ -146,31 +150,38 @@ export const comparisons = [
     gnowit: "partial",
   },
   {
-    feature: "Governance",
+    feature: "Audit logs, GDPR, retention controls",
     regula: true,
     regology: "partial",
     corlytics: "partial",
     gnowit: "partial",
   },
   {
-    feature: "Real-Time Crawling",
-    regula: true,
-    regology: true,
-    corlytics: "partial",
-    gnowit: true,
+    feature: "Crawl frequency (configurable by plan)",
+    regula: "Daily–hourly (see plans)",
+    regology: "Varies",
+    corlytics: "Varies",
+    gnowit: "Varies",
   },
   {
-    feature: "AI Impact Scoring",
+    feature: "LLM classification & impact scoring",
     regula: true,
     regology: "partial",
     corlytics: true,
     gnowit: "partial",
   },
   {
-    feature: "Setup Time",
-    regula: "< 15 mins",
-    regology: "Weeks",
-    corlytics: "Months",
-    gnowit: "Days",
+    feature: "In-app analytics",
+    regula: true,
+    regology: "Varies",
+    corlytics: "Varies",
+    gnowit: "Varies",
+  },
+  {
+    feature: "Typical self-serve time-to-value",
+    regula: "< 15 minutes to first targets",
+    regology: "Varies",
+    corlytics: "Varies",
+    gnowit: "Varies",
   },
 ];

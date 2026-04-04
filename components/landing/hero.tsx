@@ -3,9 +3,9 @@ import Link from "next/link";
 import { HeroVideoDialog } from "../ui/hero-video-dialog";
 
 const HERO_TRUST_CHIPS = [
-  "Built for SBP, CBN, MENA",
-  "AI impact scoring + version evidence",
-  "Audit-ready workflows",
+  "Free: 3 targets · daily crawls (see Pricing)",
+  "Impact scoring, diffs & version compare",
+  "Analytics, audit logs, CSV/PDF export",
 ] as const;
 
 export function Hero() {
@@ -18,7 +18,7 @@ export function Hero() {
             <p className="bg-accent/50 rounded-full text-sm h-8 px-3 flex items-center gap-2 max-w-[calc(100vw-3rem)]">
               <Layers className="size-4 shrink-0" />
               <span className="truncate sm:whitespace-normal">
-                Real-Time Regulatory Monitoring
+                Regulatory change monitoring
               </span>
             </p>
             <div className="flex flex-col items-center justify-center gap-5 md:p-5 lg:p-0">
@@ -26,9 +26,10 @@ export function Hero() {
                 Regulatory Operations for Emerging-Market FinTech Teams
               </h1>
               <p className="text-sm md:text-lg text-center text-muted-foreground font-medium text-balance leading-relaxed tracking-tight">
-                Automatically discover what to monitor, detect meaningful
-                regulatory changes, and route them into auditable workflows your
-                team can act on.
+                Discover targets, crawl on a schedule you choose, detect
+                material changes, and route them into triage workflows with
+                history you can export—then measure engagement and coverage in
+                Analytics.
               </p>
             </div>
             <div className="flex flex-col items-center gap-4 w-full">

@@ -9,6 +9,12 @@ import {
   versions,
 } from "@/lib/db/schema";
 import { PLAN_CONFIGS, type PlanType } from "@/lib/plans";
+import {
+  getCrawlAuditReliability,
+  getMedianTimeToFirstAction,
+  getOrgSourceReliability,
+  type OrgSourceReliability,
+} from "@/lib/services/analytics";
 
 /** Platform-level KPIs for founder/internal dashboard */
 export interface PlatformKpis {
@@ -38,6 +44,23 @@ export interface PlatformKpis {
   operational: {
     crawlSuccessRate: number | null; // if we have success/fail in versions
     totalCrawlsLast30Days: number;
+    /** Targets whose last crawl job completed vs failed (active targets only). */
+    targetLastCrawlSuccessPercent: number | null;
+    targetLastCrawlFailed: number;
+    targetLastCrawlCompleted: number;
+    crawlAuditSuccessPercent: number | null;
+    crawlAuditCompleted: number;
+    crawlAuditFailed: number;
+  };
+  /** Rolling window baselines for moat / quality metrics (aligned with 90-day plan). */
+  moatBaselines: {
+    windowDays: number;
+    alertsInWindow: number;
+    falsePositiveCount: number;
+    falsePositiveRate: number;
+    alertEngagementRate: number;
+    medianTimeToFirstActionMinutes: number | null;
+    timeToFirstActionSampleSize: number;
   };
 }
 
@@ -57,6 +80,13 @@ export interface OrgComplianceAnalytics {
     actionableCount: number;
     actionableRatio: number;
     falsePositiveRate: number;
+    falsePositiveCount: number;
+    triagedCount: number;
+    medianTimeToFirstActionMinutes: number | null;
+    timeToFirstActionSampleSize: number;
+  };
+  moat: {
+    sourceReliability: OrgSourceReliability;
   };
 }
 
@@ -182,7 +212,59 @@ export async function getPlatformKpis(): Promise<PlatformKpis> {
     .from(versions)
     .where(gte(versions.crawledAt, thirtyDaysAgo));
   const totalCrawlsLast30Days = Number(crawlStats?.total ?? 0);
-  const crawlSuccessRate = totalCrawlsLast30Days > 0 ? 100 : null; // We don't have explicit success/fail; treat all as success for now
+  const crawlSuccessRate = totalCrawlsLast30Days > 0 ? 100 : null; // Version rows imply a stored crawl outcome
+
+  // Target-level last crawl outcomes (source reliability proxy)
+  const [targetCrawlMix] = await db
+    .select({
+      completed: sql<number>`count(*) filter (where ${targets.lastCrawlStatus} = 'completed' and ${targets.status} = 'active')`,
+      failed: sql<number>`count(*) filter (where ${targets.lastCrawlStatus} = 'failed' and ${targets.status} = 'active')`,
+    })
+    .from(targets);
+  const tcCompleted = Number(targetCrawlMix?.completed ?? 0);
+  const tcFailed = Number(targetCrawlMix?.failed ?? 0);
+  const tcDenom = tcCompleted + tcFailed;
+  const targetLastCrawlSuccessPercent =
+    tcDenom > 0 ? Math.round((tcCompleted / tcDenom) * 1000) / 10 : null;
+
+  const crawlAudit = await getCrawlAuditReliability(thirtyDaysAgo);
+
+  // Moat baselines: last 30 days, same window as operational crawls
+  const [alerts30d] = await db
+    .select({
+      inWindow: count(),
+      actionedOrClosed: sql<number>`count(*) filter (where ${alerts.status} in ('actioned', 'closed'))`,
+    })
+    .from(alerts)
+    .where(
+      and(gte(alerts.createdAt, thirtyDaysAgo), lte(alerts.createdAt, now)),
+    );
+  const alertsInWindow = Number(alerts30d?.inWindow ?? 0);
+  const actionedClosed30 = Number(alerts30d?.actionedOrClosed ?? 0);
+
+  const [fp30] = await db
+    .select({
+      c: sql<number>`count(distinct ${alertFeedback.alertId})`,
+    })
+    .from(alertFeedback)
+    .innerJoin(alerts, eq(alertFeedback.alertId, alerts.id))
+    .where(
+      and(
+        eq(alertFeedback.type, "false_positive"),
+        gte(alerts.createdAt, thirtyDaysAgo),
+        lte(alerts.createdAt, now),
+      ),
+    );
+  const falsePositiveCount30 = Number(fp30?.c ?? 0);
+  const falsePositiveRate30 =
+    alertsInWindow > 0 ? (falsePositiveCount30 / alertsInWindow) * 100 : 0;
+  const alertEngagementRate30 =
+    alertsInWindow > 0 ? (actionedClosed30 / alertsInWindow) * 100 : 0;
+
+  const ttfPlatform = await getMedianTimeToFirstAction({
+    startDate: thirtyDaysAgo,
+    endDate: now,
+  });
 
   return {
     northStar: {
@@ -214,6 +296,21 @@ export async function getPlatformKpis(): Promise<PlatformKpis> {
     operational: {
       crawlSuccessRate,
       totalCrawlsLast30Days,
+      targetLastCrawlSuccessPercent,
+      targetLastCrawlFailed: tcFailed,
+      targetLastCrawlCompleted: tcCompleted,
+      crawlAuditSuccessPercent: crawlAudit.successPercent,
+      crawlAuditCompleted: crawlAudit.completed,
+      crawlAuditFailed: crawlAudit.failed,
+    },
+    moatBaselines: {
+      windowDays: 30,
+      alertsInWindow,
+      falsePositiveCount: falsePositiveCount30,
+      falsePositiveRate: Math.round(falsePositiveRate30 * 10) / 10,
+      alertEngagementRate: Math.round(alertEngagementRate30 * 10) / 10,
+      medianTimeToFirstActionMinutes: ttfPlatform.medianMinutes,
+      timeToFirstActionSampleSize: ttfPlatform.sampleSize,
     },
   };
 }
@@ -229,71 +326,86 @@ export async function getOrgComplianceAnalytics(
       ? sql`date_trunc('week', ${alerts.createdAt})::date`
       : sql`date_trunc('day', ${alerts.createdAt})::date`;
 
-  const trends = await db
-    .select({
-      date: sql<string>`${trunc}::text`,
-      count: count(),
-      openedOrActed: sql<number>`count(*) filter (where ${alerts.status} in ('actioned', 'closed'))`,
-      low: sql<number>`count(*) filter (where ${alerts.impactScore} < 0.4 or ${alerts.impactScore} is null)`,
-      medium: sql<number>`count(*) filter (where ${alerts.impactScore} >= 0.4 and ${alerts.impactScore} < 0.7)`,
-      high: sql<number>`count(*) filter (where ${alerts.impactScore} >= 0.7)`,
-    })
-    .from(alerts)
-    .where(
-      and(
-        eq(alerts.organizationId, organizationId),
-        gte(alerts.createdAt, startDate),
-        lte(alerts.createdAt, endDate),
-      ),
-    )
-    .groupBy(trunc)
-    .orderBy(trunc);
+  const [trends, byJurisdiction, summaryRows, fpRows, ttf, sourceReliability] =
+    await Promise.all([
+      db
+        .select({
+          date: sql<string>`${trunc}::text`,
+          count: count(),
+          openedOrActed: sql<number>`count(*) filter (where ${alerts.status} in ('actioned', 'closed'))`,
+          low: sql<number>`count(*) filter (where ${alerts.impactScore} < 0.4 or ${alerts.impactScore} is null)`,
+          medium: sql<number>`count(*) filter (where ${alerts.impactScore} >= 0.4 and ${alerts.impactScore} < 0.7)`,
+          high: sql<number>`count(*) filter (where ${alerts.impactScore} >= 0.7)`,
+        })
+        .from(alerts)
+        .where(
+          and(
+            eq(alerts.organizationId, organizationId),
+            gte(alerts.createdAt, startDate),
+            lte(alerts.createdAt, endDate),
+          ),
+        )
+        .groupBy(trunc)
+        .orderBy(trunc),
+      db
+        .select({
+          jurisdiction: targets.jurisdiction,
+          count: count(),
+        })
+        .from(alerts)
+        .innerJoin(targets, eq(alerts.targetId, targets.id))
+        .where(
+          and(
+            eq(alerts.organizationId, organizationId),
+            gte(alerts.createdAt, startDate),
+            lte(alerts.createdAt, endDate),
+          ),
+        )
+        .groupBy(targets.jurisdiction)
+        .orderBy(sql`count(*) desc`),
+      db
+        .select({
+          total: count(),
+          openedOrActed: sql<number>`count(*) filter (where ${alerts.status} in ('actioned', 'closed'))`,
+          actionable: sql<number>`count(*) filter (where ${alerts.impactScore} >= 0.4)`,
+          triaged: sql<number>`count(*) filter (where ${alerts.status} = 'triaged')`,
+        })
+        .from(alerts)
+        .where(
+          and(
+            eq(alerts.organizationId, organizationId),
+            gte(alerts.createdAt, startDate),
+            lte(alerts.createdAt, endDate),
+          ),
+        ),
+      db
+        .select({
+          count: sql<number>`count(distinct ${alertFeedback.alertId})`,
+        })
+        .from(alertFeedback)
+        .innerJoin(alerts, eq(alertFeedback.alertId, alerts.id))
+        .where(
+          and(
+            eq(alertFeedback.organizationId, organizationId),
+            eq(alertFeedback.type, "false_positive"),
+            gte(alerts.createdAt, startDate),
+            lte(alerts.createdAt, endDate),
+          ),
+        ),
+      getMedianTimeToFirstAction({
+        organizationId,
+        startDate,
+        endDate,
+      }),
+      getOrgSourceReliability(organizationId),
+    ]);
 
-  const byJurisdiction = await db
-    .select({
-      jurisdiction: targets.jurisdiction,
-      count: count(),
-    })
-    .from(alerts)
-    .innerJoin(targets, eq(alerts.targetId, targets.id))
-    .where(
-      and(
-        eq(alerts.organizationId, organizationId),
-        gte(alerts.createdAt, startDate),
-        lte(alerts.createdAt, endDate),
-      ),
-    )
-    .groupBy(targets.jurisdiction)
-    .orderBy(sql`count(*) desc`);
-
-  const [summaryRow] = await db
-    .select({
-      total: count(),
-      openedOrActed: sql<number>`count(*) filter (where ${alerts.status} in ('actioned', 'closed'))`,
-      actionable: sql<number>`count(*) filter (where ${alerts.impactScore} >= 0.4)`,
-    })
-    .from(alerts)
-    .where(
-      and(
-        eq(alerts.organizationId, organizationId),
-        gte(alerts.createdAt, startDate),
-        lte(alerts.createdAt, endDate),
-      ),
-    );
-
-  const [fpRow] = await db
-    .select({ count: count() })
-    .from(alertFeedback)
-    .where(
-      and(
-        eq(alertFeedback.organizationId, organizationId),
-        eq(alertFeedback.type, "false_positive"),
-      ),
-    );
-
+  const [summaryRow] = summaryRows;
+  const [fpRow] = fpRows;
   const total = Number(summaryRow?.total ?? 0);
   const openedOrActedCount = Number(summaryRow?.openedOrActed ?? 0);
   const actionableCount = Number(summaryRow?.actionable ?? 0);
+  const triagedCount = Number(summaryRow?.triaged ?? 0);
   const fpCount = Number(fpRow?.count ?? 0);
 
   return {
@@ -318,6 +430,13 @@ export async function getOrgComplianceAnalytics(
       actionableCount,
       actionableRatio: total > 0 ? (actionableCount / total) * 100 : 0,
       falsePositiveRate: total > 0 ? (fpCount / total) * 100 : 0,
+      falsePositiveCount: fpCount,
+      triagedCount,
+      medianTimeToFirstActionMinutes: ttf.medianMinutes,
+      timeToFirstActionSampleSize: ttf.sampleSize,
+    },
+    moat: {
+      sourceReliability,
     },
   };
 }

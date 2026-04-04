@@ -17,15 +17,23 @@ import {
   checkAlertMatchesTemplate,
   getAlertTemplates,
 } from "./alert-templates";
-import { CACHE_KEYS, CACHE_TTL, withCache } from "./cache-helpers";
+import {
+  CACHE_KEYS,
+  CACHE_TTL,
+  invalidateCacheKeys,
+  withCache,
+} from "./cache-helpers";
 import {
   checkAlertMatchesRule,
   getActiveCustomAlertRules,
 } from "./custom-alert-rules";
 import type { DiffMetadata } from "./diff";
+import { getAdaptiveImpactMultiplierForTarget } from "./feedback-features";
 import { calculateImpactScoreFromDiff } from "./impact-scoring";
 import { type SummarizationResult, summarizeRegulatoryContent } from "./llm";
 import { sendRealtimeAlertNotification } from "./notifications";
+import { applyImpactCalibration } from "./score-calibration";
+import { getTargetSourceReliability } from "./source-reliability";
 import { getVersionContent } from "./versions";
 
 /**
@@ -104,8 +112,36 @@ export async function generateAlert(params: {
     };
   }
 
-  // Step 3: Calculate impact score
-  const impactScore = calculateImpactScoreFromDiff({
+  let adaptiveMultiplier = 1;
+  let adaptiveUsedFullFallback = true;
+  try {
+    const adaptive = await getAdaptiveImpactMultiplierForTarget({
+      organizationId,
+      jurisdiction: target.jurisdiction,
+      category: target.category,
+    });
+    adaptiveMultiplier = adaptive.multiplier;
+    adaptiveUsedFullFallback = adaptive.usedFallback;
+  } catch (error) {
+    console.error(
+      "Adaptive feedback signals unavailable; using baseline impact score:",
+      error,
+    );
+  }
+
+  let sourceReliabilityComposite: number | undefined;
+  try {
+    const rel = await getTargetSourceReliability(targetId);
+    sourceReliabilityComposite = rel.composite;
+  } catch (error) {
+    console.error(
+      "Source reliability unavailable; skipping reliability calibration:",
+      error,
+    );
+  }
+
+  // Step 3: Heuristic impact, then calibration layer (safe fallback = heuristic only)
+  const heuristicImpact = calculateImpactScoreFromDiff({
     diffMetadata,
     regulatoryCategory: summarizationResult.category,
     jurisdiction: target.jurisdiction ?? undefined,
@@ -115,6 +151,25 @@ export async function generateAlert(params: {
       deadlines: summarizationResult.entities.deadlines,
     },
   });
+
+  let impactScore: ReturnType<typeof applyImpactCalibration>;
+  try {
+    impactScore = applyImpactCalibration({
+      heuristicImpact,
+      adaptiveMultiplier,
+      adaptiveUsedFullFallback,
+      classificationConfidence: summarizationResult.classification.confidence,
+      sourceReliabilityComposite,
+    });
+  } catch (error) {
+    console.error("Impact calibration failed; using heuristic score:", error);
+    impactScore = {
+      ...heuristicImpact,
+      heuristicNumericScore: heuristicImpact.numericScore,
+      calibrationApplied: false,
+      calibrationSteps: [],
+    };
+  }
 
   // Step 3.5: Check custom alert rules and templates
   let templateId: string | undefined;
@@ -404,6 +459,10 @@ export async function markAlertFalsePositive(
     createdAt: new Date(),
   });
 
+  await invalidateCacheKeys([
+    CACHE_KEYS.adaptiveFeedbackSignals(organizationId),
+  ]);
+
   return { id };
 }
 
@@ -531,6 +590,10 @@ export async function updateAlertStatus(
     )
     .returning();
 
+  await invalidateCacheKeys([
+    CACHE_KEYS.adaptiveFeedbackSignals(organizationId),
+  ]);
+
   return updated || null;
 }
 
@@ -571,6 +634,10 @@ export async function assignAlertToUsers(
     );
   }
 
+  await invalidateCacheKeys([
+    CACHE_KEYS.adaptiveFeedbackSignals(organizationId),
+  ]);
+
   return true;
 }
 
@@ -607,6 +674,10 @@ export async function addAlertComment(
       createdAt: new Date(),
     })
     .returning();
+
+  await invalidateCacheKeys([
+    CACHE_KEYS.adaptiveFeedbackSignals(organizationId),
+  ]);
 
   return comment;
 }

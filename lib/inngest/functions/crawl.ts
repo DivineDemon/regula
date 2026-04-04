@@ -4,10 +4,12 @@ import { organizations, targets } from "@/lib/db/schema";
 import { inngest } from "@/lib/inngest/client";
 import { shouldRefreshContentGraph } from "@/lib/services/adaptive-crawl";
 import { generateAlert } from "@/lib/services/alerts";
+import { createAuditLog } from "@/lib/services/audit";
 import type { CrawlResult } from "@/lib/services/crawler";
 import { crawlUrl } from "@/lib/services/crawler";
 import { detectChanges } from "@/lib/services/diff";
 import { quotaService } from "@/lib/services/quotas";
+import { getTargetSourceReliabilityBatch } from "@/lib/services/source-reliability";
 import { usageService } from "@/lib/services/usage";
 import { usageWarningService } from "@/lib/services/usage-warnings";
 import { getVersion, storeVersion } from "@/lib/services/versions";
@@ -438,6 +440,19 @@ export const crawlTarget = inngest.createFunction(
         await usageWarningService.checkAndSendWarnings(organizationId);
       });
 
+      await step.run("audit-crawl-completed", async () => {
+        await createAuditLog({
+          organizationId,
+          action: "system.crawl_completed",
+          metadata: {
+            targetId,
+            versionId: version.id,
+            hasChanges: changeDetectionResult.hasChanges,
+            graphBased: changeDetectionResult.graphBased,
+          },
+        });
+      });
+
       return {
         success: true,
         targetId,
@@ -468,6 +483,17 @@ export const crawlTarget = inngest.createFunction(
             updateError,
           );
         }
+      });
+
+      await step.run("audit-crawl-failed", async () => {
+        await createAuditLog({
+          organizationId,
+          action: "system.crawl_failed",
+          metadata: {
+            targetId,
+            reason: errorMessage.substring(0, 500),
+          },
+        });
       });
 
       // Re-throw the error so Inngest can handle retries
@@ -529,7 +555,20 @@ export const scheduleCrawls = inngest.createFunction(
 
     // Send crawl events for each target
     await step.run("send-crawl-events", async () => {
-      const events = targetsToCrawl.map((target) => ({
+      const reliabilityByTarget = await getTargetSourceReliabilityBatch(
+        targetsToCrawl.map((t) => ({
+          id: t.id,
+          crawlFrequency: t.crawlFrequency,
+        })),
+      );
+      const ordered = [...targetsToCrawl].sort((a, b) => {
+        const ra = reliabilityByTarget.get(a.id)?.composite ?? 0.5;
+        const rb = reliabilityByTarget.get(b.id)?.composite ?? 0.5;
+        if (ra !== rb) return ra - rb;
+        return a.id.localeCompare(b.id);
+      });
+
+      const events = ordered.map((target) => ({
         name: "target/crawl" as const,
         data: {
           targetId: target.id,

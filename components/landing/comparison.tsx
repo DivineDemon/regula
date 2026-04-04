@@ -24,8 +24,10 @@ export function Comparison() {
                 Why FinTech Teams Choose Regula
               </h2>
               <p className="text-muted-foreground text-center text-balance font-medium">
-                Built for fast-moving compliance teams that need emerging-market
-                coverage, actionable analysis, and SMB-friendly pricing.
+                The Regula column reflects what the product does today—published
+                tiers, crawl schedules, and in-app analytics. Other vendors:
+                confirm capabilities and pricing with each provider; we do not
+                publish competitor benchmarks.
               </p>
             </div>
           </motion.div>
@@ -35,7 +37,7 @@ export function Comparison() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: false, margin: "-100px" }}
-              className="min-w-[800px] rounded-xl w-full"
+              className="min-w-[920px] rounded-xl w-full"
             >
               <table className="w-full text-sm">
                 <thead>

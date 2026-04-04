@@ -82,11 +82,11 @@ export function Contact() {
           <div className="w-full h-fit flex flex-col items-start justify-start gap-8 max-w-lg">
             <div className="w-full flex flex-col items-start justify-start gap-3">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground text-balance">
-                Need jurisdiction-specific coverage ?
+                Need help scoping coverage?
               </h2>
               <p className="text-base text-muted-foreground leading-relaxed">
-                Talk to us about multi-jurisdiction rollouts, and how your team
-                runs regulatory ops. We respond within 24 hours.
+                Talk to us about target lists, crawl expectations, and how your
+                team runs regulatory ops. We respond within 24 hours.
                 <br />
                 <br />
                 Prefer email?&nbsp;
@@ -103,10 +103,10 @@ export function Contact() {
                 Pilot and enterprise assist
               </p>
               <p className="text-sm text-muted-foreground mb-4">
-                We&apos;re onboarding teams that need deeper coverage and
-                workflow fit—especially across SBP, CBN, and MENA contexts.
-                Request a pilot to get early access and shape the roadmap with
-                us.
+                We&apos;re onboarding teams that need more targets, retention,
+                or integration fit than self-serve tiers list today. Request a
+                pilot to align on coverage and workflow—not a substitute for
+                your compliance program or counsel.
               </p>
               <Button asChild size="sm" className="rounded-full">
                 <Link href="/register">Request a pilot</Link>

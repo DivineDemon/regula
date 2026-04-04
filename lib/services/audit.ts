@@ -40,6 +40,8 @@ export type AuditAction =
   // Export operations
   | "export.alerts"
   | "export.compliance_report"
+  | "export.evidence_packet"
+  | "export.workflow_contract"
   // GDPR operations
   | "gdpr_request_deletion"
   | "gdpr_request_export"
@@ -153,6 +155,46 @@ export async function getAuditLogs(params: {
     ...log,
     metadata: log.metadata ? JSON.parse(log.metadata) : null,
   }));
+}
+
+/**
+ * Audit rows whose JSON metadata references a specific alert (e.g. status changes, webhooks).
+ */
+export async function getAuditLogsForAlert(params: {
+  organizationId: string;
+  alertId: string;
+  limit?: number;
+}) {
+  const { organizationId, alertId, limit = 500 } = params;
+  const { and, asc, eq, sql } = await import("drizzle-orm");
+
+  const logs = await db
+    .select()
+    .from(auditLogs)
+    .where(
+      and(
+        eq(auditLogs.organizationId, organizationId),
+        sql`${auditLogs.metadata} IS NOT NULL`,
+        sql`(${auditLogs.metadata}::jsonb ->> 'alertId') = ${alertId}`,
+      ),
+    )
+    .orderBy(asc(auditLogs.createdAt))
+    .limit(limit);
+
+  return logs.map((log) => {
+    let metadata: unknown = null;
+    if (log.metadata) {
+      try {
+        metadata = JSON.parse(log.metadata) as unknown;
+      } catch {
+        metadata = { parseError: true, raw: log.metadata };
+      }
+    }
+    return {
+      ...log,
+      metadata,
+    };
+  });
 }
 
 /**

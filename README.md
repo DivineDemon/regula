@@ -1,14 +1,14 @@
 <div align="center">
   <img src="./public/favicon.svg" alt="Regula Logo" width="120" height="120" />
   <h1>Regula</h1>
-  <p>Real-time regulatory intelligence platform for emerging-market FinTechs</p>
+  <p>Regulatory monitoring and operations workflows for FinTech teams—scheduled crawls, optional real-time alerts on paid tiers, in-app analytics</p>
 </div>
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue)](https://www.postgresql.org/)
 
-**Regula** is an automated regulatory monitoring and intelligence platform built specifically for FinTech startups and SMBs operating in emerging markets. It provides real-time tracking of regulatory changes, AI-powered impact analysis, and actionable alerts—enabling compliance teams to stay ahead of regulatory updates without the overhead of manual monitoring.
+**Regula** is a multi-tenant regulatory monitoring product for FinTech teams: configurable crawls (daily to hourly by plan), diff-based change detection, LLM-assisted summaries and impact scoring, and alert workflows with assignments, comments, exports, and audit logs. **Real-time notifications** are available on Growth and Enterprise; Free and Starter use digest-friendly schedules. **Analytics** surfaces operational metrics (for example engagement and crawl-health signals) so teams can review outcomes in data rather than marketing claims alone.
 
 ## 🎯 Problem Statement
 
@@ -16,10 +16,10 @@ Regulated businesses, especially FinTech startups in emerging markets, face crit
 
 - **Constant regulatory changes** across fragmented sources (websites, PDFs, circulars, archives)
 - **Heavy compliance burden** without dedicated legal teams
-- **Existing RegTech solutions** exclude emerging markets (focus on US/EU/UK only)
+- **Enterprise RegTech** is often sold as long-cycle programs with opaque pricing—harder to trial quickly at SMB scale
 - **High cost of non-compliance** including license risk, penalties, and service disruptions
 
-Regula solves these by providing automated, real-time regulatory intelligence at an affordable price point.
+Regula addresses this with **published self-serve tiers** (including a free tier), crawler-backed monitoring for **sources you configure**, and workflow tooling your team can measure in-product (Analytics, usage, audit history)—not a substitute for legal advice or your own compliance program.
 
 ## ✨ Key Features
 

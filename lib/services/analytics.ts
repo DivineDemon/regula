@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   alertFeedback,
   alerts,
+  auditLogs,
   targets,
   usageMetrics,
   versions,
@@ -248,4 +249,146 @@ export async function getUsageAnalytics(
   );
 
   return grouped;
+}
+
+/** Median minutes from alert creation to first non-`new` status change (audit-backed). */
+export interface TimeToFirstActionResult {
+  medianMinutes: number | null;
+  sampleSize: number;
+}
+
+export async function getMedianTimeToFirstAction(params: {
+  organizationId?: string;
+  startDate: Date;
+  endDate: Date;
+}): Promise<TimeToFirstActionResult> {
+  const { organizationId, startDate, endDate } = params;
+
+  const orgClause =
+    organizationId === undefined
+      ? sql`true`
+      : sql`a."organizationId" = ${organizationId}`;
+
+  const rows = await db.execute(sql`
+    WITH first_action AS (
+      SELECT
+        (metadata::jsonb->>'alertId') AS "alertId",
+        MIN("createdAt") AS "firstAt"
+      FROM "audit_logs"
+      WHERE action = 'alert.status_changed'
+        AND (metadata::jsonb->>'alertId') IS NOT NULL
+        AND COALESCE(metadata::jsonb->>'newValue', '') <> 'new'
+      GROUP BY 1
+    )
+    SELECT
+      percentile_cont(0.5) WITHIN GROUP (
+        ORDER BY GREATEST(
+          0,
+          EXTRACT(EPOCH FROM (fa."firstAt" - a."createdAt")) / 60.0
+        )
+      ) AS "medianMinutes",
+      COUNT(*)::int AS "sampleSize"
+    FROM first_action fa
+    INNER JOIN "alerts" a ON a.id = fa."alertId"
+    WHERE ${orgClause}
+      AND a."createdAt" >= ${startDate}
+      AND a."createdAt" <= ${endDate}
+      AND fa."firstAt" >= a."createdAt"
+  `);
+
+  const row = rows[0] as
+    | { medianMinutes: string | number | null; sampleSize: number }
+    | undefined;
+  const sampleSize = Number(row?.sampleSize ?? 0);
+  const raw = row?.medianMinutes;
+  const medianMinutes = raw != null && sampleSize > 0 ? Number(raw) : null;
+
+  return {
+    medianMinutes:
+      medianMinutes != null && !Number.isNaN(medianMinutes)
+        ? Math.round(medianMinutes * 10) / 10
+        : null,
+    sampleSize,
+  };
+}
+
+/** Crawl outcome mix from targets (last job status), scoped to one org. */
+export interface OrgSourceReliability {
+  activeTargets: number;
+  targetsWithLastCrawl: number;
+  lastCrawlCompleted: number;
+  lastCrawlFailed: number;
+  /** Share of targets with a recorded last crawl where status is `completed`. */
+  lastCrawlSuccessPercent: number | null;
+  /** Median hours since `lastCrawlAt` among active targets that have been crawled. */
+  medianFreshnessHours: number | null;
+}
+
+export async function getOrgSourceReliability(
+  organizationId: string,
+): Promise<OrgSourceReliability> {
+  const [stats] = await db
+    .select({
+      activeTargets: sql<number>`count(*) filter (where ${targets.status} = 'active')`,
+      targetsWithLastCrawl: sql<number>`count(*) filter (where ${targets.lastCrawlAt} is not null and ${targets.status} = 'active')`,
+      lastCrawlCompleted: sql<number>`count(*) filter (where ${targets.lastCrawlStatus} = 'completed' and ${targets.status} = 'active')`,
+      lastCrawlFailed: sql<number>`count(*) filter (where ${targets.lastCrawlStatus} = 'failed' and ${targets.status} = 'active')`,
+    })
+    .from(targets)
+    .where(eq(targets.organizationId, organizationId));
+
+  const withCrawl = Number(stats?.targetsWithLastCrawl ?? 0);
+  const completed = Number(stats?.lastCrawlCompleted ?? 0);
+  const failed = Number(stats?.lastCrawlFailed ?? 0);
+  const denom = completed + failed;
+  const lastCrawlSuccessPercent =
+    denom > 0 ? Math.round((completed / denom) * 1000) / 10 : null;
+
+  const [freshRow] = await db.execute(sql`
+    SELECT
+      percentile_cont(0.5) WITHIN GROUP (
+        ORDER BY EXTRACT(EPOCH FROM (NOW() - "lastCrawlAt")) / 3600.0
+      ) AS "medianHours"
+    FROM "targets"
+    WHERE "organizationId" = ${organizationId}
+      AND "status" = 'active'
+      AND "lastCrawlAt" IS NOT NULL
+  `);
+  const fr = freshRow as { medianHours: string | number | null } | undefined;
+  const mh = fr?.medianHours != null ? Number(fr.medianHours) : null;
+
+  return {
+    activeTargets: Number(stats?.activeTargets ?? 0),
+    targetsWithLastCrawl: withCrawl,
+    lastCrawlCompleted: completed,
+    lastCrawlFailed: failed,
+    lastCrawlSuccessPercent,
+    medianFreshnessHours:
+      mh != null && !Number.isNaN(mh) ? Math.round(mh * 10) / 10 : null,
+  };
+}
+
+/** Platform crawl audit outcomes (when instrumentation writes these actions). */
+export async function getCrawlAuditReliability(since: Date): Promise<{
+  completed: number;
+  failed: number;
+  successPercent: number | null;
+}> {
+  const [row] = await db
+    .select({
+      completed: sql<number>`count(*) filter (where ${auditLogs.action} = 'system.crawl_completed')`,
+      failed: sql<number>`count(*) filter (where ${auditLogs.action} = 'system.crawl_failed')`,
+    })
+    .from(auditLogs)
+    .where(gte(auditLogs.createdAt, since));
+
+  const completed = Number(row?.completed ?? 0);
+  const failed = Number(row?.failed ?? 0);
+  const total = completed + failed;
+  return {
+    completed,
+    failed,
+    successPercent:
+      total > 0 ? Math.round((completed / total) * 1000) / 10 : null,
+  };
 }

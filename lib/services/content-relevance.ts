@@ -1,4 +1,8 @@
 import { crawlUrl } from "./crawler";
+import {
+  applyRelevanceCalibration,
+  type RelevanceCalibrationOptions,
+} from "./score-calibration";
 import type { SitemapEntry } from "./sitemap-discovery";
 
 /**
@@ -326,6 +330,7 @@ export function prioritizeContentSources(
     metadata?: { title?: string };
   }>,
   config: TargetConfig,
+  calibration?: RelevanceCalibrationOptions,
 ): Array<{
   url: string;
   type?: string;
@@ -333,10 +338,14 @@ export function prioritizeContentSources(
   score?: number;
 }> {
   return sources
-    .map((source) => ({
-      ...source,
-      score: calculateRelevanceScore(source, config),
-    }))
+    .map((source) => {
+      const heuristic = calculateRelevanceScore(source, config);
+      const calibrated = applyRelevanceCalibration(heuristic, calibration);
+      return {
+        ...source,
+        score: calibrated.sortScore,
+      };
+    })
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .map(({ score, ...source }) => source);
 }

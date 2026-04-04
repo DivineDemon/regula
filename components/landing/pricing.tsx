@@ -31,8 +31,9 @@ export function Pricing() {
             Pricing That Scales With Compliance Maturity
           </h2>
           <p className="text-muted-foreground text-balance font-medium">
-            Start with essential coverage. Upgrade to real-time intelligence and
-            deeper retention as your operations grow.
+            Limits and quotas match what you see at checkout and in Settings →
+            Billing. Upgrade when you need hourly crawls, real-time alerts, or
+            longer retention.
           </p>
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
@@ -94,15 +95,16 @@ export function Pricing() {
             );
           })}
         </div>
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Enterprise includes dedicated success manager and custom features
-          —&nbsp;
+        <p className="text-center text-sm text-muted-foreground mt-6 max-w-xl mx-auto">
+          No separate setup fee on self-serve plans. Enterprise includes a
+          dedicated success manager and custom options—&nbsp;
           <Link
             href="#contact"
             className="text-primary font-medium underline underline-offset-2"
           >
             contact us
           </Link>
+          .
         </p>
       </div>
     </section>

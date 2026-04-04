@@ -120,6 +120,142 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      "/api/alerts/{id}/evidence": {
+        get: {
+          summary: "Export evidence packet",
+          description:
+            "Audit-oriented JSON for an alert: target, captured version hashes, diff metadata, workflow state, audit trail, and integrity digest.",
+          security: [{ BearerAuth: [] }, { ApiKeyAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "organizationId",
+              in: "query",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "download",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["1"] },
+            },
+            {
+              name: "includeAuditTrail",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["0", "1"] },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Evidence packet (regula.evidence_packet v1)",
+              content: { "application/json": { schema: { type: "object" } } },
+            },
+          },
+        },
+      },
+      "/api/alerts/{id}/workflow-payload": {
+        get: {
+          summary: "Workflow integration payload",
+          description:
+            "Versioned contract JSON for Jira, ServiceNow, or generic GRC ticketing (derived from the evidence packet).",
+          security: [{ BearerAuth: [] }, { ApiKeyAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "organizationId",
+              in: "query",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "provider",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                enum: ["jira", "servicenow", "generic"],
+              },
+            },
+            {
+              name: "includeAuditTrail",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["0", "1"] },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Provider-specific workflow contract",
+              content: { "application/json": { schema: { type: "object" } } },
+            },
+          },
+        },
+      },
+      "/api/alerts/evidence": {
+        get: {
+          summary: "Export period evidence packet",
+          description:
+            "Audit-oriented JSON over a date range. Includes per-alert evidence packets, summary counts, and integrity digest.",
+          security: [{ BearerAuth: [] }, { ApiKeyAuth: [] }],
+          parameters: [
+            {
+              name: "organizationId",
+              in: "query",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "startDate",
+              in: "query",
+              required: true,
+              schema: { type: "string", format: "date-time" },
+            },
+            {
+              name: "endDate",
+              in: "query",
+              required: true,
+              schema: { type: "string", format: "date-time" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 1000 },
+            },
+            {
+              name: "includeAuditTrailPerAlert",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["0", "1"] },
+            },
+            {
+              name: "download",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["1"] },
+            },
+          ],
+          responses: {
+            "200": {
+              description:
+                "Period evidence packet (regula.evidence_packet.period v1)",
+              content: { "application/json": { schema: { type: "object" } } },
+            },
+          },
+        },
+      },
       "/api/analytics": {
         get: {
           summary: "Get analytics data",
@@ -138,7 +274,14 @@ export async function GET(request: NextRequest) {
               required: true,
               schema: {
                 type: "string",
-                enum: ["trends", "statistics", "health", "usage"],
+                enum: [
+                  "trends",
+                  "statistics",
+                  "health",
+                  "usage",
+                  "compliance-analytics",
+                  "adaptive-signals",
+                ],
               },
             },
           ],

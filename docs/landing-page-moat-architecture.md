@@ -57,12 +57,12 @@ This order is strong and should remain. The primary update is content strategy a
 - `Regulatory Operations for Emerging-Market FinTech Teams`
 
 **Recommended subheadline direction**
-- `Automatically discover what to monitor, detect meaningful regulatory changes, and route them into auditable workflows your team can act on.`
+- `Discover targets, crawl on a schedule you choose, detect material changes, and route them into triage workflows with history you can export—then measure engagement and coverage in Analytics.`
 
-**Recommended trust/value chips under CTA**
-- `Built for SBP, CBN, MENA`
-- `AI impact scoring + version evidence`
-- `Audit-ready workflows`
+**Recommended trust/value chips under CTA** (keep aligned with `lib/plans.ts` + shipped UI)
+- `Free: 3 targets · daily crawls (see Pricing)`
+- `Impact scoring, diffs & version compare`
+- `Analytics, audit logs, CSV/PDF export`
 
 **CTA buttons**
 - Primary: `Start Free`
@@ -141,17 +141,17 @@ This order is strong and should remain. The primary update is content strategy a
 - `Why FinTech Teams Choose Regula`
 
 **Final section subheading**
-- `Built for fast-moving compliance teams that need emerging-market coverage, actionable analysis, and SMB-friendly pricing.`
+- Lead with **what Regula ships**: published tiers, crawl schedules, in-app analytics, and exportable history.
+- State clearly that **other vendors are “Varies”** unless you maintain a sourced matrix; **do not publish estimated competitor pricing** or unverified capability absolutes (e.g. “competitor X cannot do Y”).
 
 **Row strategy**
-- Keep current rows, add 2-4 moat rows over time:
-  - `Workflow depth (detection -> triage -> audit)`
-  - `Version-level evidence and compare`
-  - `Team collaboration in-product`
-  - `Governance controls (audit, GDPR, retention)`
+- **Regula column**: only claims you can trace to `lib/plans.ts`, product UI, and services (crawl frequencies, free tier limits, analytics, audit logs, compare, assignments, LLM pipeline).
+- **Competitor columns**: prefer `Varies`, `partial`, or `Contact vendor` over invented setup times or dollar ranges.
+- Moat rows that remain useful: workflow depth, version compare, collaboration, governance, analytics, LLM-assisted scoring.
 
 **Compliance/legal caution**
-- Keep competitors and pricing estimates fact-checked and regularly reviewed.
+- Add a short **disclaimer** under the table: illustrative comparison, not legal advice, human review where required.
+- **Platform admin** (`/admin/kpis`) holds **internal** cohort metrics (e.g. time-to-first-action, false-positive signals)—use those for **private** GTM or investor updates unless you have a separate public methodology; the **public site** should not quote live percentages without a defined, stable disclosure process.
 
 ---
 
@@ -171,7 +171,7 @@ This order is strong and should remain. The primary update is content strategy a
 - `Pricing That Scales With Compliance Maturity`
 
 **Final section subheading**
-- `Start with essential coverage. Upgrade to real-time intelligence and deeper retention as your operations grow.`
+- Tie copy to **verifiable plan limits** (targets, crawl cadence, retention, real-time vs digest) as implemented in `lib/plans.ts` and checkout—not vague “intelligence” superlatives.
 
 **Plan communication guidance**
 - **Free:** prove value with daily monitoring.
@@ -196,10 +196,10 @@ This order is strong and should remain. The primary update is content strategy a
 - Reframe from generic slogan to outcome promise tied to moat.
 
 **Recommended headline**
-- `Move From Regulatory Noise to Operational Clarity`
+- `Move From Regulatory Noise to Operational Clarity` (outcome-led; avoids unsubstantiated “AI” slogans)
 
 **Recommended button copy**
-- `Start free — monitor 3 targets today`
+- `Start free — monitor 3 targets today` (matches free-plan `targets: 3` in `lib/plans.ts`)
 
 **Support text**
 - `No credit card required`
@@ -301,7 +301,12 @@ This order is strong and should remain. The primary update is content strategy a
 ## Success Criteria for This Landing Version
 
 - A prospect can explain Regula as a **regulatory operations platform** in one sentence.
-- The page clearly differentiates Regula from generic compliance trackers.
-- Free-to-paid progression is obvious and credible.
-- Governance and trust signals are visible without overclaiming.
-- Messaging stays accurate to shipped product capabilities.
+- The page clearly differentiates Regula from generic compliance trackers **using shipped behaviors** (crawl schedules, alerts, compare, exports, analytics)—not competitor teardowns or guessed pricing.
+- Free-to-paid progression is obvious and **numerically aligned** with plan config.
+- Governance and trust signals are visible without implying certifications or legal outcomes the product does not provide.
+- Messaging stays accurate to shipped product capabilities; **testimonials** avoid “never miss / first to know” absolutes unless tied to real, attributable customers.
+
+## Measured proof (where it lives)
+
+- **Per-organization**: `/analytics` and dashboard metrics for operational review.
+- **Platform-internal**: `/api/admin/kpis` and `FounderKpisClient` for cohort-style quality and engagement signals—treat as **internal instrumentation** until you publish a methodology for external claims.

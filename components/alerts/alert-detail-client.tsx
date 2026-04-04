@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   ArrowLeft,
+  ChevronDown,
   Loader2,
   MessageSquare,
   Send,
@@ -26,6 +27,14 @@ import { VersionHistoryCard } from "@/components/alerts/version-history-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Empty,
   EmptyDescription,
@@ -110,6 +119,7 @@ export function AlertDetailClient({
   const [submittingComment, setSubmittingComment] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [markingFalsePositive, setMarkingFalsePositive] = useState(false);
+  const [exportingEvidence, setExportingEvidence] = useState(false);
 
   const fetchAlert = useCallback(async () => {
     try {
@@ -210,6 +220,64 @@ export function AlertDetailClient({
       toast.error("Failed to mark as false positive. Please try again.");
     } finally {
       setMarkingFalsePositive(false);
+    }
+  };
+
+  const handleDownloadEvidence = async () => {
+    if (!alertId || !organizationId) return;
+    setExportingEvidence(true);
+    try {
+      const res = await fetch(
+        `/api/alerts/${alertId}/evidence?organizationId=${encodeURIComponent(organizationId)}&download=1`,
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || "Export failed");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `regula-evidence-${alertId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Evidence packet downloaded");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e instanceof Error ? e.message : "Could not download evidence packet",
+      );
+    } finally {
+      setExportingEvidence(false);
+    }
+  };
+
+  const handleCopyWorkflowPayload = async (
+    provider: "jira" | "servicenow" | "generic",
+  ) => {
+    if (!alertId || !organizationId) return;
+    try {
+      const res = await fetch(
+        `/api/alerts/${alertId}/workflow-payload?organizationId=${encodeURIComponent(organizationId)}&provider=${provider}`,
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || "Request failed");
+      }
+      const data = await res.json();
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      toast.success(
+        provider === "generic"
+          ? "Generic GRC payload copied"
+          : provider === "jira"
+            ? "Jira contract JSON copied"
+            : "ServiceNow contract JSON copied",
+      );
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e instanceof Error ? e.message : "Could not copy workflow payload",
+      );
     }
   };
 
@@ -402,16 +470,58 @@ export function AlertDetailClient({
           </div>
         </div>
         <div className="w-full h-full col-span-1 flex flex-col items-start justify-start border rounded-3xl">
-          <div className="w-full flex items-center justify-center p-5 border-b">
-            <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="w-full flex items-start justify-between gap-3 p-5 border-b">
+            <div className="flex-1 flex flex-col items-stretch justify-center min-w-0">
               <span className="w-full text-left text-lg font-bold">
                 Alert Details
               </span>
-              <span className="w-full text-left text-sm text-muted-foreground">
+              <span className="w-full text-left text-sm text-muted-foreground break-all">
                 {alertDetail.alert.id}
               </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 w-fit gap-1"
+                    disabled={exportingEvidence}
+                  >
+                    {exportingEvidence ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <>
+                        Export & integrations
+                        <ChevronDown className="size-4 opacity-60" />
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-56">
+                  <DropdownMenuLabel>Evidence</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={handleDownloadEvidence}>
+                    Download evidence packet (JSON)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Ticketing / GRC</DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onSelect={() => handleCopyWorkflowPayload("jira")}
+                  >
+                    Copy Jira issue contract
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => handleCopyWorkflowPayload("servicenow")}
+                  >
+                    Copy ServiceNow incident contract
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => handleCopyWorkflowPayload("generic")}
+                  >
+                    Copy generic GRC ticket contract
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <p className="text-2xl font-bold text-destructive">
+            <p className="text-2xl font-bold text-destructive shrink-0">
               {alertDetail.alert.impactScore
                 ? (alertDetail.alert.impactScore * 100).toFixed(0)
                 : "N/A"}

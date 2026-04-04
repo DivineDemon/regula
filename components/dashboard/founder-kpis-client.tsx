@@ -5,8 +5,10 @@ import {
   AlertTriangle,
   Building2,
   DollarSign,
+  Gauge,
   MousePointerClick,
   Target,
+  Timer,
   TrendingUp,
   Zap,
 } from "lucide-react";
@@ -40,6 +42,21 @@ interface PlatformKpis {
   operational: {
     crawlSuccessRate: number | null;
     totalCrawlsLast30Days: number;
+    targetLastCrawlSuccessPercent: number | null;
+    targetLastCrawlFailed: number;
+    targetLastCrawlCompleted: number;
+    crawlAuditSuccessPercent: number | null;
+    crawlAuditCompleted: number;
+    crawlAuditFailed: number;
+  };
+  moatBaselines: {
+    windowDays: number;
+    alertsInWindow: number;
+    falsePositiveCount: number;
+    falsePositiveRate: number;
+    alertEngagementRate: number;
+    medianTimeToFirstActionMinutes: number | null;
+    timeToFirstActionSampleSize: number;
   };
 }
 
@@ -172,6 +189,84 @@ export function FounderKpisClient() {
         </Card>
       </div>
 
+      {/* Moat baselines (rolling window, same as plan success metrics) */}
+      <div>
+        <h2 className="mb-4 text-lg font-semibold">
+          Moat baselines ({kpis.moatBaselines.windowDays}d)
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                False-positive rate
+              </CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.moatBaselines.falsePositiveRate}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {kpis.moatBaselines.falsePositiveCount} /{" "}
+                {kpis.moatBaselines.alertsInWindow} alerts in window
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Engagement ({kpis.moatBaselines.windowDays}d)
+              </CardTitle>
+              <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.moatBaselines.alertEngagementRate}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Actioned or closed (created in window)
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Time to first action
+              </CardTitle>
+              <Timer className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.moatBaselines.medianTimeToFirstActionMinutes != null
+                  ? kpis.moatBaselines.medianTimeToFirstActionMinutes >= 120
+                    ? `${Math.round((kpis.moatBaselines.medianTimeToFirstActionMinutes / 60) * 10) / 10}h`
+                    : `${kpis.moatBaselines.medianTimeToFirstActionMinutes}m`
+                  : "—"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Median from alert created to first status change (n=
+                {kpis.moatBaselines.timeToFirstActionSampleSize})
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                All-time FP rate
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.product.falsePositiveRate}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Platform cumulative (for contrast)
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* Technical health */}
       <div>
         <h2 className="mb-4 text-lg font-semibold">Technical health</h2>
@@ -188,21 +283,8 @@ export function FounderKpisClient() {
                 {kpis.product.alertEngagementRate}%
               </div>
               <p className="text-xs text-muted-foreground">
-                Opened or acted upon
+                All-time actioned or closed
               </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                False-positive rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {kpis.product.falsePositiveRate}%
-              </div>
-              <p className="text-xs text-muted-foreground">Target &lt; 15%</p>
             </CardContent>
           </Card>
           <Card>
@@ -216,7 +298,25 @@ export function FounderKpisClient() {
                   : "—"}
               </div>
               <p className="text-xs text-muted-foreground">
-                Time to first alert
+                Avg hours org → first alert
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Source crawl success
+              </CardTitle>
+              <Gauge className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.operational.targetLastCrawlSuccessPercent != null
+                  ? `${kpis.operational.targetLastCrawlSuccessPercent}%`
+                  : "—"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Last job completed vs failed (active targets)
               </p>
             </CardContent>
           </Card>
@@ -231,6 +331,66 @@ export function FounderKpisClient() {
                 {kpis.operational.totalCrawlsLast30Days.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">Version records</p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Crawl audit signal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.operational.crawlAuditCompleted +
+                  kpis.operational.crawlAuditFailed >
+                0
+                  ? kpis.operational.crawlAuditSuccessPercent != null
+                    ? `${kpis.operational.crawlAuditSuccessPercent}%`
+                    : "—"
+                  : "—"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {kpis.operational.crawlAuditCompleted +
+                  kpis.operational.crawlAuditFailed >
+                0
+                  ? `${kpis.operational.crawlAuditCompleted} ok, ${kpis.operational.crawlAuditFailed} failed (audit logs, 30d)`
+                  : "No system.crawl_* audit rows yet"}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Targets last crawl failed
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.operational.targetLastCrawlFailed}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {kpis.operational.targetLastCrawlCompleted} completed (active
+                targets)
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Version crawl rate
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.operational.crawlSuccessRate != null
+                  ? `${kpis.operational.crawlSuccessRate}%`
+                  : "—"}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Rows stored vs attempts (proxy)
+              </p>
             </CardContent>
           </Card>
         </div>

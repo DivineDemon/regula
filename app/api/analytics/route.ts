@@ -11,6 +11,7 @@ import {
   getUsageAnalytics,
 } from "@/lib/services/analytics";
 import { calculateComplianceHealthScore } from "@/lib/services/compliance-health";
+import { getOrgAdaptiveSignalsSnapshot } from "@/lib/services/feedback-features";
 import { getOrgComplianceAnalytics } from "@/lib/services/kpi";
 
 export async function GET(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const organizationId = searchParams.get("organizationId");
-    const type = searchParams.get("type"); // trends, statistics, health, usage, compliance-analytics
+    const type = searchParams.get("type"); // trends, statistics, health, usage, compliance-analytics, adaptive-signals
 
     if (!organizationId) {
       return NextResponse.json(
@@ -127,11 +128,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(analytics);
       }
 
+      case "adaptive-signals": {
+        const snapshot = await getOrgAdaptiveSignalsSnapshot(organizationId);
+        return NextResponse.json(snapshot);
+      }
+
       default:
         return NextResponse.json(
           {
             error:
-              "Invalid type. Must be trends, statistics, health, usage, or compliance-analytics",
+              "Invalid type. Must be trends, statistics, health, usage, compliance-analytics, or adaptive-signals",
           },
           { status: 400 },
         );
