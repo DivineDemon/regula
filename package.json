@@ -44,7 +44,7 @@
     "drizzle-orm": "^0.45.1",
     "framer-motion": "^12.23.26",
     "html2canvas": "^1.4.1",
-    "inngest": "^3.48.1",
+    "inngest": "^3.54.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.562.0",
     "marked": "^17.0.5",
